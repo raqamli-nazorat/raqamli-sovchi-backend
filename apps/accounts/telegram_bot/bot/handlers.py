@@ -1,15 +1,16 @@
 import os
 import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
-from apps.telegram_bot.models import LoginCode
+from apps.accounts.telegram_bot.models import LoginCode
 from .states import AuthStates
-
-django.setup()
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 router = Router()
 
