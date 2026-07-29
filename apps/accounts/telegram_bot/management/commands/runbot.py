@@ -8,7 +8,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from apps.telegram_bot.bot.handlers import router
+from apps.accounts.telegram_bot.bot.handlers import router
 
 
 class Command(BaseCommand):
