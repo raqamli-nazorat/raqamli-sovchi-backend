@@ -8,6 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.base.views import BaseManageViewSet
+from apps.core.base.mixins import AutoSchemaMixin
 from .models import User, UserPledge, AuthProvider
 from .serializers import (
     UserSerializer,
@@ -43,7 +44,7 @@ class UserPledgeViewSet(BaseManageViewSet):
     ordering_fields = ["created_at"]
 
 
-class GoogleLoginView(views.APIView):
+class GoogleLoginView(AutoSchemaMixin, views.APIView):
     permission_classes = []
 
     def post(self, request, *args, **kwargs):
@@ -92,7 +93,7 @@ class GoogleLoginView(views.APIView):
         )
 
 
-class PhoneAuthView(views.APIView):
+class PhoneAuthView(AutoSchemaMixin, views.APIView):
     permission_classes = []
 
     def post(self, request, *args, **kwargs):

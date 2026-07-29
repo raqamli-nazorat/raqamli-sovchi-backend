@@ -4,6 +4,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
+from apps.core.base.mixins import AutoSchemaMixin
 from .models import Question, QuestionOption, UserAnswer
 from .serializers import (
     QuestionSerializer,
@@ -38,7 +39,7 @@ class UserAnswerViewSet(BaseManageViewSet):
     filterset_class = UserAnswerFilter
 
 
-class BulkUserAnswerSubmitView(views.APIView):
+class BulkUserAnswerSubmitView(AutoSchemaMixin, views.APIView):
     def post(self, request, *args, **kwargs):
         serializer = BulkUserAnswerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
