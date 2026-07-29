@@ -4,6 +4,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.core.base.mixins import AutoSchemaMixin
 from apps.accounts.users.models import User, AuthProvider
 from apps.accounts.users.serializers import UserSerializer
 from .models import LoginCode
@@ -18,7 +19,7 @@ def get_tokens_for_user(user):
     }
 
 
-class VerifyCodeView(views.APIView):
+class VerifyCodeView(AutoSchemaMixin, views.APIView):
     permission_classes = []
 
     def post(self, request, *args, **kwargs):
