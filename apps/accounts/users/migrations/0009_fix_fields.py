@@ -2,7 +2,6 @@ import django.core.validators
 import uuid
 from django.db import migrations, models
 
-
 FIX_ROLE_ID_TYPE_SQL = """
 DO $$
 BEGIN

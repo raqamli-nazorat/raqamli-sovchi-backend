@@ -14,6 +14,7 @@ from .serializers import (
 )
 from .filters import QuestionFilter, UserAnswerFilter
 
+
 class QuestionViewSet(BaseReadOnlyViewSet):
     queryset = Question.objects.prefetch_related("options").active()
     serializer_class = QuestionSerializer
@@ -22,9 +23,11 @@ class QuestionViewSet(BaseReadOnlyViewSet):
     search_fields = ["text"]
     ordering_fields = ["order", "created_at"]
 
+
 class QuestionOptionViewSet(BaseReadOnlyViewSet):
     queryset = QuestionOption.objects.select_related("question").active()
     serializer_class = QuestionOptionSerializer
+
 
 class UserAnswerViewSet(BaseManageViewSet):
     queryset = UserAnswer.objects.select_related(
@@ -33,6 +36,7 @@ class UserAnswerViewSet(BaseManageViewSet):
     serializer_class = UserAnswerSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserAnswerFilter
+
 
 class BulkUserAnswerSubmitView(AutoSchemaMixin, views.APIView):
     def post(self, request, *args, **kwargs):

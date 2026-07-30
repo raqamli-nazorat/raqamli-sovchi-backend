@@ -9,6 +9,7 @@ try:
 except NotRegistered:
     pass
 
+
 @admin.register(LogEntry)
 class UnfoldLogEntryAdmin(ModelAdmin, LogEntryAdmin):
     list_display = ["created", "resource_url", "action", "msg_short", "user_url"]

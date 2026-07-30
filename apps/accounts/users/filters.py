@@ -2,6 +2,7 @@ import django_filters
 from apps.core.base.filters import UUIDInFilter, NumberInFilter
 from .models import User, UserPledge, Role
 
+
 class RoleFilter(django_filters.FilterSet):
     permissions = NumberInFilter(field_name="permissions", lookup_expr="in")
     start_date = django_filters.DateFilter(
@@ -14,6 +15,7 @@ class RoleFilter(django_filters.FilterSet):
     class Meta:
         model = Role
         fields = ["permissions", "start_date", "end_date"]
+
 
 class UserFilter(django_filters.FilterSet):
     auth_provider = django_filters.CharFilter(
@@ -31,6 +33,7 @@ class UserFilter(django_filters.FilterSet):
     class Meta:
         model = User
         fields = ["auth_provider", "role", "is_verified", "start_date", "end_date"]
+
 
 class UserPledgeFilter(django_filters.FilterSet):
     user = UUIDInFilter(field_name="user", lookup_expr="in")

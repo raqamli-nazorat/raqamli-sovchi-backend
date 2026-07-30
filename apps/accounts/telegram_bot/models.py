@@ -3,11 +3,14 @@ from django.utils import timezone
 from django.db import models
 from apps.core.base.models import BaseModel
 
+
 def generate_code():
     return str(random.randint(100000, 999999))
 
+
 def default_expires_at():
     return timezone.now() + timezone.timedelta(minutes=5)
+
 
 class LoginCode(BaseModel):
     phone_number = models.CharField(

@@ -2,6 +2,7 @@ import django_filters
 from apps.core.base.filters import UUIDInFilter
 from .models import Question, UserAnswer
 
+
 class QuestionFilter(django_filters.FilterSet):
     section = django_filters.CharFilter(field_name="section", lookup_expr="exact")
     target_gender = django_filters.CharFilter(
@@ -12,6 +13,7 @@ class QuestionFilter(django_filters.FilterSet):
     class Meta:
         model = Question
         fields = ["section", "target_gender", "is_trap_question"]
+
 
 class UserAnswerFilter(django_filters.FilterSet):
     profile = UUIDInFilter(field_name="profile", lookup_expr="in")

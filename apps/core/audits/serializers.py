@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from auditlog.models import LogEntry
 
+
 class LogEntrySerializer(serializers.ModelSerializer):
     actor_name = serializers.CharField(
         source="actor.full_name", read_only=True, default=None
