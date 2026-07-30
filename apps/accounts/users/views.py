@@ -87,7 +87,14 @@ class RoleViewSet(BaseManageViewSet):
     @property
     def serializer_fields(self):
         if self.action == "list":
-            return ["id", "name", "permissions_count", "created_at", "updated_at"]
+            return [
+                "id",
+                "name",
+                "is_default",
+                "permissions_count",
+                "created_at",
+                "updated_at",
+            ]
         return None
 
 
