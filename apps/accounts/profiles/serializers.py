@@ -47,5 +47,47 @@ class ProfileSerializer(BaseModelSerializer):
         }
 
 
+class ProfileMeSerializer(BaseModelSerializer):
+    class Meta:
+        model = Profile
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "middle_name",
+            "gender",
+            "role",
+            "birth_year",
+            "height",
+            "weight",
+            "region",
+            "district",
+            "health_status",
+            "marital_status",
+            "bio",
+            "voice_intro",
+            "latitude",
+            "longitude",
+            "blur_photos",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+        related_fields = {
+            "user": [
+                "id",
+                "phone_number",
+                "email",
+                "auth_provider",
+                "is_verified",
+                "is_staff",
+                "created_at",
+            ],
+            "region": ["id", "name"],
+            "district": ["id", "name"],
+            "photos": ["id", "image", "is_main", "order", "created_at"],
+        }
+
+
 class FaceVerificationSerializer(serializers.Serializer):
     image = serializers.ImageField(required=True, label="Selfie rasm")

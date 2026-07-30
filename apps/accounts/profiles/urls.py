@@ -5,6 +5,7 @@ from .views import (
     ProfilePhotoViewSet,
     RepresentativeInfoViewSet,
     FaceVerificationView,
+    ProfileMeView,
 )
 
 router = DefaultRouter()
@@ -15,6 +16,7 @@ router.register(
 )
 
 urlpatterns = [
+    path("profiles/me/", ProfileMeView.as_view(), name="profile-me"),
     path("face-verify/", FaceVerificationView.as_view(), name="face-verify"),
     path("", include(router.urls)),
 ]
