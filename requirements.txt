@@ -27,3 +27,4 @@ deepface==0.0.100
 retina-face==0.0.17
 opencv-python==4.11.0.86
 tensorflow==2.19.0
+tf-keras==2.21.0
