@@ -6,7 +6,8 @@ from .models import User, UserPledge, Role
 
 @admin.register(Role)
 class RoleAdmin(BaseModelAdmin):
-    list_display = ("id", "name", "created_at")
+    list_display = ("id", "name", "is_default", "created_at")
+    list_filter = ("is_default",)
     search_fields = ("name",)
     filter_horizontal = ("permissions",)
 
