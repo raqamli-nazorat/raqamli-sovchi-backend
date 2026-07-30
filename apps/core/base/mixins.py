@@ -1,9 +1,11 @@
 from drf_spectacular.utils import extend_schema
 from apps.core.base.permissions import FullDjangoModelPermissions
 
+
 class DynamicPermissionMixin:
 
     permission_classes = [FullDjangoModelPermissions]
+
 
 class AutoSchemaMixin:
 

@@ -26,7 +26,9 @@ class Migration(migrations.Migration):
                 (
                     "created_at",
                     models.DateTimeField(
-                        auto_now_add=True, db_index=True, verbose_name="Yaratilgan vaqti"
+                        auto_now_add=True,
+                        db_index=True,
+                        verbose_name="Yaratilgan vaqti",
                     ),
                 ),
                 (
@@ -43,9 +45,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "name",
-                    models.CharField(
-                        max_length=150, unique=True, verbose_name="Nomi"
-                    ),
+                    models.CharField(max_length=150, unique=True, verbose_name="Nomi"),
                 ),
                 (
                     "permissions",

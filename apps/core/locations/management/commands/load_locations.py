@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from apps.core.locations.models import Region, District
 
+
 class Command(BaseCommand):
     help = (
         "O'zbekistonning barcha viloyat va shahar/tumanlarini bazaga avtomatik kiritish"

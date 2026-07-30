@@ -6,6 +6,7 @@ DEFAULT_ERROR_MSG = "Kutilmagan xatolik yuzaga keldi."
 
 SCHEMA_VIEW_MODULES = ("drf_spectacular", "drf_yasg", "rest_framework.schemas")
 
+
 class ResponseRenderer(JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         renderer_context = renderer_context or {}

@@ -1,7 +1,7 @@
-
 import apps.accounts.telegram_bot.models
 import uuid
 from django.db import migrations, models
+
 
 class Migration(migrations.Migration):
 

@@ -1,6 +1,7 @@
 from django.db import models
 from apps.core.base.models import BaseModel
 
+
 class Region(BaseModel):
     name = models.CharField(max_length=255, verbose_name="Nomi")
     code = models.PositiveIntegerField(null=True, blank=True, verbose_name="Kodi")
@@ -11,6 +12,7 @@ class Region(BaseModel):
     class Meta:
         verbose_name = "Viloyat"
         verbose_name_plural = "Viloyatlar"
+
 
 class District(BaseModel):
     name = models.CharField(max_length=255, verbose_name="Nomi")

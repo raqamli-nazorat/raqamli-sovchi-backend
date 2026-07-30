@@ -10,12 +10,14 @@ from apps.accounts.users.serializers import UserSerializer
 from .models import LoginCode
 from .serializers import VerifyCodeSerializer
 
+
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
         "refresh": str(refresh),
         "access": str(refresh.access_token),
     }
+
 
 class VerifyCodeView(AutoSchemaMixin, views.APIView):
     permission_classes = []

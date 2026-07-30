@@ -2,6 +2,7 @@ from django.db import models
 from apps.core.base.models import BaseModel
 from apps.accounts.profiles.models import Profile
 
+
 class SectionType(models.TextChoices):
     RELIGIOUS_SPIRITUAL = (
         "religious_spiritual",
@@ -21,10 +22,12 @@ class SectionType(models.TextChoices):
     )
     FUTURE_PLANS = "future_plans", "V. Kelajak Rejalari va Maishiy Hayot"
 
+
 class TargetGender(models.TextChoices):
     ALL = "all", "Barchaga (Umumiy)"
     GROOM = "groom", "Faqat Kuyov uchun"
     BRIDE = "bride", "Faqat Kelin uchun"
+
 
 class Question(BaseModel):
     section = models.CharField(
@@ -52,6 +55,7 @@ class Question(BaseModel):
     def __str__(self):
         return f"{self.order}. {self.text[:50]}..."
 
+
 class QuestionOption(BaseModel):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="options", verbose_name="Savol"
@@ -75,6 +79,7 @@ class QuestionOption(BaseModel):
 
     def __str__(self):
         return f"{self.question.order}-{self.option_letter}: {self.text[:40]}"
+
 
 class UserAnswer(BaseModel):
     profile = models.ForeignKey(

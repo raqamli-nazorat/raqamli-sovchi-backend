@@ -2,6 +2,7 @@ import django_filters
 from apps.core.base.filters import UUIDInFilter
 from .models import Profile, ProfilePhoto
 
+
 class ProfileFilter(django_filters.FilterSet):
     region = UUIDInFilter(field_name="region", lookup_expr="in")
     district = UUIDInFilter(field_name="district", lookup_expr="in")
@@ -43,4 +44,3 @@ class ProfileFilter(django_filters.FilterSet):
             "birth_year_min",
             "birth_year_max",
         ]
-

@@ -14,6 +14,7 @@ logger = logging.getLogger("api.errors")
 
 SERVER_ERROR_MSG = "Serverdagi ichki xatolik."
 
+
 def exception_handler(exc, context):
     if isinstance(exc, DjangoValidationError):
         exc = _convert_django_validation_error(exc)
@@ -47,14 +48,17 @@ def exception_handler(exc, context):
         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
+
 def _convert_django_validation_error(exc):
     if hasattr(exc, "message_dict"):
         return DRFValidationError(detail=exc.message_dict)
     return DRFValidationError(detail=exc.messages)
 
+
 def _extract_error_code(exc):
     code = getattr(exc, "default_code", None)
     return str(code) if code else "error"
+
 
 def _error_response(status_code, message, error_code, is_friendly=True):
     return JsonResponse(
@@ -73,12 +77,14 @@ def _error_response(status_code, message, error_code, is_friendly=True):
         json_dumps_params={"ensure_ascii": False},
     )
 
+
 def handler400(request, exception=None, *args, **kwargs):
     return _error_response(
         status.HTTP_400_BAD_REQUEST,
         "Noto'g'ri so'rov.",
         "bad_request",
     )
+
 
 def handler403(request, exception=None, *args, **kwargs):
     return _error_response(
@@ -87,12 +93,14 @@ def handler403(request, exception=None, *args, **kwargs):
         "permission_denied",
     )
 
+
 def handler404(request, exception=None, *args, **kwargs):
     return _error_response(
         status.HTTP_404_NOT_FOUND,
         "Sahifa topilmadi.",
         "not_found",
     )
+
 
 def handler500(request, *args, **kwargs):
     return _error_response(

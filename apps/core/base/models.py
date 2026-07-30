@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.db.models.base import ModelBase
 
+
 class BaseQuerySet(models.QuerySet):
 
     def active(self):
@@ -17,6 +18,7 @@ class BaseQuerySet(models.QuerySet):
     def hard_delete(self):
         return super().delete()
 
+
 class BaseModelMeta(ModelBase):
     def __new__(mcs, name, bases, attrs):
         new_class = super().__new__(mcs, name, bases, attrs)
@@ -24,6 +26,7 @@ class BaseModelMeta(ModelBase):
             if not new_class._meta.ordering:
                 new_class._meta.ordering = ["-created_at"]
         return new_class
+
 
 class BaseModel(models.Model, metaclass=BaseModelMeta):
 
