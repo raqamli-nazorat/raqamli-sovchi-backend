@@ -111,12 +111,26 @@ class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
 
 
 class UserViewSet(BaseManageViewSet):
-    queryset = User.objects.active()
+    queryset = (
+        User.objects.select_related("profile", "profile__region", "role")
+        .prefetch_related("profile__photos")
+        .active()
+    )
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserFilter
-    search_fields = ["phone_number", "email"]
+    search_fields = [
+        "phone_number",
+        "email",
+        "profile__first_name",
+        "profile__last_name",
+    ]
     ordering_fields = ["created_at", "phone_number"]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return UserListSerializer
+        return super().get_serializer_class()
 
 
 class UserPledgeViewSet(BaseManageViewSet):

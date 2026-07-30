@@ -41,18 +41,114 @@ class UserSerializer(BaseModelSerializer):
         model = User
         fields = [
             "id",
-            "first_name",
-            "last_name",
             "phone_number",
             "email",
             "role",
             "auth_provider",
             "is_verified",
+            "is_blocked",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "is_verified", "created_at", "updated_at"]
         related_fields = {"role": ["id", "name"]}
+
+
+class UserListSerializer(BaseModelSerializer):
+    display_id = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    candidate_type = serializers.SerializerMethodField()
+    region_name = serializers.SerializerMethodField()
+    completion_percentage = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "display_id",
+            "full_name",
+            "phone_number",
+            "email",
+            "candidate_type",
+            "region_name",
+            "completion_percentage",
+            "status",
+            "is_verified",
+            "is_blocked",
+            "created_at",
+        ]
+
+    def get_display_id(self, obj):
+        short_code = str(obj.id).replace("-", "")[:5].upper()
+        return f"USR-{short_code}"
+
+    def get_full_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        if profile and (profile.first_name or profile.last_name):
+            return f"{profile.first_name or ''} {profile.last_name or ''}".strip()
+        return obj.phone_number
+
+    def get_candidate_type(self, obj):
+        profile = getattr(obj, "profile", None)
+        if profile:
+            role_map = {
+                "groom": "Groom",
+                "bride": "Bride",
+                "representative": "Representative",
+            }
+            if profile.role:
+                return role_map.get(profile.role, profile.get_role_display())
+            if getattr(profile, "representative_info", None):
+                return "Representative"
+        return "Unknown"
+
+    def get_region_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        if profile and profile.region:
+            return profile.region.name
+        return None
+
+    def get_completion_percentage(self, obj):
+        profile = getattr(obj, "profile", None)
+        if not profile:
+            return 0
+
+        score = 0
+        if profile.first_name:
+            score += 10
+        if profile.last_name:
+            score += 10
+        if profile.gender:
+            score += 10
+        if profile.role:
+            score += 10
+        if profile.birth_year:
+            score += 10
+        if profile.height and profile.weight:
+            score += 10
+        if profile.region:
+            score += 10
+        if profile.district:
+            score += 10
+        if profile.marital_status:
+            score += 10
+        if hasattr(profile, "photos") and bool(profile.photos.all()):
+            score += 10
+
+        return score
+
+    def get_status(self, obj):
+        if obj.is_blocked:
+            return "Blocked"
+        if obj.is_verified:
+            return "Approved"
+
+        pct = self.get_completion_percentage(obj)
+        if pct < 50:
+            return "Incomplete"
+
+        return "Under Review"
 
 
 class UserPledgeSerializer(BaseModelSerializer):
