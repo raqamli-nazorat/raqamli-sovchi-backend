@@ -71,6 +71,12 @@ class PhoneAuthSerializer(serializers.Serializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = "phone_number"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields[self.username_field] = serializers.CharField(validators=[phone_validator])
+
     def validate(self, attrs):
         data: dict = super().validate(attrs)
         user = self.user
