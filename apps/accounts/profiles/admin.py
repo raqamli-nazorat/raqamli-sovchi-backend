@@ -28,7 +28,13 @@ class ProfileAdmin(BaseModelAdmin):
         "blur_photos",
         "created_at",
     )
-    list_filter = ("health_status", "marital_status", "blur_photos", "region", "district")
+    list_filter = (
+        "health_status",
+        "marital_status",
+        "blur_photos",
+        "region",
+        "district",
+    )
     search_fields = ("first_name", "last_name", "user__phone_number")
     inlines = [ProfilePhotoInline, RepresentativeInfoInline]
 
@@ -37,6 +43,7 @@ class ProfileAdmin(BaseModelAdmin):
 class ProfilePhotoAdmin(BaseModelAdmin):
     list_display = ("id", "profile", "is_main", "order", "created_at")
     list_filter = ("is_main",)
+
 
 @admin.register(RepresentativeInfo)
 class RepresentativeInfoAdmin(BaseModelAdmin):

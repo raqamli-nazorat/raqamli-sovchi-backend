@@ -169,9 +169,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Authentication Backends
 # https://docs.djangoproject.com/en/6.0/topics/auth/customizing/#other-authentication-sources
 
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend"
-]
+AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 # User model
 # https://docs.djangoproject.com/en/6.0/topics/auth/customizing/#other-authentication-sources
