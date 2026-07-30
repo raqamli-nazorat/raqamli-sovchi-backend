@@ -4,9 +4,11 @@ from apps.core.base.mixins import (
     AutoSchemaMixin,
 )
 
+
 class BaseManageViewSet(AutoSchemaMixin, DynamicPermissionMixin, viewsets.ModelViewSet):
 
     pass
+
 
 class BaseReadOnlyViewSet(
     AutoSchemaMixin, DynamicPermissionMixin, viewsets.ReadOnlyModelViewSet

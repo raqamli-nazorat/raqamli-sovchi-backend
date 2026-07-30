@@ -8,6 +8,7 @@ phone_validator = RegexValidator(
     message="Telefon raqami noto'g'ri formatda kiritildi. Kutilgan format: '+9989012345678'. Uzunligi aynan 13 ta belgi bo'lishi shart.",
 )
 
+
 class ComplexPasswordValidator:
     def validate(self, password, user=None):
         if not re.findall(r"[A-Z]", password):
@@ -33,6 +34,7 @@ class ComplexPasswordValidator:
 
     def get_help_text(self):
         return "Parolingiz kamida bitta katta harf, bitta kichik harf, bitta raqam va bitta maxsus belgi saqlashi kerak."
+
 
 @deconstructible
 class FileSizeValidator:

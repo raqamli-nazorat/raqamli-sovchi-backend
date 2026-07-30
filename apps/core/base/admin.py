@@ -1,6 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
+
 class BaseModelAdmin(ModelAdmin):
     def delete_model(self, request, obj):
         obj.delete()

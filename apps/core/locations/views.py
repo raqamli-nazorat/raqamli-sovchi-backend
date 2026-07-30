@@ -6,6 +6,7 @@ from .serializers import RegionSerializer, DistrictSerializer
 from .models import Region, District
 from .filters import RegionFilter, DistrictFilter
 
+
 class RegionViewSet(BaseManageViewSet):
     queryset = Region.objects.active()
     serializer_class = RegionSerializer
@@ -13,6 +14,7 @@ class RegionViewSet(BaseManageViewSet):
     filterset_class = RegionFilter
     search_fields = ["name"]
     ordering_fields = ["created_at", "name"]
+
 
 class DistrictViewSet(BaseManageViewSet):
     queryset = District.objects.select_related("region").active()

@@ -2,6 +2,7 @@ from django.apps import AppConfig
 from django.apps import apps
 from django.db.models.signals import class_prepared
 
+
 def register_auditlog(sender, **kwargs):
     from auditlog.registry import auditlog
     from apps.core.base.models import BaseModel
@@ -11,6 +12,7 @@ def register_auditlog(sender, **kwargs):
             auditlog.register(sender)
         except Exception:
             pass
+
 
 class BaseConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"

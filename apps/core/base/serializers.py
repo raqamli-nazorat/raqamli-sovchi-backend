@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+
 class BaseModelSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
@@ -88,6 +89,7 @@ class BaseModelSerializer(serializers.ModelSerializer):
             val = ret.pop("updated_at")
             ret["updated_at"] = val
         return ret
+
 
 def get_short_serializer(model_class, fields=None, nested_related_fields=None):
 
