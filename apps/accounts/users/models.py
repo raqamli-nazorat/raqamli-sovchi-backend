@@ -10,7 +10,6 @@ class AuthProvider(models.TextChoices):
     TELEGRAM = "telegram", "Telegram"
 
 
-
 class UserRole(models.TextChoices):
     GROOM = "groom", "Kuyov"
     BRIDE = "bride", "Kelin"
@@ -20,39 +19,26 @@ class UserRole(models.TextChoices):
 class User(AbstractUser, BaseModel):
     username = None
     phone_number = models.CharField(
-        max_length=20,
-        unique=True,
-        db_index=True,
-        verbose_name="Telefon raqam"
+        max_length=20, unique=True, db_index=True, verbose_name="Telefon raqam"
     )
     email = models.EmailField(
-        blank=True,
-        null=True,
-        unique=True,
-        verbose_name="Email manzili"
+        blank=True, null=True, unique=True, verbose_name="Email manzili"
     )
     auth_provider = models.CharField(
         max_length=20,
         choices=AuthProvider.choices,
         default=AuthProvider.PHONE,
-        verbose_name="Ro'yxatdan o'tgan usuli"
+        verbose_name="Ro'yxatdan o'tgan usuli",
     )
     role = models.CharField(
         max_length=20,
         choices=UserRole.choices,
         blank=True,
         null=True,
-        verbose_name="Foydalanuvchi roli (Kuyov/Kelin/Vakil)"
-    )
-    pin_code = models.CharField(
-        max_length=128,
-        blank=True,
-        null=True,
-        verbose_name="PIN-kod HASH"
+        verbose_name="Foydalanuvchi roli (Kuyov/Kelin/Vakil)",
     )
     is_verified = models.BooleanField(
-        default=False,
-        verbose_name="Tasdiqlangan foydalanuvchi"
+        default=False, verbose_name="Tasdiqlangan foydalanuvchi"
     )
 
     objects = UserManager()
@@ -74,20 +60,16 @@ class UserPledge(BaseModel):
         User,
         on_delete=models.CASCADE,
         related_name="pledge",
-        verbose_name="Foydalanuvchi"
+        verbose_name="Foydalanuvchi",
     )
     accepted_terms = models.BooleanField(
-        default=False,
-        verbose_name="Shartlarga roziligi"
+        default=False, verbose_name="Shartlarga roziligi"
     )
     has_serious_badge = models.BooleanField(
-        default=False,
-        verbose_name="'Niyati jiddiy' belgisi"
+        default=False, verbose_name="'Niyati jiddiy' belgisi"
     )
     ip_address = models.GenericIPAddressField(
-        blank=True,
-        null=True,
-        verbose_name="IP manzil"
+        blank=True, null=True, verbose_name="IP manzil"
     )
 
     class Meta:

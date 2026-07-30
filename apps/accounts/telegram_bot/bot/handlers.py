@@ -7,7 +7,12 @@ django.setup()
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import (
+    Message,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardRemove,
+)
 
 from apps.accounts.telegram_bot.models import LoginCode
 from .states import AuthStates
@@ -45,7 +50,7 @@ async def handle_contact(message: Message, state: FSMContext):
 
     await state.clear()
     await message.answer(
-        f"🔐 Tasdiqlash kodingiz: <code>{login_code.code}</code>\n\n"
+        f"🔐 <b>Tasdiqlash kodingiz:</b> <code>{login_code.code}</code>\n\n"
         f"<i>Kod 5 daqiqa davomida amal qiladi.</i>",
         reply_markup=ReplyKeyboardRemove(),
     )

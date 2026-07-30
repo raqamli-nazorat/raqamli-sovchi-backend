@@ -29,15 +29,12 @@ class Profile(BaseModel):
         User,
         on_delete=models.CASCADE,
         related_name="profile",
-        verbose_name="Foydalanuvchi"
+        verbose_name="Foydalanuvchi",
     )
     first_name = models.CharField(max_length=100, verbose_name="Ismi")
     last_name = models.CharField(max_length=100, verbose_name="Familiyasi")
     middle_name = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name="Otasining ismi"
+        max_length=100, blank=True, null=True, verbose_name="Otasining ismi"
     )
     birth_year = models.PositiveIntegerField(verbose_name="Tug'ilgan yili")
     height = models.PositiveIntegerField(verbose_name="Bo'yi (sm)")
@@ -48,56 +45,49 @@ class Profile(BaseModel):
         on_delete=models.SET_NULL,
         null=True,
         related_name="profiles",
-        verbose_name="Viloyat"
+        verbose_name="Viloyat",
     )
     district = models.ForeignKey(
         District,
         on_delete=models.SET_NULL,
         null=True,
         related_name="profiles",
-        verbose_name="Tuman"
+        verbose_name="Tuman",
     )
 
     health_status = models.CharField(
         max_length=20,
         choices=HealthStatus.choices,
         default=HealthStatus.HEALTHY,
-        verbose_name="Sog'liqlik darajasi"
+        verbose_name="Sog'liqlik darajasi",
     )
     marital_status = models.CharField(
-        max_length=20,
-        choices=MaritalStatus.choices,
-        verbose_name="Oilaviy holati"
+        max_length=20, choices=MaritalStatus.choices, verbose_name="Oilaviy holati"
     )
 
-    bio = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="O'zi haqida izoh matn"
-    )
+    bio = models.TextField(blank=True, null=True, verbose_name="O'zi haqida izoh matn")
     voice_intro = models.FileField(
         upload_to="voice_intros/",
         blank=True,
         null=True,
-        verbose_name="Anonim ovozli xabar (Audio)"
+        verbose_name="Anonim ovozli xabar (Audio)",
     )
     latitude = models.DecimalField(
         max_digits=9,
         decimal_places=6,
         blank=True,
         null=True,
-        verbose_name="Kenglik (Latitude)"
+        verbose_name="Kenglik (Latitude)",
     )
     longitude = models.DecimalField(
         max_digits=9,
         decimal_places=6,
         blank=True,
         null=True,
-        verbose_name="Uzunlik (Longitude)"
+        verbose_name="Uzunlik (Longitude)",
     )
     blur_photos = models.BooleanField(
-        default=True,
-        verbose_name="Rasmlarni xiralashtirish (Blur)"
+        default=True, verbose_name="Rasmlarni xiralashtirish (Blur)"
     )
 
     class Meta:
@@ -111,12 +101,12 @@ class Profile(BaseModel):
 
 class ProfilePhoto(BaseModel):
     profile = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name="photos",
-        verbose_name="Profil"
+        Profile, on_delete=models.CASCADE, related_name="photos", verbose_name="Profil"
     )
     image = models.ImageField(upload_to="profile_photos/", verbose_name="Rasm")
+    embedding = models.JSONField(
+        blank=True, null=True, verbose_name="Yuz embedding vektori"
+    )
     order = models.PositiveSmallIntegerField(default=1, verbose_name="Tartib")
     is_main = models.BooleanField(default=False, verbose_name="Asosiy rasm")
 
@@ -135,17 +125,15 @@ class RepresentativeInfo(BaseModel):
         Profile,
         on_delete=models.CASCADE,
         related_name="representative_info",
-        verbose_name="Vakil profili"
+        verbose_name="Vakil profili",
     )
     kinship = models.CharField(
-        max_length=30,
-        choices=KinshipType.choices,
-        verbose_name="Qarindoshlik holati"
+        max_length=30, choices=KinshipType.choices, verbose_name="Qarindoshlik holati"
     )
     candidate_role = models.CharField(
         max_length=20,
         choices=[("groom", "Kuyov"), ("bride", "Kelin")],
-        verbose_name="Nomzod turi"
+        verbose_name="Nomzod turi",
     )
 
     class Meta:
