@@ -51,7 +51,10 @@ class UserSerializer(BaseModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "is_verified", "created_at", "updated_at"]
-        related_fields = {"role": ["id", "name"]}
+        related_fields = {
+            "role": ["id", "name"],
+            "profile": "__all__",
+        }
 
 
 class UserListSerializer(BaseModelSerializer):
@@ -91,17 +94,9 @@ class UserListSerializer(BaseModelSerializer):
 
     def get_candidate_type(self, obj):
         profile = getattr(obj, "profile", None)
-        if profile:
-            role_map = {
-                "groom": "Groom",
-                "bride": "Bride",
-                "representative": "Representative",
-            }
-            if profile.role:
-                return role_map.get(profile.role, profile.get_role_display())
-            if getattr(profile, "representative_info", None):
-                return "Representative"
-        return "Unknown"
+        if profile and profile.candidate_type:
+            return profile.get_candidate_type_display()
+        return None
 
     def get_region_name(self, obj):
         profile = getattr(obj, "profile", None)
@@ -121,7 +116,7 @@ class UserListSerializer(BaseModelSerializer):
             score += 10
         if profile.gender:
             score += 10
-        if profile.role:
+        if profile.candidate_type:
             score += 10
         if profile.birth_year:
             score += 10
@@ -140,15 +135,15 @@ class UserListSerializer(BaseModelSerializer):
 
     def get_status(self, obj):
         if obj.is_blocked:
-            return "Blocked"
+            return "Bloklangan"
         if obj.is_verified:
-            return "Approved"
+            return "Tasdiqlangan"
 
         pct = self.get_completion_percentage(obj)
         if pct < 50:
-            return "Incomplete"
+            return "Anketa to'liq emas"
 
-        return "Under Review"
+        return "Tekshiruvda"
 
 
 class UserPledgeSerializer(BaseModelSerializer):
