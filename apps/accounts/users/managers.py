@@ -9,13 +9,6 @@ class UserManager(BaseUserManager.from_queryset(BaseQuerySet)):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
 
-        if "role" not in extra_fields or extra_fields["role"] is None:
-            from apps.accounts.users.models import Role
-
-            default_role = Role.objects.filter(name="Foydalanuvchi").first()
-            if default_role:
-                extra_fields["role"] = default_role
-
         user = self.model(phone_number=phone_number, **extra_fields)
         if password:
             user.set_password(password)
