@@ -11,7 +11,7 @@ try:
     from deepface import DeepFace
 
     DEEPFACE_AVAILABLE = True
-except ImportError:
+except Exception:
     DeepFace = None
     DEEPFACE_AVAILABLE = False
 
