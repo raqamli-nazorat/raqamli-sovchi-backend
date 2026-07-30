@@ -21,6 +21,7 @@ from .serializers import (
     PermissionSerializer,
     PhoneAuthSerializer,
     RoleSerializer,
+    UserListSerializer,
     UserPledgeSerializer,
     UserSerializer,
 )
