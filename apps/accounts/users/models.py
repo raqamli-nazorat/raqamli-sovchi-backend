@@ -84,6 +84,9 @@ class User(AbstractUser, RolePermissionsMixin, BaseModel):
     is_verified = models.BooleanField(
         default=False, verbose_name="Tasdiqlangan foydalanuvchi"
     )
+    is_blocked = models.BooleanField(
+        default=False, verbose_name="Bloklangan foydalanuvchi"
+    )
 
     objects = UserManager()
 

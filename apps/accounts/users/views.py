@@ -3,8 +3,7 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, views, permissions
-from rest_framework.decorators import action
+from rest_framework import generics, permissions, status, views
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
@@ -99,32 +98,39 @@ class RoleViewSet(BaseManageViewSet):
         return None
 
 
+class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save(update_fields=["is_active"])
+
+
 class UserViewSet(BaseManageViewSet):
-    queryset = User.objects.active()
+    queryset = (
+        User.objects.select_related("profile", "profile__region", "role")
+        .prefetch_related("profile__photos")
+        .active()
+    )
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserFilter
-    search_fields = ["phone_number", "email"]
+    search_fields = [
+        "phone_number",
+        "email",
+        "profile__first_name",
+        "profile__last_name",
+    ]
     ordering_fields = ["created_at", "phone_number"]
 
-    @action(
-        detail=False,
-        methods=["get", "delete"],
-        permission_classes=[permissions.IsAuthenticated],
-        url_path="me",
-    )
-    def me(self, request):
-        user = request.user
-        if request.method == "GET":
-            serializer = self.get_serializer(user)
-            return Response(serializer.data)
-        elif request.method == "DELETE":
-            user.is_active = False
-            user.save(update_fields=["is_active"])
-            return Response(
-                {"detail": "Foydalanuvchi hisobi muvaffaqiyatli o'chirildi."},
-                status=status.HTTP_204_NO_CONTENT,
-            )
+    def get_serializer_class(self):
+        if self.action == "list":
+            return UserListSerializer
+        return super().get_serializer_class()
 
 
 class UserPledgeViewSet(BaseManageViewSet):
