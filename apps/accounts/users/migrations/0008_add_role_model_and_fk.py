@@ -1,3 +1,4 @@
+import uuid
 import django.db.models.deletion
 from django.db import migrations, models
 
@@ -15,17 +16,17 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.BigAutoField(
-                        auto_created=True,
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
                         primary_key=True,
                         serialize=False,
-                        verbose_name="ID",
                     ),
                 ),
                 (
                     "created_at",
                     models.DateTimeField(
-                        auto_now_add=True, verbose_name="Yaratilgan vaqti"
+                        auto_now_add=True, db_index=True, verbose_name="Yaratilgan vaqti"
                     ),
                 ),
                 (
@@ -37,7 +38,7 @@ class Migration(migrations.Migration):
                 (
                     "is_active",
                     models.BooleanField(
-                        default=True, verbose_name="Faol / O'chirilgan"
+                        db_index=True, default=True, verbose_name="Is Active"
                     ),
                 ),
                 (
