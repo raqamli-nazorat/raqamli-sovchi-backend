@@ -1,20 +1,11 @@
 from drf_spectacular.utils import extend_schema
 from apps.core.base.permissions import FullDjangoModelPermissions
 
-
 class DynamicPermissionMixin:
-    """
-    Hamma ViewSet larda avtomatik ravishda Djangoning add/change/delete/view ruxsatlarini tekshiradi.
-    """
 
     permission_classes = [FullDjangoModelPermissions]
 
-
 class AutoSchemaMixin:
-    """
-    ViewSet va APIView larni Swaggerda alohida taglar bilan ajratib ko'rsatish uchun mixin.
-    ViewSet lar model nomi bilan, APIView lar esa app nomi bilan ajratiladi.
-    """
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

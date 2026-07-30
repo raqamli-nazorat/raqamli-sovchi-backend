@@ -7,7 +7,6 @@ from apps.accounts.questionnaire.models import (
     SectionType,
 )
 
-
 class Command(BaseCommand):
     help = "TZ da berilgan barcha so'rovnoma savollari va variantlarini bazaga bulk_create orqali kiritadi."
 

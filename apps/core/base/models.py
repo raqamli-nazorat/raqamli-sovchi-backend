@@ -3,12 +3,7 @@ import uuid
 from django.db import models
 from django.db.models.base import ModelBase
 
-
 class BaseQuerySet(models.QuerySet):
-    """
-    Tizimdagi modellarning o'chirilish jarayonini (soft-delete) to'g'ri boshqarish
-    uchun umumiy QuerySet. Asl ma'lumotlarni o'chirmasdan 'is_active=False' holatiga o'tkazadi.
-    """
 
     def active(self):
         return self.filter(is_active=True)
@@ -22,7 +17,6 @@ class BaseQuerySet(models.QuerySet):
     def hard_delete(self):
         return super().delete()
 
-
 class BaseModelMeta(ModelBase):
     def __new__(mcs, name, bases, attrs):
         new_class = super().__new__(mcs, name, bases, attrs)
@@ -31,12 +25,7 @@ class BaseModelMeta(ModelBase):
                 new_class._meta.ordering = ["-created_at"]
         return new_class
 
-
 class BaseModel(models.Model, metaclass=BaseModelMeta):
-    """
-    Loyiha davomidagi barcha modellar uchun asosiy va mavhum (abstract) model.
-    O'zida ID (UUID), aktivlik holati, yaratilgan va o'zgartirilgan vaqtlarni jamlaydi.
-    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     is_active = models.BooleanField(

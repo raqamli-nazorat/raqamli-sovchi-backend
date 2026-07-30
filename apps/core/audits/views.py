@@ -7,7 +7,6 @@ from apps.core.base.views import BaseReadOnlyViewSet
 from .serializers import LogEntrySerializer
 from .filters import LogEntryFilter
 
-
 class LogEntryViewSet(BaseReadOnlyViewSet):
     queryset = LogEntry.objects.select_related("actor", "content_type").all()
     serializer_class = LogEntrySerializer

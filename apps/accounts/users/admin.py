@@ -1,7 +1,14 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from apps.core.base.admin import BaseModelAdmin
-from .models import User, UserPledge
+from .models import User, UserPledge, Role
+
+
+@admin.register(Role)
+class RoleAdmin(BaseModelAdmin):
+    list_display = ("id", "name", "created_at")
+    search_fields = ("name",)
+    filter_horizontal = ("permissions",)
 
 
 @admin.register(User)

@@ -10,7 +10,6 @@ logger = logging.getLogger("api.throttling")
 RATE_RE = re.compile(r"^(\d+)/(\d+)?([smhd])[a-z]*$")
 UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
 
-
 class CustomScopedRateThrottle(ScopedRateThrottle):
     def parse_rate(self, rate):
         if rate is None:
@@ -53,11 +52,10 @@ class CustomScopedRateThrottle(ScopedRateThrottle):
 
     def _login_ident(self, request):
         try:
-            full_name = str(request.data.get("full_name") or "").strip().lower()
+            phone_number = str(request.data.get("phone_number") or "").strip()
         except Exception:
-            full_name = ""
-        return f"login:{self.get_ident(request)}:{full_name}"
-
+            phone_number = ""
+        return f"login:{self.get_ident(request)}:{phone_number}"
 
 class ThrottleExceptionHandlerMixin:
     def handle_exception(self, exc):

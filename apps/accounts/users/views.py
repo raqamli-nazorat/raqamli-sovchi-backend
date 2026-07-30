@@ -1,30 +1,94 @@
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
-from rest_framework import status, views
-from rest_framework.response import Response
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.exceptions import ValidationError
+from django.contrib.auth.models import Permission
+from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import status, views
+from rest_framework.exceptions import ValidationError
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from apps.core.base.views import BaseManageViewSet
 from apps.core.base.mixins import AutoSchemaMixin
-from .models import User, UserPledge, AuthProvider
+from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
+from apps.core.utils.throttles import CustomScopedRateThrottle
+
+from .filters import RoleFilter, UserFilter, UserPledgeFilter
+from .models import AuthProvider, Role, User, UserPledge
 from .serializers import (
-    UserSerializer,
-    UserPledgeSerializer,
+    CustomTokenObtainPairSerializer,
     GoogleLoginSerializer,
+    PermissionSerializer,
     PhoneAuthSerializer,
+    RoleSerializer,
+    UserPledgeSerializer,
+    UserSerializer,
 )
-from .filters import UserFilter, UserPledgeFilter
+from .utils import get_tokens_for_user
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        "refresh": str(refresh),
-        "access": str(refresh.access_token),
-    }
+class PermissionViewSet(BaseReadOnlyViewSet):
+    queryset = Permission.objects.select_related("content_type").exclude(
+        content_type__app_label__in=[
+            "admin",
+            "auth",
+            "sessions",
+            "contenttypes",
+            "django_celery_beat",
+        ]
+    )
+    serializer_class = PermissionSerializer
+    pagination_class = None
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+
+        grouped_data = {}
+        for perm in serializer.data:
+            group_key = perm["model_name"]
+
+            if group_key not in grouped_data:
+                grouped_data[group_key] = []
+
+            grouped_data[group_key].append(
+                {"id": perm["id"], "name": perm["name"], "codename": perm["codename"]}
+            )
+
+        return Response(grouped_data)
+
+
+class RoleViewSet(BaseManageViewSet):
+    queryset = Role.objects.active()
+    serializer_class = RoleSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = RoleFilter
+    search_fields = ["name"]
+    ordering_fields = ["created_at", "name"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        perms_subq = (
+            Role.permissions.through.objects.filter(role_id=OuterRef("pk"))
+            .values("role_id")
+            .annotate(c=Count("permission_id"))
+            .values("c")
+        )
+
+        qs = qs.annotate(
+            permissions_count=Subquery(perms_subq, output_field=IntegerField())
+        )
+
+        if self.action != "list":
+            qs = qs.prefetch_related("permissions")
+        return qs
+
+    @property
+    def serializer_fields(self):
+        if self.action == "list":
+            return ["id", "name", "permissions_count", "created_at", "updated_at"]
+        return None
 
 
 class UserViewSet(BaseManageViewSet):
@@ -74,9 +138,16 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
                 "auth_provider": AuthProvider.GOOGLE,
             },
         )
+
+        update_fields = []
         if not user.email and email:
             user.email = email
-            user.save(update_fields=["email"])
+            update_fields.append("email")
+        if not created and user.auth_provider != AuthProvider.GOOGLE:
+            user.auth_provider = AuthProvider.GOOGLE
+            update_fields.append("auth_provider")
+        if update_fields:
+            user.save(update_fields=update_fields)
 
         social_login.user = user
         social_login.lookup()
@@ -106,6 +177,10 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
             defaults={"auth_provider": AuthProvider.PHONE},
         )
 
+        if not created and user.auth_provider != AuthProvider.PHONE:
+            user.auth_provider = AuthProvider.PHONE
+            user.save(update_fields=["auth_provider"])
+
         tokens = get_tokens_for_user(user)
         return Response(
             {
@@ -115,3 +190,27 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
             },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class CustomTokenObtainPairView(AutoSchemaMixin, TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [CustomScopedRateThrottle]
+    throttle_scope = "login"
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            for throttle in self.get_throttles():
+                if hasattr(throttle, "get_cache_key") and hasattr(throttle, "cache"):
+                    if hasattr(throttle, "scope_attr"):
+                        throttle.scope = getattr(self, throttle.scope_attr, None)
+                    cache_key = throttle.get_cache_key(request, view=self)
+                    if cache_key:
+                        throttle.cache.delete(cache_key)
+
+        return response
+
+
+class CustomTokenRefreshView(AutoSchemaMixin, TokenRefreshView):
+    pass
