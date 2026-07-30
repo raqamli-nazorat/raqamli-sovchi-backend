@@ -36,7 +36,7 @@ class ProfileViewSet(BaseManageViewSet):
 
     @action(
         detail=False,
-        methods=["get", "post", "put", "patch", "delete"],
+        methods=["get", "delete"],
         permission_classes=[permissions.IsAuthenticated],
         url_path="me",
     )
@@ -50,31 +50,6 @@ class ProfileViewSet(BaseManageViewSet):
                     status=status.HTTP_404_NOT_FOUND,
                 )
             serializer = self.get_serializer(profile)
-            return Response(serializer.data)
-
-        elif request.method == "POST":
-            if profile and profile.is_active:
-                return Response(
-                    {"detail": "Profil allaqachon yaratilgan."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        elif request.method in ["PUT", "PATCH"]:
-            if not profile or not profile.is_active:
-                return Response(
-                    {"detail": "Yangilash uchun profil topilmadi."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-            partial = request.method == "PATCH"
-            serializer = self.get_serializer(
-                profile, data=request.data, partial=partial
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
             return Response(serializer.data)
 
         elif request.method == "DELETE":

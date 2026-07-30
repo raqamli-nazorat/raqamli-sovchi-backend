@@ -109,7 +109,7 @@ class UserViewSet(BaseManageViewSet):
 
     @action(
         detail=False,
-        methods=["get", "put", "patch", "delete"],
+        methods=["get", "delete"],
         permission_classes=[permissions.IsAuthenticated],
         url_path="me",
     )
@@ -117,12 +117,6 @@ class UserViewSet(BaseManageViewSet):
         user = request.user
         if request.method == "GET":
             serializer = self.get_serializer(user)
-            return Response(serializer.data)
-        elif request.method in ["PUT", "PATCH"]:
-            partial = request.method == "PATCH"
-            serializer = self.get_serializer(user, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
             return Response(serializer.data)
         elif request.method == "DELETE":
             user.is_active = False
