@@ -136,14 +136,15 @@ class UserListSerializer(BaseModelSerializer):
     def get_status(self, obj):
         if obj.is_blocked:
             return "Bloklangan"
-        if obj.is_verified:
-            return "Tasdiqlangan"
 
         pct = self.get_completion_percentage(obj)
         if pct < 50:
             return "Anketa to'liq emas"
 
-        return "Tekshiruvda"
+        if not obj.is_verified:
+            return "Tekshiruvda"
+
+        return "Tasdiqlangan"
 
 
 class UserPledgeSerializer(BaseModelSerializer):
