@@ -21,13 +21,19 @@ class UserAdmin(BaseModelAdmin):
         "role",
         "auth_provider",
         "is_verified",
+        "is_blocked",
         "is_staff",
         "is_active",
         "created_at",
     )
-    list_filter = ("role", "auth_provider", "is_verified", "is_staff", "is_active")
-    search_fields = ("phone_number", "email", "first_name", "last_name")
+    list_filter = ("role", "auth_provider", "is_verified", "is_blocked", "is_staff", "is_active")
+    search_fields = ("phone_number", "email", "profile__first_name", "profile__last_name")
     ordering = ("-created_at",)
+
+    def save_model(self, request, obj, form, change):
+        if obj.password and not obj.password.startswith("pbkdf2_"):
+            obj.set_password(obj.password)
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(UserPledge)
