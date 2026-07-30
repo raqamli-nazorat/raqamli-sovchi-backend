@@ -80,14 +80,14 @@ class UserListSerializer(BaseModelSerializer):
             "created_at",
         ]
         related_fields = {
-            "profile": {
-                "source": "profile",
-                "fields": ["id"],
-                "related_fields": {
-                    "region": ["id", "name"],
-                    "district": ["id", "name"],
-                },
-            }
+            "region": {
+                "source": "profile__region",
+                "fields": ["id", "name"],
+            },
+            "district": {
+                "source": "profile__district",
+                "fields": ["id", "name"],
+            },
         }
 
     def get_display_id(self, obj):
