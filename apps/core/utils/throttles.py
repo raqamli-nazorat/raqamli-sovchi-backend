@@ -53,10 +53,11 @@ class CustomScopedRateThrottle(ScopedRateThrottle):
 
     def _login_ident(self, request):
         try:
-            full_name = str(request.data.get("full_name") or "").strip().lower()
+            phone_number = str(request.data.get("phone_number") or "").strip()
         except Exception:
-            full_name = ""
-        return f"login:{self.get_ident(request)}:{full_name}"
+            phone_number = ""
+        # IP + phone_number kombinatsiyasi: bitta raqam uchun alohida limit
+        return f"login:{self.get_ident(request)}:{phone_number}"
 
 
 class ThrottleExceptionHandlerMixin:

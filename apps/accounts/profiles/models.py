@@ -4,6 +4,11 @@ from apps.accounts.users.models import User
 from apps.core.locations.models import Region, District
 
 
+class GenderType(models.TextChoices):
+    MALE = "male", "Erkak"
+    FEMALE = "female", "Ayol"
+
+
 class HealthStatus(models.TextChoices):
     HEALTHY = "healthy", "Sog'lom"
     DISABLED = "disabled", "Nogironligi bor"
@@ -35,6 +40,11 @@ class Profile(BaseModel):
     last_name = models.CharField(max_length=100, verbose_name="Familiyasi")
     middle_name = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Otasining ismi"
+    )
+    gender = models.CharField(
+        max_length=10,
+        choices=GenderType.choices,
+        verbose_name="Jinsi",
     )
     birth_year = models.PositiveIntegerField(verbose_name="Tug'ilgan yili")
     height = models.PositiveIntegerField(verbose_name="Bo'yi (sm)")
