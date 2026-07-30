@@ -30,8 +30,9 @@ class VerifyCodeView(AutoSchemaMixin, views.APIView):
         code = serializer.validated_data["code"]
 
         login_code = (
-            LoginCode.objects
-            .filter(phone_number=phone_number, code=code, is_used=False)
+            LoginCode.objects.filter(
+                phone_number=phone_number, code=code, is_used=False
+            )
             .filter(expires_at__gt=timezone.now())
             .order_by("-created_at")
             .first()
