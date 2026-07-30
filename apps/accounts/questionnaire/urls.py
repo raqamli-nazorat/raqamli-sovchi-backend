@@ -13,6 +13,10 @@ router.register(r"options", QuestionOptionViewSet, basename="question-option")
 router.register(r"answers", UserAnswerViewSet, basename="user-answer")
 
 urlpatterns = [
-    path("answers/bulk-submit/", BulkUserAnswerSubmitView.as_view(), name="bulk-answer-submit"),
+    path(
+        "answers/bulk-submit/",
+        BulkUserAnswerSubmitView.as_view(),
+        name="bulk-answer-submit",
+    ),
     path("", include(router.urls)),
 ]

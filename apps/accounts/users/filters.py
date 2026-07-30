@@ -4,7 +4,9 @@ from .models import User, UserPledge
 
 
 class UserFilter(django_filters.FilterSet):
-    auth_provider = django_filters.CharFilter(field_name="auth_provider", lookup_expr="exact")
+    auth_provider = django_filters.CharFilter(
+        field_name="auth_provider", lookup_expr="exact"
+    )
     role = django_filters.CharFilter(field_name="role", lookup_expr="exact")
     is_verified = django_filters.BooleanFilter(field_name="is_verified")
     start_date = django_filters.DateFilter(

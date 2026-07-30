@@ -15,5 +15,3 @@ class DistrictSerializer(BaseModelSerializer):
         fields = "__all__"
 
         related_fields = {"region": ["id", "name"]}
-
-
