@@ -8,6 +8,7 @@ from .views import (
     PermissionViewSet,
     PhoneAuthView,
     RoleViewSet,
+    UserMeView,
     UserPledgeViewSet,
     UserViewSet,
 )
@@ -19,6 +20,7 @@ router.register(r"users", UserViewSet, basename="user")
 router.register(r"pledges", UserPledgeViewSet, basename="user-pledge")
 
 urlpatterns = [
+    path("users/me/", UserMeView.as_view(), name="user-me"),
     path("auth/google/", GoogleLoginView.as_view(), name="auth-google"),
     path("auth/phone/", PhoneAuthView.as_view(), name="auth-phone"),
     path("auth/token/", CustomTokenObtainPairView.as_view(), name="token-obtain-pair"),
