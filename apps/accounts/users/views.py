@@ -3,7 +3,8 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, views
+from rest_framework import status, views, permissions
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
@@ -105,6 +106,31 @@ class UserViewSet(BaseManageViewSet):
     filterset_class = UserFilter
     search_fields = ["phone_number", "email"]
     ordering_fields = ["created_at", "phone_number"]
+
+    @action(
+        detail=False,
+        methods=["get", "put", "patch", "delete"],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="me",
+    )
+    def me(self, request):
+        user = request.user
+        if request.method == "GET":
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+        elif request.method in ["PUT", "PATCH"]:
+            partial = request.method == "PATCH"
+            serializer = self.get_serializer(user, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        elif request.method == "DELETE":
+            user.is_active = False
+            user.save(update_fields=["is_active"])
+            return Response(
+                {"detail": "Foydalanuvchi hisobi muvaffaqiyatli o'chirildi."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
 
 
 class UserPledgeViewSet(BaseManageViewSet):
