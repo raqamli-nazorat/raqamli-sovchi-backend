@@ -1,9 +1,10 @@
 from django.contrib.auth.models import AbstractUser, Permission
 from django.db import models
 
-from apps.core.base.models import BaseModel
 from apps.accounts.users.managers import UserManager
 from apps.accounts.users.mixins import RolePermissionsMixin
+from apps.core.base.models import BaseModel
+from apps.core.utils.validators import phone_validator
 
 
 class UserRole(models.TextChoices):
@@ -46,7 +47,11 @@ class User(AbstractUser, RolePermissionsMixin, BaseModel):
     groups = None
 
     phone_number = models.CharField(
-        max_length=20, unique=True, db_index=True, verbose_name="Telefon raqam"
+        max_length=20,
+        unique=True,
+        db_index=True,
+        validators=[phone_validator],
+        verbose_name="Telefon raqam",
     )
     email = models.EmailField(
         blank=True, null=True, unique=True, verbose_name="Email manzili"
