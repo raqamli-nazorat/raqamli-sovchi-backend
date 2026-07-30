@@ -62,7 +62,7 @@ class UserFilter(django_filters.FilterSet):
             "representative": "representative",
         }
         target = val_map.get(value.lower(), value)
-        return queryset.filter(profile__role__iexact=target)
+        return queryset.filter(profile__candidate_type__iexact=target)
 
     def filter_status(self, queryset, name, value):
         val_map = {

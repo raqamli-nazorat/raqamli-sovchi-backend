@@ -55,7 +55,7 @@ class ProfileMeSerializer(BaseModelSerializer):
             "last_name",
             "middle_name",
             "gender",
-            "role",
+            "candidate_type",
             "birth_year",
             "height",
             "weight",
