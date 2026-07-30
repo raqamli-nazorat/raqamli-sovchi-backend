@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.core.base.serializers import BaseModelSerializer
+from apps.core.utils.validators import phone_validator
 from .models import Role, User, UserPledge
 
 
@@ -34,6 +35,8 @@ class RoleSerializer(BaseModelSerializer):
 
 
 class UserSerializer(BaseModelSerializer):
+    phone_number = serializers.CharField(validators=[phone_validator])
+
     class Meta:
         model = User
         fields = [
@@ -60,11 +63,11 @@ class UserPledgeSerializer(BaseModelSerializer):
 
 class GoogleLoginSerializer(serializers.Serializer):
     access_token = serializers.CharField()
-    phone_number = serializers.CharField()
+    phone_number = serializers.CharField(validators=[phone_validator])
 
 
 class PhoneAuthSerializer(serializers.Serializer):
-    phone_number = serializers.CharField()
+    phone_number = serializers.CharField(validators=[phone_validator])
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
