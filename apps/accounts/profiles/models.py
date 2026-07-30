@@ -20,14 +20,10 @@ class MaritalStatus(models.TextChoices):
     DIVORCED = "divorced", "Ajrashgan"
 
 
-class KinshipType(models.TextChoices):
-    FATHER = "father", "Ota"
-    MOTHER = "mother", "Ona"
-    UNCLE_PATERNAL = "uncle_paternal", "Amaki"
-    UNCLE_MATERNAL = "uncle_maternal", "Tog'a"
-    AUNT_PATERNAL = "aunt_paternal", "Amma"
-    AUNT_MATERNAL = "aunt_maternal", "Xola"
-    OTHER = "other", "Boshqa qarindosh"
+class CandidateRole(models.TextChoices):
+    GROOM = "groom", "Kuyov"
+    BRIDE = "bride", "Kelin"
+    REPRESENTATIVE = "representative", "Vakil"
 
 
 class Profile(BaseModel):
@@ -47,12 +43,12 @@ class Profile(BaseModel):
         choices=GenderType.choices,
         verbose_name="Jinsi",
     )
-    role = models.CharField(
+    candidate_type = models.CharField(
         max_length=20,
-        choices=UserRole.choices,
+        choices=CandidateRole.choices,
         blank=True,
         null=True,
-        verbose_name="Roli (Kuyov/Kelin/Vakil)",
+        verbose_name="Nomzod turi (Kuyov/Kelin/Vakil)",
     )
     birth_year = models.PositiveIntegerField(verbose_name="Tug'ilgan yili")
     height = models.PositiveIntegerField(verbose_name="Bo'yi (sm)")
@@ -146,7 +142,10 @@ class RepresentativeInfo(BaseModel):
         verbose_name="Vakil profili",
     )
     kinship = models.CharField(
-        max_length=30, choices=KinshipType.choices, verbose_name="Qarindoshlik holati"
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Qarindoshlik holati",
     )
     candidate_role = models.CharField(
         max_length=20,
@@ -160,4 +159,4 @@ class RepresentativeInfo(BaseModel):
         db_table = "representative_infos"
 
     def __str__(self):
-        return f"Vakil: {self.profile.first_name} ({self.get_kinship_display()})"
+        return f"Vakil: {self.profile.first_name}"

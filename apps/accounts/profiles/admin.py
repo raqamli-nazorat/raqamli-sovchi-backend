@@ -20,7 +20,7 @@ class ProfileAdmin(BaseModelAdmin):
         "first_name",
         "last_name",
         "user",
-        "role",
+        "candidate_type",
         "gender",
         "birth_year",
         "region",
@@ -31,7 +31,7 @@ class ProfileAdmin(BaseModelAdmin):
         "created_at",
     )
     list_filter = (
-        "role",
+        "candidate_type",
         "gender",
         "health_status",
         "marital_status",
