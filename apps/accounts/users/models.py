@@ -1,13 +1,9 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Permission
 from django.db import models
+
 from apps.core.base.models import BaseModel
 from apps.accounts.users.managers import UserManager
-
-
-class AuthProvider(models.TextChoices):
-    GOOGLE = "google", "Google"
-    PHONE = "phone", "Phone"
-    TELEGRAM = "telegram", "Telegram"
+from apps.accounts.users.mixins import RolePermissionsMixin
 
 
 class UserRole(models.TextChoices):
@@ -16,8 +12,39 @@ class UserRole(models.TextChoices):
     REPRESENTATIVE = "representative", "Vakil"
 
 
-class User(AbstractUser, BaseModel):
+class AuthProvider(models.TextChoices):
+    GOOGLE = "google", "Google"
+    PHONE = "phone", "Phone"
+    TELEGRAM = "telegram", "Telegram"
+
+
+class Role(BaseModel):
+    name = models.CharField(max_length=150, unique=True, verbose_name="Nomi")
+    permissions = models.ManyToManyField(
+        Permission,
+        verbose_name="Huquqlar",
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Rol"
+        verbose_name_plural = "Rollar"
+
+    def delete(self, *args, **kwargs):
+        self.is_active = False
+        self.save()
+
+    def hard_delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class User(AbstractUser, RolePermissionsMixin, BaseModel):
     username = None
+    groups = None
+
     phone_number = models.CharField(
         max_length=20, unique=True, db_index=True, verbose_name="Telefon raqam"
     )
@@ -29,13 +56,6 @@ class User(AbstractUser, BaseModel):
         choices=AuthProvider.choices,
         default=AuthProvider.PHONE,
         verbose_name="Ro'yxatdan o'tgan usuli",
-    )
-    role = models.CharField(
-        max_length=20,
-        choices=UserRole.choices,
-        blank=True,
-        null=True,
-        verbose_name="Foydalanuvchi roli (Kuyov/Kelin/Vakil)",
     )
     is_verified = models.BooleanField(
         default=False, verbose_name="Tasdiqlangan foydalanuvchi"

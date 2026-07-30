@@ -1,12 +1,6 @@
 from rest_framework import serializers
 
-
 class BaseModelSerializer(serializers.ModelSerializer):
-    """
-    Barcha loyiha serializerlari uchun asosiy qolip.
-    ID va sanalarni o'zgartirishni taqiqlaydi va 'is_active' ni doim yashiradi.
-    Shuningdek, ForeignKey bog'lanishlarni avtomatik write_only / _info qilib beradi.
-    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -95,11 +89,8 @@ class BaseModelSerializer(serializers.ModelSerializer):
             ret["updated_at"] = val
         return ret
 
-
 def get_short_serializer(model_class, fields=None, nested_related_fields=None):
-    """
-    Dinamik ravishda ShortSerializer yasab beruvchi universal funksiya.
-    """
+
     _fields = fields or "__all__"
     _related_fields = nested_related_fields or {}
 

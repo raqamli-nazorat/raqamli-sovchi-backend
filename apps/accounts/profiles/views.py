@@ -20,7 +20,6 @@ from .filters import ProfileFilter
 
 logger = logging.getLogger(__name__)
 
-
 class ProfileViewSet(BaseManageViewSet):
     queryset = (
         Profile.objects.select_related("user", "region", "district")
@@ -55,7 +54,6 @@ class ProfileViewSet(BaseManageViewSet):
         )
         instance.delete()
 
-
 class ProfilePhotoViewSet(BaseManageViewSet):
     queryset = ProfilePhoto.objects.select_related("profile").active()
     serializer_class = ProfilePhotoSerializer
@@ -85,7 +83,6 @@ class ProfilePhotoViewSet(BaseManageViewSet):
         )
         instance.delete()
 
-
 class RepresentativeInfoViewSet(BaseManageViewSet):
     queryset = RepresentativeInfo.objects.select_related("profile").active()
     serializer_class = RepresentativeInfoSerializer
@@ -113,7 +110,6 @@ class RepresentativeInfoViewSet(BaseManageViewSet):
             instance.profile_id,
         )
         instance.delete()
-
 
 class FaceVerificationView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]

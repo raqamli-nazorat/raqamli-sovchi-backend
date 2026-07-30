@@ -10,14 +10,12 @@ from apps.accounts.users.serializers import UserSerializer
 from .models import LoginCode
 from .serializers import VerifyCodeSerializer
 
-
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
         "refresh": str(refresh),
         "access": str(refresh.access_token),
     }
-
 
 class VerifyCodeView(AutoSchemaMixin, views.APIView):
     permission_classes = []
@@ -44,12 +42,10 @@ class VerifyCodeView(AutoSchemaMixin, views.APIView):
         login_code.is_used = True
         login_code.save(update_fields=["is_used"])
 
-        # Mavjud telefon raqamli user bo'lsa yangilash, yo'q bo'lsa yaratish
         user, created = User.objects.get_or_create(
             phone_number=phone_number,
             defaults={"auth_provider": AuthProvider.TELEGRAM},
         )
-        # auth_provider ni yangilaymiz (agar boshqa provider bilan kelgan bo'lsa)
         if not created and user.auth_provider != AuthProvider.TELEGRAM:
             user.auth_provider = AuthProvider.TELEGRAM
             user.save(update_fields=["auth_provider"])
