@@ -1,3 +1,5 @@
+import hashlib
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.contrib.auth.models import Permission
@@ -23,7 +25,7 @@ from .serializers import (
     RoleSerializer,
     UserListSerializer,
     UserPledgeSerializer,
-    UserSerializer,
+    UserSerializer, ChangePasswordSerializer,
 )
 from .utils import get_tokens_for_user
 
@@ -250,3 +252,34 @@ class CustomTokenObtainPairView(AutoSchemaMixin, TokenObtainPairView):
 
 class CustomTokenRefreshView(AutoSchemaMixin, TokenRefreshView):
     pass
+
+
+class ChangePasswordView(AutoSchemaMixin, generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["put"]
+
+    def get_object(self):
+        return self.request.user
+
+    def put(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={"request": request}
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+
+            offline_secret = hashlib.sha256(
+                request.user.password.encode("utf-8")
+            ).hexdigest()
+
+            return Response(
+                {
+                    "message": "Parol muvaffaqiyatli o'zgartirildi.",
+                    "offline_secret": offline_secret,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
