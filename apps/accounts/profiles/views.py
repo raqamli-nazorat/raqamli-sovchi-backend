@@ -1,22 +1,23 @@
 import logging
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status
+from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.base.views import BaseManageViewSet
 from apps.core.base.mixins import AutoSchemaMixin
+from apps.core.base.views import BaseManageViewSet
 from apps.core.utils.face import hash_compare
 
+from .filters import ProfileFilter
 from .models import Profile, ProfilePhoto, RepresentativeInfo
 from .serializers import (
-    ProfileSerializer,
-    ProfilePhotoSerializer,
-    RepresentativeInfoSerializer,
     FaceVerificationSerializer,
+    ProfilePhotoSerializer,
+    ProfileSerializer,
+    RepresentativeInfoSerializer,
 )
-from .filters import ProfileFilter
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,61 @@ class ProfileViewSet(BaseManageViewSet):
     filterset_class = ProfileFilter
     search_fields = ["first_name", "last_name", "bio"]
     ordering_fields = ["created_at", "birth_year", "height", "weight"]
+
+    @action(
+        detail=False,
+        methods=["get", "post", "put", "patch", "delete"],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="me",
+    )
+    def me(self, request):
+        profile = getattr(request.user, "profile", None)
+
+        if request.method == "GET":
+            if not profile or not profile.is_active:
+                return Response(
+                    {"detail": "Foydalanuvchi profili topilmadi."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
+
+        elif request.method == "POST":
+            if profile and profile.is_active:
+                return Response(
+                    {"detail": "Profil allaqachon yaratilgan."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        elif request.method in ["PUT", "PATCH"]:
+            if not profile or not profile.is_active:
+                return Response(
+                    {"detail": "Yangilash uchun profil topilmadi."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            partial = request.method == "PATCH"
+            serializer = self.get_serializer(
+                profile, data=request.data, partial=partial
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
+        elif request.method == "DELETE":
+            if not profile or not profile.is_active:
+                return Response(
+                    {"detail": "O'chirish uchun profil topilmadi."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            profile.delete()
+            return Response(
+                {"detail": "Profil muvaffaqiyatli o'chirildi."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
 
     def perform_create(self, serializer):
         profile = serializer.save()
