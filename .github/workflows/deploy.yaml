@@ -1,4 +1,4 @@
-name: Deploy ERP Backend
+name: Deploy Raqamli Sovchi Backend
 
 on:
   push:

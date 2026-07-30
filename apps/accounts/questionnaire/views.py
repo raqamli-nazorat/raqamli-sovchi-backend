@@ -30,10 +30,9 @@ class QuestionOptionViewSet(BaseReadOnlyViewSet):
 
 
 class UserAnswerViewSet(BaseManageViewSet):
-    queryset = (
-        UserAnswer.objects.select_related("profile", "question", "selected_option")
-        .active()
-    )
+    queryset = UserAnswer.objects.select_related(
+        "profile", "question", "selected_option"
+    ).active()
     serializer_class = UserAnswerSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserAnswerFilter
@@ -52,7 +51,7 @@ class BulkUserAnswerSubmitView(AutoSchemaMixin, views.APIView):
             ans, _ = UserAnswer.objects.update_or_create(
                 profile_id=profile_id,
                 question_id=item["question_id"],
-                defaults={"selected_option_id": item["selected_option_id"]}
+                defaults={"selected_option_id": item["selected_option_id"]},
             )
             created_answers.append(ans)
 

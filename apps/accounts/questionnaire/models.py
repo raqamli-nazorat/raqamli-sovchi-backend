@@ -4,10 +4,22 @@ from apps.accounts.profiles.models import Profile
 
 
 class SectionType(models.TextChoices):
-    RELIGIOUS_SPIRITUAL = "religious_spiritual", "I. Diniy-Ma'naviy Qadriyatlar va E'tiqod"
-    FINANCIAL_GOVERNANCE = "financial_governance", "II. Oila Boshqaruvi va Moliyaviy Qarashlar"
-    RELATIVES_RELATIONS = "relatives_relations", "III. Qarindoshlar va Qaynona-Kelin Munosabatlari"
-    CHARACTER_CRISIS = "character_crisis", "IV. Harakter, Psixologik Muvofiqlik va Inqiroz"
+    RELIGIOUS_SPIRITUAL = (
+        "religious_spiritual",
+        "I. Diniy-Ma'naviy Qadriyatlar va E'tiqod",
+    )
+    FINANCIAL_GOVERNANCE = (
+        "financial_governance",
+        "II. Oila Boshqaruvi va Moliyaviy Qarashlar",
+    )
+    RELATIVES_RELATIONS = (
+        "relatives_relations",
+        "III. Qarindoshlar va Qaynona-Kelin Munosabatlari",
+    )
+    CHARACTER_CRISIS = (
+        "character_crisis",
+        "IV. Harakter, Psixologik Muvofiqlik va Inqiroz",
+    )
     FUTURE_PLANS = "future_plans", "V. Kelajak Rejalari va Maishiy Hayot"
 
 
@@ -19,20 +31,18 @@ class TargetGender(models.TextChoices):
 
 class Question(BaseModel):
     section = models.CharField(
-        max_length=50,
-        choices=SectionType.choices,
-        verbose_name="Bo'lim"
+        max_length=50, choices=SectionType.choices, verbose_name="Bo'lim"
     )
     text = models.TextField(verbose_name="Savol matni")
     target_gender = models.CharField(
         max_length=10,
         choices=TargetGender.choices,
         default=TargetGender.ALL,
-        verbose_name="Qaysi jins uchun"
+        verbose_name="Qaysi jins uchun",
     )
     is_trap_question = models.BooleanField(
         default=False,
-        verbose_name="Tizim tuzoq savolimi (Lie Scale / Cross Validation)"
+        verbose_name="Tizim tuzoq savolimi (Lie Scale / Cross Validation)",
     )
     order = models.PositiveIntegerField(default=1, verbose_name="Tartib raqami")
 
@@ -48,20 +58,16 @@ class Question(BaseModel):
 
 class QuestionOption(BaseModel):
     question = models.ForeignKey(
-        Question,
-        on_delete=models.CASCADE,
-        related_name="options",
-        verbose_name="Savol"
+        Question, on_delete=models.CASCADE, related_name="options", verbose_name="Savol"
     )
     option_letter = models.CharField(
         max_length=2,
         choices=[("A", "A"), ("B", "B"), ("C", "C"), ("D", "D")],
-        verbose_name="Variant harfi (A/B/C/D)"
+        verbose_name="Variant harfi (A/B/C/D)",
     )
     text = models.TextField(verbose_name="Variant matni")
     weight = models.IntegerField(
-        default=0,
-        verbose_name="Variant balli/og'irligi (Algoritm va Lie Scale uchun)"
+        default=0, verbose_name="Variant balli/og'irligi (Algoritm va Lie Scale uchun)"
     )
 
     class Meta:
@@ -77,22 +83,19 @@ class QuestionOption(BaseModel):
 
 class UserAnswer(BaseModel):
     profile = models.ForeignKey(
-        Profile,
-        on_delete=models.CASCADE,
-        related_name="answers",
-        verbose_name="Profil"
+        Profile, on_delete=models.CASCADE, related_name="answers", verbose_name="Profil"
     )
     question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
         related_name="user_answers",
-        verbose_name="Savol"
+        verbose_name="Savol",
     )
     selected_option = models.ForeignKey(
         QuestionOption,
         on_delete=models.CASCADE,
         related_name="selected_by_users",
-        verbose_name="Tanlangan variant"
+        verbose_name="Tanlangan variant",
     )
 
     class Meta:
