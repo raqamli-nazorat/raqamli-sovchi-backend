@@ -23,7 +23,6 @@ django-allauth==65.18.0
 requests==2.34.2
 aiogram==3.30.0
 
-# Face verification
 deepface==0.0.100
 retina-face==0.0.17
 opencv-python==4.11.0.86
