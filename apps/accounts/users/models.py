@@ -21,6 +21,11 @@ class AuthProvider(models.TextChoices):
 
 class Role(BaseModel):
     name = models.CharField(max_length=150, unique=True, verbose_name="Nomi")
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name="Boshlang'ich rol",
+        help_text="Yangi ro'yxatdan o'tgan foydalanuvchilarga avtomatik beriladigan rol",
+    )
     permissions = models.ManyToManyField(
         Permission,
         verbose_name="Huquqlar",
@@ -30,6 +35,20 @@ class Role(BaseModel):
     class Meta:
         verbose_name = "Rol"
         verbose_name_plural = "Rollar"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["is_default"],
+                condition=models.Q(is_default=True),
+                name="unique_default_role",
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            Role.objects.filter(is_default=True).exclude(pk=self.pk).update(
+                is_default=False
+            )
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         self.is_active = False
