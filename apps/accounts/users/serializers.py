@@ -61,7 +61,6 @@ class UserListSerializer(BaseModelSerializer):
     display_id = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
     candidate_type = serializers.SerializerMethodField()
-    region_name = serializers.SerializerMethodField()
     completion_percentage = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
@@ -74,13 +73,22 @@ class UserListSerializer(BaseModelSerializer):
             "phone_number",
             "email",
             "candidate_type",
-            "region_name",
             "completion_percentage",
             "status",
             "is_verified",
             "is_blocked",
             "created_at",
         ]
+        related_fields = {
+            "region": {
+                "source": "profile__region",
+                "fields": ["id", "name"],
+            },
+            "district": {
+                "source": "profile__district",
+                "fields": ["id", "name"],
+            },
+        }
 
     def get_display_id(self, obj):
         short_code = str(obj.id).replace("-", "")[:5].upper()
@@ -96,12 +104,6 @@ class UserListSerializer(BaseModelSerializer):
         profile = getattr(obj, "profile", None)
         if profile and profile.candidate_type:
             return profile.get_candidate_type_display()
-        return None
-
-    def get_region_name(self, obj):
-        profile = getattr(obj, "profile", None)
-        if profile and profile.region:
-            return profile.region.name
         return None
 
     def get_completion_percentage(self, obj):

@@ -113,7 +113,9 @@ class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
 
 class UserViewSet(BaseManageViewSet):
     queryset = (
-        User.objects.select_related("profile", "profile__region", "role")
+        User.objects.select_related(
+            "profile", "profile__region", "profile__district", "role"
+        )
         .prefetch_related("profile__photos")
         .active()
     )
