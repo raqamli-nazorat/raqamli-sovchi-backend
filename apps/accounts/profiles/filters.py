@@ -2,10 +2,11 @@ import django_filters
 from apps.core.base.filters import UUIDInFilter
 from .models import Profile, ProfilePhoto
 
-
 class ProfileFilter(django_filters.FilterSet):
     region = UUIDInFilter(field_name="region", lookup_expr="in")
     district = UUIDInFilter(field_name="district", lookup_expr="in")
+    role = django_filters.CharFilter(field_name="role", lookup_expr="exact")
+    gender = django_filters.CharFilter(field_name="gender", lookup_expr="exact")
     health_status = django_filters.CharFilter(
         field_name="health_status", lookup_expr="exact"
     )
@@ -29,6 +30,8 @@ class ProfileFilter(django_filters.FilterSet):
     class Meta:
         model = Profile
         fields = [
+            "role",
+            "gender",
             "region",
             "district",
             "health_status",
@@ -40,3 +43,4 @@ class ProfileFilter(django_filters.FilterSet):
             "birth_year_min",
             "birth_year_max",
         ]
+

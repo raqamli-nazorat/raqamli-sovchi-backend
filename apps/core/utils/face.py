@@ -22,7 +22,6 @@ DETECTOR_BACKEND = "retinaface"
 MAX_DISTANCE = 0.45
 REQUIRE_ANTISPOOFING = True
 
-
 @contextmanager
 def _temp_jpeg_files(*labels):
     request_id = uuid.uuid4().hex
@@ -38,14 +37,12 @@ def _temp_jpeg_files(*labels):
             except OSError:
                 logger.warning("Vaqtinchalik faylni o'chirib bo'lmadi: %s", p)
 
-
 def _save_as_rgb_jpeg(source, dest_path):
     with Image.open(source) as image:
         image.load()
         if image.mode != "RGB":
             image = image.convert("RGB")
         image.save(dest_path, format="JPEG", quality=95)
-
 
 def _write_field_file_to_path(field_file, dest_path):
     field_file.open("rb")
@@ -54,7 +51,6 @@ def _write_field_file_to_path(field_file, dest_path):
             f.write(field_file.read())
     finally:
         field_file.close()
-
 
 def calculate_cosine_distance(v1, v2):
     if not v1 or not v2 or len(v1) != len(v2):
@@ -69,7 +65,6 @@ def calculate_cosine_distance(v1, v2):
 
     similarity = dot_product / (norm_v1 * norm_v2)
     return float(1.0 - similarity)
-
 
 def _check_liveness(image_path):
     try:
@@ -95,7 +90,6 @@ def _check_liveness(image_path):
         return False, f"spoof (score={score})"
     return True, "real"
 
-
 def extract_embedding(image_path):
     if not DEEPFACE_AVAILABLE:
         return None
@@ -113,7 +107,6 @@ def extract_embedding(image_path):
     except Exception as e:
         logger.warning("extract_embedding xatoligi: %s", e)
     return None
-
 
 def verify_face_image(uploaded_file):
     if not DEEPFACE_AVAILABLE:
@@ -173,8 +166,6 @@ def verify_face_image(uploaded_file):
                 "Rasmni tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.",
                 None,
             )
-
-
 
 def hash_compare(profile_or_user, uploaded_file):
     if not DEEPFACE_AVAILABLE:

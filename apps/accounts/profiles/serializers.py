@@ -4,7 +4,6 @@ from apps.core.utils.face import verify_face_image
 
 from .models import Profile, ProfilePhoto, RepresentativeInfo
 
-
 class ProfilePhotoSerializer(BaseModelSerializer):
     class Meta:
         model = ProfilePhoto
@@ -20,12 +19,10 @@ class ProfilePhotoSerializer(BaseModelSerializer):
                 attrs["embedding"] = embedding
         return super().validate(attrs)
 
-
 class RepresentativeInfoSerializer(BaseModelSerializer):
     class Meta:
         model = RepresentativeInfo
         fields = "__all__"
-
 
 class ProfileSerializer(BaseModelSerializer):
     photos = ProfilePhotoSerializer(many=True, read_only=True)
@@ -34,11 +31,10 @@ class ProfileSerializer(BaseModelSerializer):
         model = Profile
         fields = "__all__"
         related_fields = {
-            "user": ["id", "phone_number", "role"],
+            "user": ["id", "phone_number"],
             "region": ["id", "name"],
             "district": ["id", "name"],
         }
-
 
 class FaceVerificationSerializer(serializers.Serializer):
     image = serializers.ImageField(required=True, label="Selfie rasm")

@@ -10,7 +10,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from apps.accounts.telegram_bot.bot.handlers import router
 
-
 class Command(BaseCommand):
     help = "Telegram botni ishga tushiradi"
 

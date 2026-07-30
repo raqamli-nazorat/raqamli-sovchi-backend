@@ -3,31 +3,20 @@ import environ
 from datetime import timedelta
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Environ
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-default-secret-key-change-me")
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
-# CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
-# CORS
 CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
-
-# Application definition
 
 DJANGO_APPS = [
     "unfold",
@@ -86,7 +75,6 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-
 LOCAL_APPS = [
     "apps.core.base",
     "apps.core.audits",
@@ -131,9 +119,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -147,9 +132,6 @@ DATABASES = {
         },
     }
 }
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -166,18 +148,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Authentication Backends
-# https://docs.djangoproject.com/en/6.0/topics/auth/customizing/#other-authentication-sources
-
-AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
-
-# User model
-# https://docs.djangoproject.com/en/6.0/topics/auth/customizing/#other-authentication-sources
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.users.backends.RoleBackend",
+]
 
 AUTH_USER_MODEL = "users.User"
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
 
 LANGUAGE_CODE = "uz"
 
@@ -189,18 +164,11 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Media files (jpg, mp4 ...)
-
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
-# Django Rest Framework
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -230,14 +198,10 @@ REST_FRAMEWORK = {
     },
 }
 
-# JWT
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
 }
-
-# Spectacular
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Raqamli Sovchi API",
@@ -251,8 +215,6 @@ SPECTACULAR_SETTINGS = {
     },
     "COMPONENT_SPLIT_REQUEST": True,
 }
-
-# Redis
 
 CACHES = {
     "default": {
@@ -279,7 +241,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-# S3 storage settings
 USE_S3 = env.bool("USE_S3", False)
 
 if USE_S3:
@@ -307,7 +268,6 @@ AWS_STORAGE_BUCKET_NAME = env.str("AWS_STORAGE_BUCKET_NAME", default="")
 AWS_S3_ENDPOINT_URL = env.str("AWS_S3_ENDPOINT_URL", default="")
 AWS_S3_ADDRESSING_STYLE = env.str("AWS_S3_ADDRESSING_STYLE", default="path")
 
-# Logging Configuration
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -346,5 +306,4 @@ LOGGING = {
     },
 }
 
-# Telegram Bot configuration for Telegram Login Widget
 TELEGRAM_BOT_TOKEN = env.str("TELEGRAM_BOT_TOKEN", default="")

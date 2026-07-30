@@ -10,14 +10,12 @@ from apps.accounts.users.serializers import UserSerializer
 from .models import LoginCode
 from .serializers import VerifyCodeSerializer
 
-
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
         "refresh": str(refresh),
         "access": str(refresh.access_token),
     }
-
 
 class VerifyCodeView(AutoSchemaMixin, views.APIView):
     permission_classes = []
@@ -48,6 +46,9 @@ class VerifyCodeView(AutoSchemaMixin, views.APIView):
             phone_number=phone_number,
             defaults={"auth_provider": AuthProvider.TELEGRAM},
         )
+        if not created and user.auth_provider != AuthProvider.TELEGRAM:
+            user.auth_provider = AuthProvider.TELEGRAM
+            user.save(update_fields=["auth_provider"])
 
         tokens = get_tokens_for_user(user)
         return Response(
