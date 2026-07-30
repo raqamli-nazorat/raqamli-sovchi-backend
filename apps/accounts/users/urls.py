@@ -10,7 +10,7 @@ from .views import (
     RoleViewSet,
     UserMeView,
     UserPledgeViewSet,
-    UserViewSet,
+    UserViewSet, ChangePasswordView,
 )
 
 router = DefaultRouter()
@@ -24,6 +24,7 @@ urlpatterns = [
     path("auth/google/", GoogleLoginView.as_view(), name="auth-google"),
     path("auth/phone/", PhoneAuthView.as_view(), name="auth-phone"),
     path("auth/token/", CustomTokenObtainPairView.as_view(), name="token-obtain-pair"),
+    path("auth/change-password/", ChangePasswordView.as_view(), name="change_password"),
     path(
         "auth/token/refresh/",
         CustomTokenRefreshView.as_view(),
