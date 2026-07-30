@@ -26,6 +26,7 @@ class UserFilter(django_filters.FilterSet):
         method="filter_candidate_type", label="Nomzod turi (Kuyov, Kelin, Vakil)"
     )
     region = django_filters.UUIDFilter(field_name="profile__region", lookup_expr="exact")
+    district = django_filters.UUIDFilter(field_name="profile__district", lookup_expr="exact")
     is_verified = django_filters.BooleanFilter(field_name="is_verified")
     is_blocked = django_filters.BooleanFilter(field_name="is_blocked")
     is_active = django_filters.BooleanFilter(field_name="is_active")
@@ -44,6 +45,7 @@ class UserFilter(django_filters.FilterSet):
             "role",
             "candidate_type",
             "region",
+            "district",
             "is_verified",
             "is_blocked",
             "is_active",
