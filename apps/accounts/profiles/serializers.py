@@ -28,6 +28,8 @@ class RepresentativeInfoSerializer(BaseModelSerializer):
 
 
 class ProfileSerializer(BaseModelSerializer):
+    photos = serializers.SerializerMethodField()
+
     class Meta:
         model = Profile
         fields = "__all__"
@@ -44,6 +46,25 @@ class ProfileSerializer(BaseModelSerializer):
             "district": ["id", "name"],
             "photos": ["id", "image", "is_main", "order", "created_at"],
         }
+
+    def get_photos(self, obj):
+        request = self.context.get("request")
+        if hasattr(obj, "photos"):
+            return [
+                {
+                    "id": str(photo.id),
+                    "image": (
+                        request.build_absolute_uri(photo.image.url)
+                        if request and photo.image
+                        else (photo.image.url if photo.image else None)
+                    ),
+                    "is_main": photo.is_main,
+                    "order": photo.order,
+                    "created_at": photo.created_at,
+                }
+                for photo in obj.photos.all()
+            ]
+        return []
 
 
 class ProfileMeSerializer(BaseModelSerializer):
