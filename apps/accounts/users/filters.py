@@ -25,8 +25,12 @@ class UserFilter(django_filters.FilterSet):
     candidate_type = django_filters.CharFilter(
         method="filter_candidate_type", label="Nomzod turi (Kuyov, Kelin, Vakil)"
     )
-    region = django_filters.UUIDFilter(field_name="profile__region", lookup_expr="exact")
-    district = django_filters.UUIDFilter(field_name="profile__district", lookup_expr="exact")
+    region = django_filters.UUIDFilter(
+        field_name="profile__region", lookup_expr="exact"
+    )
+    district = django_filters.UUIDFilter(
+        field_name="profile__district", lookup_expr="exact"
+    )
     is_verified = django_filters.BooleanFilter(field_name="is_verified")
     is_blocked = django_filters.BooleanFilter(field_name="is_blocked")
     is_active = django_filters.BooleanFilter(field_name="is_active")
@@ -83,9 +87,13 @@ class UserFilter(django_filters.FilterSet):
         elif target == "approved":
             return queryset.filter(is_blocked=False, is_verified=True)
         elif target == "incomplete":
-            return queryset.filter(is_blocked=False, is_verified=False, profile__isnull=True)
+            return queryset.filter(
+                is_blocked=False, is_verified=False, profile__isnull=True
+            )
         elif target == "review":
-            return queryset.filter(is_blocked=False, is_verified=False, profile__isnull=False)
+            return queryset.filter(
+                is_blocked=False, is_verified=False, profile__isnull=False
+            )
         return queryset
 
 

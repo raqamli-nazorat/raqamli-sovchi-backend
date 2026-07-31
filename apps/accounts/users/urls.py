@@ -10,7 +10,8 @@ from .views import (
     RoleViewSet,
     UserMeView,
     UserPledgeViewSet,
-    UserViewSet, ChangePasswordView,
+    UserViewSet,
+    ChangePasswordView,
 )
 
 router = DefaultRouter()
