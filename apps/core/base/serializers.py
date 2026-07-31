@@ -24,11 +24,13 @@ class BaseModelSerializer(serializers.ModelSerializer):
         for field_name, val in items:
             source = field_name
             fields_to_serialize = val
+            exclude_fields = None
             nested_related = {}
 
             if isinstance(val, dict):
                 source = val.get("source", field_name).replace("__", ".")
-                fields_to_serialize = val.get("fields", "__all__")
+                fields_to_serialize = val.get("fields", None if val.get("exclude") else "__all__")
+                exclude_fields = val.get("exclude", None)
                 nested_related = val.get("related_fields", {})
 
             if field_name in self.fields:
@@ -61,6 +63,7 @@ class BaseModelSerializer(serializers.ModelSerializer):
                 serializer_class = get_short_serializer(
                     related_model,
                     fields=fields_to_serialize,
+                    exclude=exclude_fields,
                     nested_related_fields=nested_related,
                 )
 
@@ -91,16 +94,28 @@ class BaseModelSerializer(serializers.ModelSerializer):
         return ret
 
 
-def get_short_serializer(model_class, fields=None, nested_related_fields=None):
-
-    _fields = fields or "__all__"
+def get_short_serializer(
+    model_class, fields=None, exclude=None, nested_related_fields=None
+):
+    _fields = fields or "__all__" if not exclude else None
+    _exclude = exclude
     _related_fields = nested_related_fields or {}
 
-    class DynamicShortSerializer(BaseModelSerializer):
-        class Meta:
-            model = model_class
-            fields = _fields
-            related_fields = _related_fields
+    if _exclude:
+
+        class DynamicShortSerializer(BaseModelSerializer):
+            class Meta:
+                model = model_class
+                exclude = _exclude
+                related_fields = _related_fields
+
+    else:
+
+        class DynamicShortSerializer(BaseModelSerializer):
+            class Meta:
+                model = model_class
+                fields = _fields
+                related_fields = _related_fields
 
     DynamicShortSerializer.__name__ = f"{model_class.__name__}ShortSerializer"
     return DynamicShortSerializer
