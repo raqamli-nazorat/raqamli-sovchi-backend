@@ -26,8 +26,20 @@ class UserAdmin(BaseModelAdmin):
         "is_active",
         "created_at",
     )
-    list_filter = ("role", "auth_provider", "is_verified", "is_blocked", "is_staff", "is_active")
-    search_fields = ("phone_number", "email", "profile__first_name", "profile__last_name")
+    list_filter = (
+        "role",
+        "auth_provider",
+        "is_verified",
+        "is_blocked",
+        "is_staff",
+        "is_active",
+    )
+    search_fields = (
+        "phone_number",
+        "email",
+        "profile__first_name",
+        "profile__last_name",
+    )
     ordering = ("-created_at",)
 
     def save_model(self, request, obj, form, change):
