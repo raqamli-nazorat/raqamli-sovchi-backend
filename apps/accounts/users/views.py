@@ -25,7 +25,8 @@ from .serializers import (
     RoleSerializer,
     UserListSerializer,
     UserPledgeSerializer,
-    UserSerializer, ChangePasswordSerializer,
+    UserSerializer,
+    ChangePasswordSerializer,
 )
 from .utils import get_tokens_for_user
 

@@ -44,16 +44,30 @@ class UserSerializer(BaseModelSerializer):
             "phone_number",
             "email",
             "role",
+            "profile",
             "auth_provider",
             "is_verified",
             "is_blocked",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "is_verified", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "is_verified",
+            "auth_provider",
+            "profile",
+            "created_at",
+            "updated_at",
+        ]
         related_fields = {
             "role": ["id", "name"],
-            "profile": "__all__",
+            "profile": {
+                "fields": "__all__",
+                "related_fields": {
+                    "region": ["id", "name"],
+                    "district": ["id", "name"],
+                },
+            },
         }
 
 
