@@ -29,7 +29,9 @@ class BaseModelSerializer(serializers.ModelSerializer):
 
             if isinstance(val, dict):
                 source = val.get("source", field_name).replace("__", ".")
-                fields_to_serialize = val.get("fields", None if val.get("exclude") else "__all__")
+                fields_to_serialize = val.get(
+                    "fields", None if val.get("exclude") else "__all__"
+                )
                 exclude_fields = val.get("exclude", None)
                 nested_related = val.get("related_fields", {})
 

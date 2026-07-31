@@ -23,7 +23,6 @@ from .serializers import (
     PermissionSerializer,
     PhoneAuthSerializer,
     RoleSerializer,
-    UserListSerializer,
     UserPledgeSerializer,
     UserSerializer,
     ChangePasswordSerializer,
@@ -132,11 +131,6 @@ class UserViewSet(BaseManageViewSet):
         "profile__last_name",
     ]
     ordering_fields = ["created_at", "phone_number"]
-
-    def get_serializer_class(self):
-        if self.action == "list":
-            return UserListSerializer
-        return super().get_serializer_class()
 
 
 class UserPledgeViewSet(BaseManageViewSet):
