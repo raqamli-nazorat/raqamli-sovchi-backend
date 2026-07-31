@@ -36,13 +36,23 @@ class RoleSerializer(BaseModelSerializer):
 
 class UserSerializer(BaseModelSerializer):
     phone_number = serializers.CharField(validators=[phone_validator])
+    display_id = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    candidate_type = serializers.SerializerMethodField()
+    completion_percentage = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id",
+            "display_id",
+            "full_name",
             "phone_number",
             "email",
+            "candidate_type",
+            "completion_percentage",
+            "status",
             "role",
             "profile",
             "auth_provider",
@@ -68,32 +78,6 @@ class UserSerializer(BaseModelSerializer):
                     "district": ["id", "name"],
                 },
             },
-        }
-
-
-class UserListSerializer(BaseModelSerializer):
-    display_id = serializers.SerializerMethodField()
-    full_name = serializers.SerializerMethodField()
-    candidate_type = serializers.SerializerMethodField()
-    completion_percentage = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = [
-            "id",
-            "display_id",
-            "full_name",
-            "phone_number",
-            "email",
-            "candidate_type",
-            "completion_percentage",
-            "status",
-            "is_verified",
-            "is_blocked",
-            "created_at",
-        ]
-        related_fields = {
             "region": {
                 "source": "profile__region",
                 "fields": ["id", "name"],
