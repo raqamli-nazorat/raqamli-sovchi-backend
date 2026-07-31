@@ -62,7 +62,7 @@ class UserSerializer(BaseModelSerializer):
         related_fields = {
             "role": ["id", "name"],
             "profile": {
-                "fields": "__all__",
+                "exclude": ["user"],
                 "related_fields": {
                     "region": ["id", "name"],
                     "district": ["id", "name"],
