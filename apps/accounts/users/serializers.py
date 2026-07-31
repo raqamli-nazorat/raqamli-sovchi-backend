@@ -41,6 +41,7 @@ class UserSerializer(BaseModelSerializer):
     candidate_type = serializers.SerializerMethodField()
     completion_percentage = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    photos = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -76,8 +77,9 @@ class UserSerializer(BaseModelSerializer):
                 "related_fields": {
                     "region": ["id", "name"],
                     "district": ["id", "name"],
+                    "photos": ["id", "image", "is_main", "order", "created_at"],
                 },
-            }
+            },
         }
 
     def get_display_id(self, obj):
@@ -137,6 +139,26 @@ class UserSerializer(BaseModelSerializer):
             return "Tekshiruvda"
 
         return "Tasdiqlangan"
+
+    def get_photos(self, obj):
+        profile = getattr(obj, "profile", None)
+        if profile and hasattr(profile, "photos"):
+            request = self.context.get("request")
+            return [
+                {
+                    "id": str(photo.id),
+                    "image": (
+                        request.build_absolute_uri(photo.image.url)
+                        if request and photo.image
+                        else (photo.image.url if photo.image else None)
+                    ),
+                    "is_main": photo.is_main,
+                    "order": photo.order,
+                    "created_at": photo.created_at,
+                }
+                for photo in profile.photos.all()
+            ]
+        return []
 
 
 class UserPledgeSerializer(BaseModelSerializer):
