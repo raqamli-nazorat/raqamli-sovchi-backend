@@ -84,12 +84,24 @@ class ProfileViewSet(BaseManageViewSet):
 
 
 class ProfilePhotoViewSet(BaseManageViewSet):
-    queryset = ProfilePhoto.objects.select_related("profile").active()
     serializer_class = ProfilePhotoSerializer
+    permission_classes = [permissions.IsAuthenticated]
     ordering_fields = ["order", "created_at"]
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = ProfilePhoto.objects.select_related("profile").active()
+        if user.is_staff or user.is_superuser:
+            return qs
+        return qs.filter(profile__user=user)
+
     def perform_create(self, serializer):
-        photo = serializer.save()
+        profile = getattr(self.request.user, "profile", None)
+        if profile and not serializer.validated_data.get("profile"):
+            photo = serializer.save(profile=profile)
+        else:
+            photo = serializer.save()
+
         logger.info(
             "Profil rasmi yuklandi: PhotoID=%s | ProfileID=%s",
             photo.id,
