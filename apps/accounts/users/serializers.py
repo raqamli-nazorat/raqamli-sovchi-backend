@@ -77,15 +77,7 @@ class UserSerializer(BaseModelSerializer):
                     "region": ["id", "name"],
                     "district": ["id", "name"],
                 },
-            },
-            "region": {
-                "source": "profile__region",
-                "fields": ["id", "name"],
-            },
-            "district": {
-                "source": "profile__district",
-                "fields": ["id", "name"],
-            },
+            }
         }
 
     def get_display_id(self, obj):
