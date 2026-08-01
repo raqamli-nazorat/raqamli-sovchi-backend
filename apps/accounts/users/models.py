@@ -78,6 +78,9 @@ class User(AbstractUser, RolePermissionsMixin, BaseModel):
     email = models.EmailField(
         blank=True, null=True, unique=True, verbose_name="Email manzili"
     )
+    telegram_id = models.BigIntegerField(
+        blank=True, null=True, unique=True, db_index=True, verbose_name="Telegram ID"
+    )
     auth_provider = models.CharField(
         max_length=20,
         choices=AuthProvider.choices,
