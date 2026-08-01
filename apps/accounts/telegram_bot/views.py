@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from django.utils import timezone
 from rest_framework import status, views
 from rest_framework.exceptions import NotFound
@@ -13,6 +14,7 @@ class CreateAuthSessionView(AutoSchemaMixin, views.APIView):
     permission_classes = []
     serializer_class = TelegramAuthSessionSerializer
 
+    @extend_schema(request=None, responses={201: TelegramAuthSessionSerializer})
     def post(self, request, *args, **kwargs):
         session = TelegramAuthSession.objects.create()
         serializer = TelegramAuthSessionSerializer(session)

@@ -11,6 +11,13 @@ class TelegramAuthSessionSerializer(BaseModelSerializer):
     class Meta:
         model = TelegramAuthSession
         fields = ["session_id", "status", "bot_url", "expires_at", "created_at"]
+        read_only_fields = [
+            "session_id",
+            "status",
+            "bot_url",
+            "expires_at",
+            "created_at",
+        ]
 
     def get_bot_url(self, obj):
         bot_username = get_bot_username()
