@@ -17,6 +17,7 @@ class AuthProvider(models.TextChoices):
     GOOGLE = "google", "Google"
     PHONE = "phone", "Phone"
     TELEGRAM = "telegram", "Telegram"
+    EMAIL = "email", "Email"
 
 
 class Role(BaseModel):
@@ -68,6 +69,8 @@ class User(AbstractUser, RolePermissionsMixin, BaseModel):
     phone_number = models.CharField(
         max_length=20,
         unique=True,
+        blank=True,
+        null=True,
         db_index=True,
         validators=[phone_validator],
         verbose_name="Telefon raqam",
@@ -99,7 +102,8 @@ class User(AbstractUser, RolePermissionsMixin, BaseModel):
         db_table = "users"
 
     def __str__(self):
-        return f"{self.phone_number} ({self.get_auth_provider_display()})"
+        identifier = self.phone_number or self.email or str(self.id)
+        return f"{identifier} ({self.get_auth_provider_display()})"
 
 
 class UserPledge(BaseModel):

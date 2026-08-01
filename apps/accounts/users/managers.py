@@ -3,9 +3,10 @@ from apps.core.base.models import BaseQuerySet
 
 
 class UserManager(BaseUserManager.from_queryset(BaseQuerySet)):
-    def create_user(self, phone_number, password=None, **extra_fields):
-        if not phone_number:
-            raise ValueError("Telefon raqami kiritilishi shart.")
+    def create_user(self, phone_number=None, password=None, **extra_fields):
+        if not phone_number and not extra_fields.get("email"):
+            raise ValueError("Telefon raqami yoki email kiritilishi shart.")
+
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
 

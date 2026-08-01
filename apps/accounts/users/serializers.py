@@ -35,7 +35,12 @@ class RoleSerializer(BaseModelSerializer):
 
 
 class UserSerializer(BaseModelSerializer):
-    phone_number = serializers.CharField(validators=[phone_validator])
+    phone_number = serializers.CharField(
+        validators=[phone_validator],
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+    )
     display_id = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
     candidate_type = serializers.SerializerMethodField()
@@ -89,7 +94,7 @@ class UserSerializer(BaseModelSerializer):
         profile = getattr(obj, "profile", None)
         if profile and (profile.first_name or profile.last_name):
             return f"{profile.first_name or ''} {profile.last_name or ''}".strip()
-        return obj.phone_number
+        return obj.phone_number or obj.email or ""
 
     def get_candidate_type(self, obj):
         profile = getattr(obj, "profile", None)
@@ -154,6 +159,10 @@ class GoogleLoginSerializer(serializers.Serializer):
 
 class PhoneAuthSerializer(serializers.Serializer):
     phone_number = serializers.CharField(validators=[phone_validator])
+
+
+class EmailAuthSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
