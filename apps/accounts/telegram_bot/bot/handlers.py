@@ -60,11 +60,12 @@ async def cmd_start(message: Message, command: CommandObject, state: FSMContext)
             reply_markup=phone_keyboard(),
         )
     else:
-        await state.set_state(AuthStates.waiting_for_phone)
+        await state.clear()
         await message.answer(
-            "👋 <b>Raqamli Sovchi botiga xush kelibsiz!</b>\n\n"
-            "<i>Tizimga kirish uchun telefon raqamingizni yuboring.</i>",
-            reply_markup=phone_keyboard(),
+            "🔒 <b>Raqamli Sovchi Bot</b>\n\n"
+            "Bot orqali tizimga kirish faqat rasmiy veb-sayt yoki mobil ilovamizdagi <b>'Telegram orqali kirish'</b> tugmasi orqali amalga oshiriladi.\n\n"
+            "<i>Iltimos, ilovaga kirib, maxsus havola orqali botga qaytadan o'ting.</i>",
+            reply_markup=ReplyKeyboardRemove(),
         )
 
 
@@ -74,16 +75,30 @@ async def handle_contact(message: Message, state: FSMContext):
     if not phone.startswith("+"):
         phone = "+" + phone
 
+    telegram_user_id = message.from_user.id if message.from_user else None
+
     data = await state.get_data()
     session_id = data.get("session_id")
 
     user, created = await User.objects.aget_or_create(
         phone_number=phone,
-        defaults={"auth_provider": AuthProvider.TELEGRAM},
+        defaults={
+            "auth_provider": AuthProvider.TELEGRAM,
+            "telegram_id": telegram_user_id,
+        },
     )
+
+    update_fields = []
     if not created and user.auth_provider != AuthProvider.TELEGRAM:
         user.auth_provider = AuthProvider.TELEGRAM
-        await user.asave(update_fields=["auth_provider"])
+        update_fields.append("auth_provider")
+
+    if telegram_user_id and user.telegram_id != telegram_user_id:
+        user.telegram_id = telegram_user_id
+        update_fields.append("telegram_id")
+
+    if update_fields:
+        await user.asave(update_fields=update_fields)
 
     refresh = RefreshToken.for_user(user)
     access_token = str(refresh.access_token)
