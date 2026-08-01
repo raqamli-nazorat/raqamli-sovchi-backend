@@ -1,31 +1,49 @@
-import random
+import uuid
 from django.utils import timezone
 from django.db import models
 from apps.core.base.models import BaseModel
+from apps.accounts.users.models import User
 
 
 def generate_code():
-    return str(random.randint(100000, 999999))
+    return ""
 
 
 def default_expires_at():
     return timezone.now() + timezone.timedelta(minutes=5)
 
 
-class LoginCode(BaseModel):
-    phone_number = models.CharField(
-        max_length=20,
+class SessionStatus(models.TextChoices):
+    PENDING = "pending", "Kutilmoqda"
+    AUTHENTICATED = "authenticated", "Tasdiqlangan"
+    EXPIRED = "expired", "Muddati o'tgan"
+
+
+class TelegramAuthSession(BaseModel):
+    session_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
         db_index=True,
-        verbose_name="Telefon raqam",
+        verbose_name="Sessiya ID",
     )
-    code = models.CharField(
-        max_length=6,
-        default=generate_code,
-        verbose_name="Tasdiqlash kodi",
+    status = models.CharField(
+        max_length=20,
+        choices=SessionStatus.choices,
+        default=SessionStatus.PENDING,
+        verbose_name="Holat",
     )
-    is_used = models.BooleanField(
-        default=False,
-        verbose_name="Ishlatilgan",
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="telegram_sessions",
+        verbose_name="Foydalanuvchi",
+    )
+    access_token = models.TextField(blank=True, null=True, verbose_name="Access Token")
+    refresh_token = models.TextField(
+        blank=True, null=True, verbose_name="Refresh Token"
     )
     expires_at = models.DateTimeField(
         default=default_expires_at,
@@ -33,13 +51,13 @@ class LoginCode(BaseModel):
     )
 
     class Meta:
-        verbose_name = "Login kodi"
-        verbose_name_plural = "Login kodlari"
-        db_table = "telegram_login_codes"
+        verbose_name = "Telegram Auth Sessiyasi"
+        verbose_name_plural = "Telegram Auth Sessiyalari"
+        db_table = "telegram_auth_sessions"
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.phone_number} — {self.code}"
+        return f"{self.session_id} — {self.get_status_display()}"
 
     def is_valid(self):
-        return not self.is_used and timezone.now() < self.expires_at
+        return self.status == SessionStatus.PENDING and timezone.now() < self.expires_at

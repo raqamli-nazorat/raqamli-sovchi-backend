@@ -1,6 +1,18 @@
 from django.urls import path
-from .views import VerifyCodeView
+from .views import (
+    CreateAuthSessionView,
+    CheckAuthSessionStatusView,
+)
 
 urlpatterns = [
-    path("verify/", VerifyCodeView.as_view(), name="telegram-bot-verify"),
+    path(
+        "auth-session/create/",
+        CreateAuthSessionView.as_view(),
+        name="telegram-session-create",
+    ),
+    path(
+        "auth-session/<uuid:session_id>/status/",
+        CheckAuthSessionStatusView.as_view(),
+        name="telegram-session-status",
+    ),
 ]

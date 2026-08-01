@@ -22,6 +22,7 @@ from .serializers import (
     GoogleLoginSerializer,
     PermissionSerializer,
     PhoneAuthSerializer,
+    EmailAuthSerializer,
     RoleSerializer,
     UserPledgeSerializer,
     UserSerializer,
@@ -212,6 +213,35 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
 
         if not created and user.auth_provider != AuthProvider.PHONE:
             user.auth_provider = AuthProvider.PHONE
+            user.save(update_fields=["auth_provider"])
+
+        tokens = get_tokens_for_user(user)
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "tokens": tokens,
+                "created": created,
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class EmailAuthView(AutoSchemaMixin, views.APIView):
+    permission_classes = []
+    serializer_class = EmailAuthSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = EmailAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"].lower()
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={"auth_provider": AuthProvider.EMAIL},
+        )
+
+        if not created and user.auth_provider != AuthProvider.EMAIL:
+            user.auth_provider = AuthProvider.EMAIL
             user.save(update_fields=["auth_provider"])
 
         tokens = get_tokens_for_user(user)
