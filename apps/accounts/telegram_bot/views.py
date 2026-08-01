@@ -1,63 +1,51 @@
 from django.utils import timezone
 from rest_framework import status, views
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.base.mixins import AutoSchemaMixin
-from apps.accounts.users.models import User, AuthProvider
 from apps.accounts.users.serializers import UserSerializer
-from .models import LoginCode
-from .serializers import VerifyCodeSerializer
+from .models import TelegramAuthSession, SessionStatus
+from .serializers import TelegramAuthSessionSerializer
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        "refresh": str(refresh),
-        "access": str(refresh.access_token),
-    }
-
-
-class VerifyCodeView(AutoSchemaMixin, views.APIView):
+class CreateAuthSessionView(AutoSchemaMixin, views.APIView):
     permission_classes = []
+    serializer_class = TelegramAuthSessionSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = VerifyCodeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        session = TelegramAuthSession.objects.create()
+        serializer = TelegramAuthSessionSerializer(session)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        phone_number = serializer.validated_data["phone_number"]
-        code = serializer.validated_data["code"]
 
-        login_code = (
-            LoginCode.objects.filter(
-                phone_number=phone_number, code=code, is_used=False
+class CheckAuthSessionStatusView(AutoSchemaMixin, views.APIView):
+    permission_classes = []
+    serializer_class = TelegramAuthSessionSerializer
+
+    def get(self, request, session_id, *args, **kwargs):
+        session = TelegramAuthSession.objects.filter(session_id=session_id).first()
+        if not session:
+            raise NotFound("Sessiya topilmadi.")
+
+        if (
+            session.status == SessionStatus.PENDING
+            and timezone.now() >= session.expires_at
+        ):
+            session.status = SessionStatus.EXPIRED
+            session.save(update_fields=["status"])
+
+        if session.status == SessionStatus.AUTHENTICATED:
+            return Response(
+                {
+                    "status": session.status,
+                    "user": UserSerializer(session.user).data if session.user else None,
+                    "tokens": {
+                        "access": session.access_token,
+                        "refresh": session.refresh_token,
+                    },
+                },
+                status=status.HTTP_200_OK,
             )
-            .filter(expires_at__gt=timezone.now())
-            .order_by("-created_at")
-            .first()
-        )
 
-        if not login_code:
-            raise ValidationError("Kod noto'g'ri yoki muddati o'tgan.")
-
-        login_code.is_used = True
-        login_code.save(update_fields=["is_used"])
-
-        user, created = User.objects.get_or_create(
-            phone_number=phone_number,
-            defaults={"auth_provider": AuthProvider.TELEGRAM},
-        )
-        if not created and user.auth_provider != AuthProvider.TELEGRAM:
-            user.auth_provider = AuthProvider.TELEGRAM
-            user.save(update_fields=["auth_provider"])
-
-        tokens = get_tokens_for_user(user)
-        return Response(
-            {
-                "user": UserSerializer(user).data,
-                "tokens": tokens,
-                "created": created,
-            },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
-        )
+        return Response({"status": session.status}, status=status.HTTP_200_OK)

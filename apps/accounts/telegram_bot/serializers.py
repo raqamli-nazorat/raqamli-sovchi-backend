@@ -1,19 +1,17 @@
 from rest_framework import serializers
 
 from apps.core.base.serializers import BaseModelSerializer
-from apps.core.utils.validators import phone_validator
-from .models import LoginCode
+from .models import TelegramAuthSession
+from .utils import get_bot_username
 
 
-class LoginCodeSerializer(BaseModelSerializer):
-    phone_number = serializers.CharField(validators=[phone_validator])
+class TelegramAuthSessionSerializer(BaseModelSerializer):
+    bot_url = serializers.SerializerMethodField()
 
     class Meta:
-        model = LoginCode
-        fields = ["id", "phone_number", "is_used", "expires_at", "created_at"]
-        read_only_fields = ["id", "is_used", "expires_at", "created_at"]
+        model = TelegramAuthSession
+        fields = ["session_id", "status", "bot_url", "expires_at", "created_at"]
 
-
-class VerifyCodeSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(validators=[phone_validator])
-    code = serializers.CharField(max_length=6, min_length=6)
+    def get_bot_url(self, obj):
+        bot_username = get_bot_username()
+        return f"https://t.me/{bot_username}?start={obj.session_id}"

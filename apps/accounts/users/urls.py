@@ -7,6 +7,7 @@ from .views import (
     GoogleLoginView,
     PermissionViewSet,
     PhoneAuthView,
+    EmailAuthView,
     RoleViewSet,
     UserMeView,
     UserPledgeViewSet,
@@ -24,6 +25,7 @@ urlpatterns = [
     path("users/me/", UserMeView.as_view(), name="user-me"),
     path("auth/google/", GoogleLoginView.as_view(), name="auth-google"),
     path("auth/phone/", PhoneAuthView.as_view(), name="auth-phone"),
+    path("auth/email/", EmailAuthView.as_view(), name="auth-email"),
     path("auth/token/", CustomTokenObtainPairView.as_view(), name="token-obtain-pair"),
     path("auth/change-password/", ChangePasswordView.as_view(), name="change_password"),
     path(
