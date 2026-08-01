@@ -55,6 +55,7 @@ class UserSerializer(BaseModelSerializer):
             "full_name",
             "phone_number",
             "email",
+            "telegram_id",
             "candidate_type",
             "completion_percentage",
             "status",
@@ -68,6 +69,7 @@ class UserSerializer(BaseModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "telegram_id",
             "is_verified",
             "auth_provider",
             "profile",
