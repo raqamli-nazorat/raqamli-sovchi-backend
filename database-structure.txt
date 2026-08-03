@@ -122,9 +122,15 @@ REFERENCES
 
 <===========================================
 QUESTIONNAIRE
+    SectionType ==> Savol bo'limi
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
     Question ==> Savol
         id: uuid
-        section: enum (RELIGIOUS_SPIRITUAL, FINANCIAL_GOVERNANCE, RELATIVES_RELATIONS, CHARACTER_CRISIS, FUTURE_PLANS)
+        section: FK SectionType
         text: text
         target_gender: enum (ALL, GROOM, BRIDE)
         is_trap_question: boolean
