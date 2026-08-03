@@ -3,6 +3,7 @@ from apps.core.base.serializers import BaseModelSerializer
 from apps.core.utils.face import verify_face_image
 
 from .models import Profile, ProfilePhoto, RepresentativeInfo
+from .utils import can_view_profile_photos
 
 
 class ProfilePhotoSerializer(BaseModelSerializer):
@@ -19,6 +20,16 @@ class ProfilePhotoSerializer(BaseModelSerializer):
             if embedding:
                 attrs["embedding"] = embedding
         return super().validate(attrs)
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        if instance.profile and not can_view_profile_photos(user, instance.profile):
+            ret["image"] = None
+
+        return ret
 
 
 class RepresentativeInfoSerializer(BaseModelSerializer):
