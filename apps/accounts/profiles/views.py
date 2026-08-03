@@ -68,6 +68,36 @@ class ProfileViewSet(BaseManageViewSet):
     search_fields = ["first_name", "last_name", "bio"]
     ordering_fields = ["created_at", "birth_year", "height", "weight"]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        profiles_list = list(page) if page is not None else list(queryset)
+
+        user_profile = (
+            getattr(request.user, "profile", None)
+            if request.user and request.user.is_authenticated
+            else None
+        )
+        batch_scores = None
+
+        if user_profile and profiles_list:
+            from apps.accounts.questionnaire.services import (
+                batch_calculate_compatibility_scores,
+            )
+
+            batch_scores = batch_calculate_compatibility_scores(user_profile, profiles_list)
+
+        context = self.get_serializer_context()
+        context["batch_compatibility_scores"] = batch_scores
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True, context=context)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True, context=context)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         profile = serializer.save()
         logger.info(

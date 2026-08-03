@@ -49,6 +49,9 @@ class UserAdmin(BaseModelAdmin):
         super().save_model(request, obj, form, change)
         if obj.is_blocked:
             register_user_faces_as_blocked(obj, reason="Admin paneli orqali bloklandi")
+        else:
+            from apps.core.utils.face import remove_user_faces_from_blocked
+            remove_user_faces_from_blocked(obj)
 
 
 @admin.register(UserPledge)

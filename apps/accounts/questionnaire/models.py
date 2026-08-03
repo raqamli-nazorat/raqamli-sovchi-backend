@@ -51,6 +51,9 @@ class Question(BaseModel):
         return f"{self.order}. {self.text[:50]}..."
 
 
+from django.core.validators import MaxValueValidator, MinValueValidator
+
+
 class QuestionOption(BaseModel):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="options", verbose_name="Savol"
@@ -62,7 +65,9 @@ class QuestionOption(BaseModel):
     )
     text = models.TextField(verbose_name="Variant matni")
     weight = models.IntegerField(
-        default=0, verbose_name="Variant balli/og'irligi (Algoritm va Lie Scale uchun)"
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
+        verbose_name="Variant balli/og'irligi (0-10)",
     )
 
     class Meta:

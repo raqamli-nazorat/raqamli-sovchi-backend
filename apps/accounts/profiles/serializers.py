@@ -39,6 +39,8 @@ class RepresentativeInfoSerializer(BaseModelSerializer):
 
 
 class ProfileSerializer(BaseModelSerializer):
+    compatibility_score = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Profile
         fields = "__all__"
@@ -60,6 +62,22 @@ class ProfileSerializer(BaseModelSerializer):
             "marital_status": ["id", "name"],
             "photos": ["id", "image", "is_main", "order", "created_at"],
         }
+
+    def get_compatibility_score(self, obj):
+        batch_scores = self.context.get("batch_compatibility_scores")
+        if batch_scores is not None:
+            return batch_scores.get(obj.id)
+
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return None
+
+        user_profile = getattr(request.user, "profile", None)
+        if not user_profile or user_profile.id == obj.id:
+            return None
+
+        from apps.accounts.questionnaire.services import calculate_compatibility_score
+        return calculate_compatibility_score(user_profile, obj)
 
 
 class ProfileMeSerializer(BaseModelSerializer):
@@ -89,6 +107,7 @@ class ProfileMeSerializer(BaseModelSerializer):
             "voice_intro",
             "latitude",
             "longitude",
+            "location",
             "blur_photos",
             "created_at",
             "updated_at",
@@ -112,6 +131,17 @@ class ProfileMeSerializer(BaseModelSerializer):
             "marital_status": ["id", "name"],
             "photos": ["id", "image", "is_main", "order", "created_at"],
         }
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.location:
+            ret["location"] = {
+                "latitude": instance.location.y,
+                "longitude": instance.location.x,
+            }
+        else:
+            ret["location"] = None
+        return ret
 
 
 class FaceVerificationSerializer(serializers.Serializer):
