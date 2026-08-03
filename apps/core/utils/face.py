@@ -340,3 +340,15 @@ def register_user_faces_as_blocked(user, reason=None, embedding=None):
                     embedding=emb,
                     reason=default_reason,
                 )
+
+
+def remove_user_faces_from_blocked(user):
+    """
+    When a user is unblocked, remove their BlockedFace records from blacklists.
+    """
+    if not user:
+        return
+
+    from apps.accounts.users.models import BlockedFace
+
+    BlockedFace.objects.filter(user=user).delete()

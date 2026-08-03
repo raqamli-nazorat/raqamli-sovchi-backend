@@ -4,7 +4,7 @@ from .models import SectionType, Question, QuestionOption, UserAnswer
 
 
 class SectionTypeSerializer(BaseModelSerializer):
-    count = serializers.SerializerMethodField()
+    count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = SectionType

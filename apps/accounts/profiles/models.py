@@ -186,7 +186,7 @@ class RepresentativeInfo(BaseModel):
     candidate_role = models.CharField(
         max_length=20,
         choices=[("groom", "Kuyov"), ("bride", "Kelin")],
-        verbose_name="Nomzod turi",
+        verbose_name="Vakillik qilayotgan nomzod turi (Kuyov/Kelin)",
     )
 
     class Meta:
