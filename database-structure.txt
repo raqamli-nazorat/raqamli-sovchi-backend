@@ -1,8 +1,9 @@
 User ==> Foydalanuvchi
     id: uuid
-    role: enum (admin, bride, groom, vakeel)
+    role: enum (ADMIN, BRIDE, GROOM, VAKEEL)
     phone_number: string [unique]
     telegram_id: string [unique]
+    is_phone_verified: boolean
     password: string
     first_name: string
     last_name: string
@@ -17,16 +18,17 @@ User ==> Foydalanuvchi
     health_status: FK HealthStatus
     created_at: timestamp
     updated_at: timestamp
-    
+
 Region ==> Viloyat
     id: uuid
-    name: string [unique]
+    name: string
     created_at: timestamp
     updated_at: timestamp
+    deleted_at: timestamp
 
 District ==> Tuman
     id: uuid
-    name: string [unique]
+    name_uz: string
     region: FK Region
     created_at: timestamp
     updated_at: timestamp
@@ -54,6 +56,52 @@ UserPhoto ==> User rasmlari
     user: FK User
     is_main: boolean
     file_url: string
+    status: enum (PENDING, APPROVED, REJECTED)
     created_at: timestamp
     updated_at: timestamp
-    
+
+MatchRequest ==> So'rovlar
+    id: uuid
+    from_user: FK User
+    to_user: FK User
+    status: enum (PENDING, ACCEPTED, REJECTED)
+    created_at: timestamp
+    updated_at: timestamp
+
+ChatRoom ==> Chat xonalari
+    id: uuid
+    match_request: FK MatchRequest
+    created_at: timestamp
+    updated_at: timestamp
+
+Message ==> Xabarlar
+    id: uuid
+    chat_room: FK ChatRoom
+    sender: FK User
+    content: text
+    is_read: boolean
+    created_at: timestamp
+    updated_at: timestamp
+
+OTP ==> Tasdiqlash kodlari
+    id: uuid
+    user: FK User
+    code: string
+    is_used: boolean
+    expires_at: timestamp
+    created_at: timestamp
+
+UserBlock ==> Bloklanganlar
+    id: uuid
+    blocker: FK User
+    blocked: FK User
+    created_at: timestamp
+
+UserReport ==> Shikoyatlar
+    id: uuid
+    reporter: FK User
+    reported: FK User
+    reason: text
+    status: enum (NEW, REVIEWED, RESOLVED)
+    created_at: timestamp
+    updated_at: timestamp
