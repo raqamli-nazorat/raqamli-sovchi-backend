@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from apps.accounts.users.models import Role, User
 
 DEFAULT_PERMISSIONS_CODENAMES = [
+    # Profiles & Candidates
     "add_profile",
     "change_profile",
     "view_profile",
@@ -15,13 +16,40 @@ DEFAULT_PERMISSIONS_CODENAMES = [
     "view_profilephoto",
     "add_representativeinfo",
     "change_representativeinfo",
+    "delete_representativeinfo",
     "view_representativeinfo",
+    # User Pledge
     "add_userpledge",
     "change_userpledge",
     "view_userpledge",
-    "add_questionnaire",
-    "change_questionnaire",
-    "view_questionnaire",
+    # References (Read-only for default users)
+    "view_region",
+    "view_district",
+    "view_educationlevel",
+    "view_nationality",
+    "view_profession",
+    "view_maritalstatus",
+    "view_healthstatus",
+    # Questionnaire
+    "view_sectiontype",
+    "view_question",
+    "view_questionoption",
+    "add_useranswer",
+    "change_useranswer",
+    "delete_useranswer",
+    "view_useranswer",
+    # Matches & Chats
+    "add_matchrequest",
+    "change_matchrequest",
+    "delete_matchrequest",
+    "view_matchrequest",
+    "add_chatroom",
+    "change_chatroom",
+    "view_chatroom",
+    "add_message",
+    "change_message",
+    "delete_message",
+    "view_message",
 ]
 
 

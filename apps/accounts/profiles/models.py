@@ -15,11 +15,6 @@ class HealthStatus(models.TextChoices):
     DISABLED = "disabled", "Nogironligi bor"
 
 
-class MaritalStatus(models.TextChoices):
-    NEVER_MARRIED = "never_married", "Birinchi marta turmush qurmoqchi"
-    DIVORCED = "divorced", "Ajrashgan"
-
-
 class CandidateRole(models.TextChoices):
     GROOM = "groom", "Kuyov"
     BRIDE = "bride", "Kelin"
@@ -69,14 +64,55 @@ class Profile(BaseModel):
         verbose_name="Tuman",
     )
 
-    health_status = models.CharField(
-        max_length=20,
-        choices=HealthStatus.choices,
-        default=HealthStatus.HEALTHY,
-        verbose_name="Sog'liqlik darajasi",
+    health_status = models.ForeignKey(
+        "references.HealthStatus",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+        verbose_name="Sog'liq holati",
     )
-    marital_status = models.CharField(
-        max_length=20, choices=MaritalStatus.choices, verbose_name="Oilaviy holati"
+    marital_status = models.ForeignKey(
+        "references.MaritalStatus",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+        verbose_name="Oilaviy holati",
+    )
+
+    education_level = models.ForeignKey(
+        "references.EducationLevel",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+        verbose_name="Ta'lim darajasi",
+    )
+    nationality = models.ForeignKey(
+        "references.Nationality",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+        verbose_name="Millati",
+    )
+    profession = models.ForeignKey(
+        "references.Profession",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+        verbose_name="Kasbi",
+    )
+    has_children = models.BooleanField(
+        default=False, verbose_name="Farzandlari bor-yo'qligi"
+    )
+    children_count = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name="Farzandlar soni"
+    )
+    expectations = models.TextField(
+        blank=True, null=True, verbose_name="Kutilmalar / Talablar"
     )
 
     bio = models.TextField(blank=True, null=True, verbose_name="O'zi haqida izoh matn")

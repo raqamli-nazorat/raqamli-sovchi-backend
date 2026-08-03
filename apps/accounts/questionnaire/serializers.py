@@ -1,6 +1,12 @@
 from rest_framework import serializers
 from apps.core.base.serializers import BaseModelSerializer
-from .models import Question, QuestionOption, UserAnswer
+from .models import SectionType, Question, QuestionOption, UserAnswer
+
+
+class SectionTypeSerializer(BaseModelSerializer):
+    class Meta:
+        model = SectionType
+        fields = "__all__"
 
 
 class QuestionOptionSerializer(BaseModelSerializer):
@@ -13,7 +19,10 @@ class QuestionSerializer(BaseModelSerializer):
     class Meta:
         model = Question
         fields = "__all__"
-        related_fields = {"options": ["id", "option_letter", "text", "weight", "order"]}
+        related_fields = {
+            "section": ["id", "name"],
+            "options": ["id", "option_letter", "text", "weight", "order"],
+        }
 
 
 class UserAnswerSerializer(BaseModelSerializer):

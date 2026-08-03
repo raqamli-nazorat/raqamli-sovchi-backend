@@ -1,6 +1,12 @@
 from django.contrib import admin
 from apps.core.base.admin import BaseModelAdmin
-from .models import Question, QuestionOption, UserAnswer
+from .models import SectionType, Question, QuestionOption, UserAnswer
+
+
+@admin.register(SectionType)
+class SectionTypeAdmin(BaseModelAdmin):
+    list_display = ("id", "name", "created_at")
+    search_fields = ("name",)
 
 
 class QuestionOptionInline(admin.TabularInline):
