@@ -19,7 +19,10 @@ class ProfilePhotoInline(admin.TabularInline):
                 '<span style="color: #d9534f; font-weight: bold;">🔒 Maxfiy (Kelin rasmi - Adminlar uchun ham yopiq)</span>'
             )
         if obj.image:
-            return format_html('<img src="{}" style="height: 60px; border-radius: 4px;" />', obj.image.url)
+            return format_html(
+                '<img src="{}" style="height: 60px; border-radius: 4px;" />',
+                obj.image.url,
+            )
         return "-"
 
     image_display.short_description = "Rasm ko'rinishi"
@@ -82,7 +85,11 @@ class ProfilePhotoAdmin(BaseModelAdmin):
                 '<span style="color: #d9534f; font-weight: bold;">🔒 Maxfiy (Kelin rasmi - Adminlar uchun ham yopiq)</span>'
             )
         if obj.image:
-            return format_html('<a href="{}" target="_blank"><img src="{}" style="height: 80px; border-radius: 4px;" /></a>', obj.image.url, obj.image.url)
+            return format_html(
+                '<a href="{}" target="_blank"><img src="{}" style="height: 80px; border-radius: 4px;" /></a>',
+                obj.image.url,
+                obj.image.url,
+            )
         return "-"
 
     image_display.short_description = "Rasm ko'rinishi"

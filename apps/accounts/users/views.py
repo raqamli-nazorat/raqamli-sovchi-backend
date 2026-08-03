@@ -115,7 +115,6 @@ class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
         instance.save(update_fields=["is_active"])
 
 
-
 class UserViewSet(BaseManageViewSet):
     queryset = (
         User.objects.select_related(
@@ -142,10 +141,14 @@ class UserViewSet(BaseManageViewSet):
         user.save(update_fields=["is_blocked"])
 
         from apps.core.utils.face import register_user_faces_as_blocked
+
         register_user_faces_as_blocked(user, reason="Admin tomonidan bloklandi")
 
         return Response(
-            {"message": "Foydalanuvchi va uning yuzi muvaffaqiyatli bloklandi.", "is_blocked": True},
+            {
+                "message": "Foydalanuvchi va uning yuzi muvaffaqiyatli bloklandi.",
+                "is_blocked": True,
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -201,7 +204,9 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
 
         if not created and user.is_blocked:
             return Response(
-                {"detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."},
+                {
+                    "detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -245,7 +250,9 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
 
         if not created and user.is_blocked:
             return Response(
-                {"detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."},
+                {
+                    "detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -280,7 +287,9 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
 
         if not created and user.is_blocked:
             return Response(
-                {"detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."},
+                {
+                    "detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 

@@ -31,21 +31,22 @@ def can_view_profile_photos(request_user, target_profile):
 
     has_accepted_match = False
     if user_profile:
-        has_accepted_match = MatchRequest.objects.filter(
-            status=MatchRequestStatus.ACCEPTED
-        ).filter(
-            (
-                Q(from_profile=user_profile, to_profile=target_profile)
-                | Q(from_profile=target_profile, to_profile=user_profile)
+        has_accepted_match = (
+            MatchRequest.objects.filter(status=MatchRequestStatus.ACCEPTED)
+            .filter(
+                (
+                    Q(from_profile=user_profile, to_profile=target_profile)
+                    | Q(from_profile=target_profile, to_profile=user_profile)
+                )
             )
-        ).exists()
+            .exists()
+        )
 
     if is_female_candidate(target_profile):
         return has_accepted_match
 
-    is_admin_role = (
-        getattr(request_user, "is_superuser", False)
-        or bool(request_user.role and not request_user.role.is_default)
+    is_admin_role = getattr(request_user, "is_superuser", False) or bool(
+        request_user.role and not request_user.role.is_default
     )
     if is_admin_role:
         return True
