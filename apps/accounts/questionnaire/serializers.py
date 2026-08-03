@@ -4,9 +4,14 @@ from .models import SectionType, Question, QuestionOption, UserAnswer
 
 
 class SectionTypeSerializer(BaseModelSerializer):
+    count = serializers.SerializerMethodField()
+
     class Meta:
         model = SectionType
         fields = "__all__"
+
+    def get_count(self, obj):
+        return obj.questions.count()
 
 
 class QuestionOptionSerializer(BaseModelSerializer):
@@ -21,7 +26,7 @@ class QuestionSerializer(BaseModelSerializer):
         fields = "__all__"
         related_fields = {
             "section": ["id", "name"],
-            "options": ["id", "option_letter", "text", "weight", "order"],
+            "options": ["id", "option_letter", "text", "weight"],
         }
 
 
