@@ -107,6 +107,7 @@ class ProfileMeSerializer(BaseModelSerializer):
             "voice_intro",
             "latitude",
             "longitude",
+            "location",
             "blur_photos",
             "created_at",
             "updated_at",
@@ -130,6 +131,17 @@ class ProfileMeSerializer(BaseModelSerializer):
             "marital_status": ["id", "name"],
             "photos": ["id", "image", "is_main", "order", "created_at"],
         }
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if instance.location:
+            ret["location"] = {
+                "latitude": instance.location.y,
+                "longitude": instance.location.x,
+            }
+        else:
+            ret["location"] = None
+        return ret
 
 
 class FaceVerificationSerializer(serializers.Serializer):
