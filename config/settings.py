@@ -1,7 +1,8 @@
 import os
-import environ
 from datetime import timedelta
 from pathlib import Path
+
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -17,6 +18,8 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
+
+GDAL_LIBRARY_PATH = env("GDAL_LIBRARY_PATH", default=None)
 
 DJANGO_APPS = [
     "unfold",
@@ -54,10 +57,27 @@ THIRD_PARTY_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
 ]
+
+LOCAL_APPS = [
+    "apps.core.base",
+    "apps.core.audits",
+    "apps.core.locations",
+    "apps.core.references",
+    "apps.accounts.users",
+    "apps.accounts.profiles",
+    "apps.accounts.questionnaire",
+    "apps.accounts.telegram_bot",
+    "apps.matches.match_requests",
+    "apps.matches.chats",
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+# Auth / AllAuth & Social Account Settings
+SITE_ID = 1
 REST_USE_JWT = True
 JWT_AUTH_COOKIE = "access"
 JWT_AUTH_REFRESH_COOKIE = "refresh"
-SITE_ID = 1
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
@@ -75,21 +95,6 @@ SOCIALACCOUNT_PROVIDERS = {
         },
     }
 }
-
-LOCAL_APPS = [
-    "apps.core.base",
-    "apps.core.audits",
-    "apps.core.locations",
-    "apps.core.references",
-    "apps.accounts.users",
-    "apps.accounts.profiles",
-    "apps.accounts.questionnaire",
-    "apps.accounts.telegram_bot",
-    "apps.matches.match_requests",
-    "apps.matches.chats",
-]
-
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
