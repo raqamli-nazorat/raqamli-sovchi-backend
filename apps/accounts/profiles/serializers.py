@@ -135,14 +135,13 @@ class ProfileMeSerializer(BaseModelSerializer):
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        loc = getattr(instance, "location", None)
-        if loc is not None and hasattr(loc, "x"):
+        if instance.location:
             ret["location"] = {
-                "latitude": loc.y,
-                "longitude": loc.x,
+                "latitude": instance.location.y,
+                "longitude": instance.location.x,
             }
         else:
-            ret["location"] = instance.location_data
+            ret["location"] = None
         return ret
 
 
