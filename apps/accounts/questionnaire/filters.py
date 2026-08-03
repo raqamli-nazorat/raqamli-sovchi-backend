@@ -4,7 +4,7 @@ from .models import Question, UserAnswer
 
 
 class QuestionFilter(django_filters.FilterSet):
-    section = django_filters.CharFilter(field_name="section", lookup_expr="exact")
+    section = UUIDInFilter(field_name="section", lookup_expr="in")
     target_gender = django_filters.CharFilter(
         field_name="target_gender", lookup_expr="exact"
     )

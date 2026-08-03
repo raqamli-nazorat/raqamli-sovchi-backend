@@ -42,6 +42,11 @@ class ProfileSerializer(BaseModelSerializer):
             ],
             "region": ["id", "name"],
             "district": ["id", "name"],
+            "education_level": ["id", "name"],
+            "nationality": ["id", "name"],
+            "profession": ["id", "name"],
+            "health_status": ["id", "name"],
+            "marital_status": ["id", "name"],
             "photos": ["id", "image", "is_main", "order", "created_at"],
         }
 
@@ -63,6 +68,12 @@ class ProfileMeSerializer(BaseModelSerializer):
             "district",
             "health_status",
             "marital_status",
+            "education_level",
+            "nationality",
+            "profession",
+            "has_children",
+            "children_count",
+            "expectations",
             "bio",
             "voice_intro",
             "latitude",
@@ -83,6 +94,11 @@ class ProfileMeSerializer(BaseModelSerializer):
             ],
             "region": ["id", "name"],
             "district": ["id", "name"],
+            "education_level": ["id", "name"],
+            "nationality": ["id", "name"],
+            "profession": ["id", "name"],
+            "health_status": ["id", "name"],
+            "marital_status": ["id", "name"],
             "photos": ["id", "image", "is_main", "order", "created_at"],
         }
 

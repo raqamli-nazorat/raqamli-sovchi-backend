@@ -1,0 +1,206 @@
+<===========================================
+USER & AUTH
+    User ==> Tizimga kirish uchun (Auth)
+        id: uuid
+        phone_number: string [unique]
+        email: string [unique, null]
+        telegram_id: string [unique, null]
+        auth_provider: enum (GOOGLE, PHONE, TELEGRAM, EMAIL)
+        is_verified: boolean
+        is_blocked: boolean
+        created_at: timestamp
+        updated_at: timestamp
+
+    Role ==> Tizim rollari (Dinamik huquqlar bilan)
+        id: uuid
+        name: string [unique]
+        is_default: boolean
+        created_at: timestamp
+        updated_at: timestamp
+
+    UserPledge ==> Halollik roziligi
+        id: uuid
+        user: O2O User
+        accepted_terms: boolean
+        has_serious_badge: boolean
+        ip_address: string
+        created_at: timestamp
+        updated_at: timestamp
+
+USER & AUTH
+===========================================>
+
+<===========================================
+PROFILES & CANDIDATES
+    Profile ==> Foydalanuvchining asosiy anketasi
+        id: uuid
+        user: O2O User
+        first_name: string
+        last_name: string
+        middle_name: string [null]
+        gender: enum (MALE, FEMALE)
+        candidate_type: enum (GROOM, BRIDE, REPRESENTATIVE) [null]
+        birth_year: integer
+        height: integer
+        weight: integer
+        region: FK Region
+        district: FK District
+        health_status: FK HealthStatus [null]
+        marital_status: FK MaritalStatus [null]
+        education_level: FK EducationLevel [null]
+        nationality: FK Nationality [null]
+        profession: FK Profession [null]
+        has_children: boolean
+        children_count: integer
+        expectations: text [null]
+        bio: text [null]
+        voice_intro: file (audio) [null]
+        latitude: decimal [null]
+        longitude: decimal [null]
+        blur_photos: boolean
+        created_at: timestamp
+        updated_at: timestamp
+
+    RepresentativeInfo ==> Vakil ma'lumoti
+        id: uuid
+        profile: O2O Profile
+        kinship: string [null]
+        candidate_role: enum (GROOM, BRIDE)
+        created_at: timestamp
+        updated_at: timestamp
+
+    ProfilePhoto ==> Profil rasmlari
+        id: uuid
+        profile: FK Profile
+        image: file (image)
+        embedding: json [null]
+        order: integer
+        is_main: boolean
+        created_at: timestamp
+        updated_at: timestamp
+
+PROFILES & CANDIDATES
+===========================================>
+
+<===========================================
+REFERENCES (Ma'lumotnomalar)
+    Region ==> Viloyat
+        id: uuid
+        name: string
+        code: integer [null]
+        created_at: timestamp
+        updated_at: timestamp
+
+    District ==> Tuman
+        id: uuid
+        name: string
+        code: integer [null]
+        region: FK Region
+        created_at: timestamp
+        updated_at: timestamp
+
+    EducationLevel ==> Ta'lim darajasi
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    Nationality ==> Millat
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    Profession ==> Kasb
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    EducationLevel ==> Ta'lim darajasi
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    MaritialStatus ==> Oilaviy holati
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+    
+    HealthStatus ==> Sog'liq holati
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+REFERENCES
+===========================================>
+
+<===========================================
+QUESTIONNAIRE
+    SectionType ==> Savol bo'limi
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    Question ==> Savol
+        id: uuid
+        section: FK SectionType
+        text: text
+        target_gender: enum (ALL, GROOM, BRIDE)
+        is_trap_question: boolean
+        order: integer
+        created_at: timestamp
+        updated_at: timestamp
+
+    QuestionOption ==> Savol varianti
+        id: uuid
+        question: FK Question
+        option_letter: enum (A, B, C, D)
+        text: text
+        weight: integer
+        created_at: timestamp
+        updated_at: timestamp
+
+    UserAnswer ==> Foydalanuvchi javobi
+        id: uuid
+        profile: FK Profile
+        question: FK Question
+        selected_option: FK QuestionOption
+        created_at: timestamp
+        updated_at: timestamp
+
+QUESTIONNAIRE
+===========================================>
+
+<===========================================
+MATCH & CHAT
+    MatchRequest ==> So'rovlar
+        id: uuid
+        from_profile: FK Profile
+        to_profile: FK Profile
+        status: enum (PENDING, ACCEPTED, REJECTED)
+        created_at: timestamp
+        question: FK Question
+        updated_at: timestamp
+
+    ChatRoom ==> Chat xonalari
+        id: uuid
+        match_request: FK MatchRequest
+        created_at: timestamp
+        updated_at: timestamp
+
+    Message ==> Xabarlar
+        id: uuid
+        chat_room: FK ChatRoom
+        sender: FK User
+        content: text
+        is_read: boolean
+        created_at: timestamp
+        updated_at: timestamp
+
+MATCH & CHAT
+===========================================>

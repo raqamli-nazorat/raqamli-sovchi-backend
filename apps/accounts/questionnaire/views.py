@@ -5,8 +5,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.base.mixins import AutoSchemaMixin
-from .models import Question, QuestionOption, UserAnswer
+from .models import SectionType, Question, QuestionOption, UserAnswer
 from .serializers import (
+    SectionTypeSerializer,
     QuestionSerializer,
     QuestionOptionSerializer,
     UserAnswerSerializer,
@@ -15,8 +16,18 @@ from .serializers import (
 from .filters import QuestionFilter, UserAnswerFilter
 
 
+class SectionTypeViewSet(BaseReadOnlyViewSet):
+    queryset = SectionType.objects.active()
+    serializer_class = SectionTypeSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ["name"]
+    ordering_fields = ["name", "created_at"]
+
+
 class QuestionViewSet(BaseReadOnlyViewSet):
-    queryset = Question.objects.prefetch_related("options").active()
+    queryset = (
+        Question.objects.select_related("section").prefetch_related("options").active()
+    )
     serializer_class = QuestionSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = QuestionFilter

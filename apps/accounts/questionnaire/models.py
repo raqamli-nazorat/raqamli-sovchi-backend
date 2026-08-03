@@ -3,24 +3,16 @@ from apps.core.base.models import BaseModel
 from apps.accounts.profiles.models import Profile
 
 
-class SectionType(models.TextChoices):
-    RELIGIOUS_SPIRITUAL = (
-        "religious_spiritual",
-        "I. Diniy-Ma'naviy Qadriyatlar va E'tiqod",
-    )
-    FINANCIAL_GOVERNANCE = (
-        "financial_governance",
-        "II. Oila Boshqaruvi va Moliyaviy Qarashlar",
-    )
-    RELATIVES_RELATIONS = (
-        "relatives_relations",
-        "III. Qarindoshlar va Qaynona-Kelin Munosabatlari",
-    )
-    CHARACTER_CRISIS = (
-        "character_crisis",
-        "IV. Harakter, Psixologik Muvofiqlik va Inqiroz",
-    )
-    FUTURE_PLANS = "future_plans", "V. Kelajak Rejalari va Maishiy Hayot"
+class SectionType(BaseModel):
+    name = models.CharField(max_length=255, unique=True, verbose_name="Nomi")
+
+    class Meta:
+        verbose_name = "Savol bo'limi"
+        verbose_name_plural = "Savol bo'limlari"
+        db_table = "section_types"
+
+    def __str__(self):
+        return self.name
 
 
 class TargetGender(models.TextChoices):
@@ -30,8 +22,11 @@ class TargetGender(models.TextChoices):
 
 
 class Question(BaseModel):
-    section = models.CharField(
-        max_length=50, choices=SectionType.choices, verbose_name="Bo'lim"
+    section = models.ForeignKey(
+        SectionType,
+        on_delete=models.CASCADE,
+        related_name="questions",
+        verbose_name="Bo'lim",
     )
     text = models.TextField(verbose_name="Savol matni")
     target_gender = models.CharField(

@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
+    SectionTypeViewSet,
     QuestionViewSet,
     QuestionOptionViewSet,
     UserAnswerViewSet,
@@ -8,6 +9,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register(r"section-types", SectionTypeViewSet, basename="section-type")
 router.register(r"questions", QuestionViewSet, basename="question")
 router.register(r"options", QuestionOptionViewSet, basename="question-option")
 router.register(r"answers", UserAnswerViewSet, basename="user-answer")
