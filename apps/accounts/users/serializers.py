@@ -181,7 +181,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         user = self.user
 
         if user.is_blocked:
-            raise serializers.ValidationError({"detail": "Sizning hisobingiz bloklangan."})
+            raise serializers.ValidationError(
+                {"detail": "Sizning hisobingiz bloklangan."}
+            )
 
         data["user"] = {
             "id": user.id,
