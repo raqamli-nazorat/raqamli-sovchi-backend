@@ -20,6 +20,20 @@ class QuestionOptionSerializer(BaseModelSerializer):
         fields = "__all__"
 
 
+class QuestionOptionBulkItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField(required=False, allow_null=True)
+    option_letter = serializers.ChoiceField(
+        choices=[("A", "A"), ("B", "B"), ("C", "C"), ("D", "D")], required=True
+    )
+    text = serializers.CharField(required=True)
+    weight = serializers.IntegerField(default=0, min_value=0, max_value=10)
+
+
+class QuestionOptionBulkSerializer(serializers.Serializer):
+    question_id = serializers.UUIDField(required=True)
+    options = QuestionOptionBulkItemSerializer(many=True, required=True)
+
+
 class QuestionSerializer(BaseModelSerializer):
     class Meta:
         model = Question
