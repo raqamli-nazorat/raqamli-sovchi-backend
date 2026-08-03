@@ -77,6 +77,7 @@ class ProfileSerializer(BaseModelSerializer):
             return None
 
         from apps.accounts.questionnaire.services import calculate_compatibility_score
+
         return calculate_compatibility_score(user_profile, obj)
 
 

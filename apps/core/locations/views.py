@@ -8,7 +8,7 @@ from .filters import RegionFilter, DistrictFilter
 
 
 class RegionViewSet(BaseManageViewSet):
-    queryset = Region.objects.prefetch_related('districts').active()
+    queryset = Region.objects.prefetch_related("districts").active()
     serializer_class = RegionSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = RegionFilter

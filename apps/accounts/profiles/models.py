@@ -1,8 +1,9 @@
+from decimal import Decimal
 from django.db import models
 from django.contrib.gis.db import models as gis_models
 from django.contrib.gis.geos import Point
 
-from apps.accounts.users.models import User, UserRole
+from apps.accounts.users.models import User
 from apps.core.base.models import BaseModel
 from apps.core.locations.models import District, Region
 
@@ -107,9 +108,7 @@ class Profile(BaseModel):
         related_name="profiles",
         verbose_name="Kasbi",
     )
-    has_children = models.BooleanField(
-        default=False, verbose_name="Farzandi bormi"
-    )
+    has_children = models.BooleanField(default=False, verbose_name="Farzandi bormi")
     children_count = models.PositiveSmallIntegerField(
         default=0, verbose_name="Farzandlar soni"
     )
@@ -117,7 +116,9 @@ class Profile(BaseModel):
         blank=True, null=True, verbose_name="Juftidan kutilayotgan talablar"
     )
 
-    bio = models.TextField(blank=True, null=True, verbose_name="O'zi haqida qo'shimcha ma'lumot")
+    bio = models.TextField(
+        blank=True, null=True, verbose_name="O'zi haqida qo'shimcha ma'lumot"
+    )
     voice_intro = models.FileField(
         upload_to="voice_intros/",
         blank=True,
@@ -157,12 +158,14 @@ class Profile(BaseModel):
     def save(self, *args, **kwargs):
         if self.latitude is not None and self.longitude is not None:
             try:
-                self.location = Point(float(self.longitude), float(self.latitude), srid=4326)
+                self.location = Point(
+                    float(self.longitude), float(self.latitude), srid=4326
+                )
             except Exception:
                 pass
         elif self.location is not None:
-            self.longitude = self.location.x
-            self.latitude = self.location.y
+            self.longitude = Decimal(str(self.location.x))
+            self.latitude = Decimal(str(self.location.y))
         super().save(*args, **kwargs)
 
     def __str__(self):

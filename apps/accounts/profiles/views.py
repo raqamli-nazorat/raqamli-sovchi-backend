@@ -86,7 +86,9 @@ class ProfileViewSet(BaseManageViewSet):
                 batch_calculate_compatibility_scores,
             )
 
-            batch_scores = batch_calculate_compatibility_scores(user_profile, profiles_list)
+            batch_scores = batch_calculate_compatibility_scores(
+                user_profile, profiles_list
+            )
 
         context = self.get_serializer_context()
         context["batch_compatibility_scores"] = batch_scores

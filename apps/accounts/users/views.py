@@ -159,10 +159,14 @@ class UserViewSet(BaseManageViewSet):
         user.save(update_fields=["is_blocked"])
 
         from apps.core.utils.face import remove_user_faces_from_blocked
+
         remove_user_faces_from_blocked(user)
 
         return Response(
-            {"message": "Foydalanuvchi va uning yuzi blokdan chiqarildi.", "is_blocked": False},
+            {
+                "message": "Foydalanuvchi va uning yuzi blokdan chiqarildi.",
+                "is_blocked": False,
+            },
             status=status.HTTP_200_OK,
         )
 
