@@ -17,7 +17,7 @@ from .filters import QuestionFilter, UserAnswerFilter
 
 
 class SectionTypeViewSet(BaseManageViewSet):
-    queryset = SectionType.objects.active()
+    queryset = SectionType.objects.prefetch_related('questions').active()
     serializer_class = SectionTypeSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["name"]
