@@ -1,0 +1,59 @@
+User ==> Foydalanuvchi
+    id: uuid
+    role: enum (admin, bride, groom, vakeel)
+    phone_number: string [unique]
+    telegram_id: string [unique]
+    password: string
+    first_name: string
+    last_name: string
+    date_of_birth: date
+    gender: enum (MALE, FEMALE)
+    region: FK Region
+    district: FK District
+    height: integer
+    weight: integer
+    maritial_status: FK MaritialStatus
+    education_level: FK EducationLevel
+    health_status: FK HealthStatus
+    created_at: timestamp
+    updated_at: timestamp
+    
+Region ==> Viloyat
+    id: uuid
+    name: string [unique]
+    created_at: timestamp
+    updated_at: timestamp
+
+District ==> Tuman
+    id: uuid
+    name: string [unique]
+    region: FK Region
+    created_at: timestamp
+    updated_at: timestamp
+
+EducationLevel ==> Ta'lim darajasi
+    id: uuid
+    name: string [unique]
+    created_at: timestamp
+    updated_at: timestamp
+
+MaritialStatus ==> Oilaviy holati
+    id: uuid
+    name: string [unique]
+    created_at: timestamp
+    updated_at: timestamp
+    
+HealthStatus ==> Sog'liq holati
+    id: uuid
+    name: string [unique]
+    created_at: timestamp
+    updated_at: timestamp
+
+UserPhoto ==> User rasmlari
+    id: uuid
+    user: FK User
+    is_main: boolean
+    file_url: string
+    created_at: timestamp
+    updated_at: timestamp
+    
