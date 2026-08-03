@@ -268,3 +268,71 @@ def hash_compare(profile_or_user, uploaded_file):
                 user_id,
             )
             return False, "Tekshiruvda xatolik yuz berdi. Qayta urinib ko'ring."
+
+
+def check_against_blocked_faces(probe_embedding, strict_threshold=0.40):
+    if not probe_embedding:
+        return False, None, 1.0
+
+    from apps.accounts.users.models import BlockedFace
+
+    blocked_faces = list(BlockedFace.objects.filter(is_active=True))
+    for bf in blocked_faces:
+        if not bf.embedding:
+            continue
+        dist = calculate_cosine_distance(probe_embedding, bf.embedding)
+        if dist <= strict_threshold:
+            logger.warning(
+                "Bloklangan yuz mosligi aniqlandi! BlockedFaceID=%s | UserID=%s | distance=%.4f",
+                bf.id,
+                bf.user_id,
+                dist,
+            )
+            return True, bf, dist
+
+    return False, None, 1.0
+
+
+def register_user_faces_as_blocked(user, reason=None, embedding=None):
+    if not user:
+        return
+
+    from apps.accounts.users.models import BlockedFace
+
+    default_reason = reason or "Foydalanuvchi bloklanganligi sababli yuzi qora ro'yxatga olindi."
+
+    if embedding:
+        exists = BlockedFace.objects.filter(user=user, embedding=embedding).exists()
+        if not exists:
+            BlockedFace.objects.create(
+                user=user,
+                embedding=embedding,
+                reason=default_reason,
+            )
+
+    profile = getattr(user, "profile", None)
+    if not profile or not hasattr(profile, "photos"):
+        return
+
+    photos = profile.photos.filter(is_active=True)
+    for photo in photos:
+        emb = photo.embedding
+        if not emb and photo.image and photo.image.name:
+            with _temp_jpeg_files(f"block_{photo.id}") as (temp_path,):
+                try:
+                    _write_field_file_to_path(photo.image, temp_path)
+                    emb = extract_embedding(temp_path)
+                    if emb:
+                        photo.embedding = emb
+                        photo.save(update_fields=["embedding", "updated_at"])
+                except Exception as e:
+                    logger.warning("PhotoID=%s embedding olishda xatolik: %s", photo.id, e)
+
+        if emb:
+            exists = BlockedFace.objects.filter(user=user, embedding=emb).exists()
+            if not exists:
+                BlockedFace.objects.create(
+                    user=user,
+                    embedding=emb,
+                    reason=default_reason,
+                )

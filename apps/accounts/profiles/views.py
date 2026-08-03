@@ -182,6 +182,42 @@ class FaceVerificationView(AutoSchemaMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Check if the uploaded selfie belongs to a blocked individual
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+
+        with _temp_jpeg_files(f"verify_probe_{user.id}") as (temp_path,):
+            try:
+                _save_as_rgb_jpeg(uploaded_file, temp_path)
+                probe_emb = extract_embedding(temp_path)
+                if probe_emb:
+                    is_blocked_match, bf_obj, dist = check_against_blocked_faces(probe_emb)
+                    if is_blocked_match:
+                        logger.warning(
+                            "Bloklangan shaxs yuzi aniqlandi! Yangi hisob ham bloklanmoqda: UserID=%s | Distance=%.4f",
+                            user.id,
+                            dist,
+                        )
+                        user.is_blocked = True
+                        user.save(update_fields=["is_blocked"])
+                        register_user_faces_as_blocked(
+                            user,
+                            reason="Bloklangan shaxs yuzi bilan yangi hisob ochishga urinish",
+                            embedding=probe_emb,
+                        )
+                        return Response(
+                            {
+                                "detail": "Ushbu yuz egasiga tegishli bloklangan hisob aniqlandi! Tizimdan foydalanish taqiqlanadi va ushbu hisobingiz ham bloklandi.",
+                                "verified": False,
+                                "is_blocked": True,
+                            },
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
+            except Exception as e:
+                logger.warning("Bloklangan yuz tekshiruvida xatolik: %s", e)
+
         is_verified, msg = hash_compare(profile, uploaded_file)
 
         if is_verified:

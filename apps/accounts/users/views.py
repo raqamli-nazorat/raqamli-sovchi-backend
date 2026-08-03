@@ -6,6 +6,7 @@ from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status, views
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
@@ -114,6 +115,7 @@ class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
         instance.save(update_fields=["is_active"])
 
 
+
 class UserViewSet(BaseManageViewSet):
     queryset = (
         User.objects.select_related(
@@ -132,6 +134,30 @@ class UserViewSet(BaseManageViewSet):
         "profile__last_name",
     ]
     ordering_fields = ["created_at", "phone_number"]
+
+    @action(detail=True, methods=["post"], url_path="block")
+    def block_user(self, request, pk=None):
+        user = self.get_object()
+        user.is_blocked = True
+        user.save(update_fields=["is_blocked"])
+
+        from apps.core.utils.face import register_user_faces_as_blocked
+        register_user_faces_as_blocked(user, reason="Admin tomonidan bloklandi")
+
+        return Response(
+            {"message": "Foydalanuvchi va uning yuzi muvaffaqiyatli bloklandi.", "is_blocked": True},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"], url_path="unblock")
+    def unblock_user(self, request, pk=None):
+        user = self.get_object()
+        user.is_blocked = False
+        user.save(update_fields=["is_blocked"])
+        return Response(
+            {"message": "Foydalanuvchi blokdan chiqarildi.", "is_blocked": False},
+            status=status.HTTP_200_OK,
+        )
 
 
 class UserPledgeViewSet(BaseManageViewSet):
@@ -173,6 +199,12 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
             },
         )
 
+        if not created and user.is_blocked:
+            return Response(
+                {"detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         update_fields = []
         if not user.email and email:
             user.email = email
@@ -211,6 +243,12 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
             defaults={"auth_provider": AuthProvider.PHONE},
         )
 
+        if not created and user.is_blocked:
+            return Response(
+                {"detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         if not created and user.auth_provider != AuthProvider.PHONE:
             user.auth_provider = AuthProvider.PHONE
             user.save(update_fields=["auth_provider"])
@@ -239,6 +277,12 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
             email=email,
             defaults={"auth_provider": AuthProvider.EMAIL},
         )
+
+        if not created and user.is_blocked:
+            return Response(
+                {"detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         if not created and user.auth_provider != AuthProvider.EMAIL:
             user.auth_provider = AuthProvider.EMAIL

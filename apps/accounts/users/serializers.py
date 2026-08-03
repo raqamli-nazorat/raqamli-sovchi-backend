@@ -180,6 +180,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data: dict = super().validate(attrs)
         user = self.user
 
+        if user.is_blocked:
+            raise serializers.ValidationError({"detail": "Sizning hisobingiz bloklangan."})
+
         data["user"] = {
             "id": user.id,
             "phone_number": user.phone_number,

@@ -133,3 +133,30 @@ class UserPledge(BaseModel):
 
     def __str__(self):
         return f"{self.user.phone_number} - Badge: {self.has_serious_badge}"
+
+
+class BlockedFace(BaseModel):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="blocked_faces",
+        verbose_name="Foydalanuvchi",
+    )
+    embedding = models.JSONField(verbose_name="Yuz vektori (Embedding)")
+    reason = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Bloklanish sababi",
+    )
+
+    class Meta:
+        verbose_name = "Bloklangan yuz"
+        verbose_name_plural = "Bloklangan yuzlar"
+        db_table = "blocked_faces"
+
+    def __str__(self):
+        user_str = str(self.user) if self.user else "Anonim/Tizim"
+        return f"BlockedFace ({user_str}) - {self.created_at}"
