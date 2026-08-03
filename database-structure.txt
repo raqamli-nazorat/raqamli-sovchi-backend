@@ -45,8 +45,8 @@ PROFILES & CANDIDATES
         weight: integer
         region: FK Region
         district: FK District
-        health_status: enum (HEALTHY, DISABLED)
-        marital_status: enum (NEVER_MARRIED, DIVORCED)
+        health_status: FK HealthStatus [null]
+        marital_status: FK MaritalStatus [null]
         education_level: FK EducationLevel [null]
         nationality: FK Nationality [null]
         profession: FK Profession [null]
@@ -112,6 +112,24 @@ REFERENCES (Ma'lumotnomalar)
         updated_at: timestamp
 
     Profession ==> Kasb
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    EducationLevel ==> Ta'lim darajasi
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    MaritialStatus ==> Oilaviy holati
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+    
+    HealthStatus ==> Sog'liq holati
         id: uuid
         name: string [unique]
         created_at: timestamp
