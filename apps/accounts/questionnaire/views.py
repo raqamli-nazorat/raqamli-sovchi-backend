@@ -100,7 +100,9 @@ class QuestionOptionViewSet(BaseManageViewSet):
                 )
                 updated_count = len(to_update)
 
-        result_options = QuestionOption.objects.filter(question_id=question_id).order_by("option_letter")
+        result_options = QuestionOption.objects.filter(
+            question_id=question_id
+        ).order_by("option_letter")
         result_serializer = QuestionOptionSerializer(result_options, many=True)
 
         return Response(

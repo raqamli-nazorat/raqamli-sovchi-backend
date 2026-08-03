@@ -77,6 +77,7 @@ class ProfileSerializer(BaseModelSerializer):
             return None
 
         from apps.accounts.questionnaire.services import calculate_compatibility_score
+
         return calculate_compatibility_score(user_profile, obj)
 
 
@@ -134,13 +135,14 @@ class ProfileMeSerializer(BaseModelSerializer):
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        if instance.location:
+        loc = getattr(instance, "location", None)
+        if loc is not None and hasattr(loc, "x"):
             ret["location"] = {
-                "latitude": instance.location.y,
-                "longitude": instance.location.x,
+                "latitude": loc.y,
+                "longitude": loc.x,
             }
         else:
-            ret["location"] = None
+            ret["location"] = instance.location_data
         return ret
 
 

@@ -1,8 +1,16 @@
 from django.db import models
-from django.contrib.gis.db import models as gis_models
-from django.contrib.gis.geos import Point
 
-from apps.accounts.users.models import User, UserRole
+try:
+    from django.contrib.gis.db import models as gis_models
+    from django.contrib.gis.geos import Point
+
+    GIS_AVAILABLE = True
+except Exception:
+    gis_models = None
+    Point = None
+    GIS_AVAILABLE = False
+
+from apps.accounts.users.models import User
 from apps.core.base.models import BaseModel
 from apps.core.locations.models import District, Region
 
@@ -107,9 +115,7 @@ class Profile(BaseModel):
         related_name="profiles",
         verbose_name="Kasbi",
     )
-    has_children = models.BooleanField(
-        default=False, verbose_name="Farzandi bormi"
-    )
+    has_children = models.BooleanField(default=False, verbose_name="Farzandi bormi")
     children_count = models.PositiveSmallIntegerField(
         default=0, verbose_name="Farzandlar soni"
     )
@@ -117,7 +123,9 @@ class Profile(BaseModel):
         blank=True, null=True, verbose_name="Juftidan kutilayotgan talablar"
     )
 
-    bio = models.TextField(blank=True, null=True, verbose_name="O'zi haqida qo'shimcha ma'lumot")
+    bio = models.TextField(
+        blank=True, null=True, verbose_name="O'zi haqida qo'shimcha ma'lumot"
+    )
     voice_intro = models.FileField(
         upload_to="voice_intros/",
         blank=True,
@@ -138,13 +146,15 @@ class Profile(BaseModel):
         null=True,
         verbose_name="Uzunlik (Longitude)",
     )
-    location = gis_models.PointField(
-        geography=True,
-        srid=4326,
-        blank=True,
-        null=True,
-        verbose_name="GPS Nuqtasi (Location)",
-    )
+    if GIS_AVAILABLE:
+        location = gis_models.PointField(
+            geography=True,
+            srid=4326,
+            blank=True,
+            null=True,
+            verbose_name="GPS Nuqtasi (Location)",
+        )
+
     blur_photos = models.BooleanField(
         default=True, verbose_name="Rasmlarni xiralashtirish (Blur)"
     )
@@ -155,15 +165,27 @@ class Profile(BaseModel):
         db_table = "profiles"
 
     def save(self, *args, **kwargs):
-        if self.latitude is not None and self.longitude is not None:
-            try:
-                self.location = Point(float(self.longitude), float(self.latitude), srid=4326)
-            except Exception:
-                pass
-        elif self.location is not None:
-            self.longitude = self.location.x
-            self.latitude = self.location.y
+        if GIS_AVAILABLE:
+            if self.latitude is not None and self.longitude is not None:
+                try:
+                    self.location = Point(
+                        float(self.longitude), float(self.latitude), srid=4326
+                    )
+                except Exception:
+                    pass
+            elif getattr(self, "location", None) is not None:
+                self.longitude = self.location.x
+                self.latitude = self.location.y
         super().save(*args, **kwargs)
+
+    @property
+    def location_data(self):
+        if self.latitude is not None and self.longitude is not None:
+            return {
+                "latitude": float(self.latitude),
+                "longitude": float(self.longitude),
+            }
+        return None
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"

@@ -1,7 +1,9 @@
+import glob
 import os
-import environ
 from datetime import timedelta
 from pathlib import Path
+
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -17,6 +19,25 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
+
+# GDAL library configuration for GeoDjango / PostGIS
+_gdal_path = env("GDAL_LIBRARY_PATH", default=None)
+if not _gdal_path:
+    for _path in [
+        "/usr/lib/x86_64-linux-gnu/libgdal.so",
+        "/usr/lib/libgdal.so",
+        "/usr/local/lib/libgdal.so",
+    ]:
+        if os.path.exists(_path):
+            _gdal_path = _path
+            break
+    else:
+        _matches = glob.glob("/usr/lib/**/libgdal.so*", recursive=True)
+        if _matches:
+            _gdal_path = _matches[0]
+
+if _gdal_path:
+    GDAL_LIBRARY_PATH = _gdal_path
 
 DJANGO_APPS = [
     "unfold",

@@ -7,12 +7,6 @@ from apps.core.base.models import BaseModel
 from apps.core.utils.validators import phone_validator
 
 
-class UserRole(models.TextChoices):
-    GROOM = "groom", "Kuyov"
-    BRIDE = "bride", "Kelin"
-    REPRESENTATIVE = "representative", "Vakil"
-
-
 class AuthProvider(models.TextChoices):
     GOOGLE = "google", "Google"
     PHONE = "phone", "Phone"
