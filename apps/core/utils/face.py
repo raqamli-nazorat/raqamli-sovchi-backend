@@ -299,7 +299,9 @@ def register_user_faces_as_blocked(user, reason=None, embedding=None):
 
     from apps.accounts.users.models import BlockedFace
 
-    default_reason = reason or "Foydalanuvchi bloklanganligi sababli yuzi qora ro'yxatga olindi."
+    default_reason = (
+        reason or "Foydalanuvchi bloklanganligi sababli yuzi qora ro'yxatga olindi."
+    )
 
     if embedding:
         exists = BlockedFace.objects.filter(user=user, embedding=embedding).exists()
@@ -326,7 +328,9 @@ def register_user_faces_as_blocked(user, reason=None, embedding=None):
                         photo.embedding = emb
                         photo.save(update_fields=["embedding", "updated_at"])
                 except Exception as e:
-                    logger.warning("PhotoID=%s embedding olishda xatolik: %s", photo.id, e)
+                    logger.warning(
+                        "PhotoID=%s embedding olishda xatolik: %s", photo.id, e
+                    )
 
         if emb:
             exists = BlockedFace.objects.filter(user=user, embedding=emb).exists()
