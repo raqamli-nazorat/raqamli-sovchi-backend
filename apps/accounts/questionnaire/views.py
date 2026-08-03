@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
-from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
+from apps.core.base.views import BaseManageViewSet
 from apps.core.base.mixins import AutoSchemaMixin
 from .models import SectionType, Question, QuestionOption, UserAnswer
 from .serializers import (
@@ -16,7 +16,7 @@ from .serializers import (
 from .filters import QuestionFilter, UserAnswerFilter
 
 
-class SectionTypeViewSet(BaseReadOnlyViewSet):
+class SectionTypeViewSet(BaseManageViewSet):
     queryset = SectionType.objects.active()
     serializer_class = SectionTypeSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -24,7 +24,7 @@ class SectionTypeViewSet(BaseReadOnlyViewSet):
     ordering_fields = ["name", "created_at"]
 
 
-class QuestionViewSet(BaseReadOnlyViewSet):
+class QuestionViewSet(BaseManageViewSet):
     queryset = (
         Question.objects.select_related("section").prefetch_related("options").active()
     )
@@ -35,7 +35,7 @@ class QuestionViewSet(BaseReadOnlyViewSet):
     ordering_fields = ["order", "created_at"]
 
 
-class QuestionOptionViewSet(BaseReadOnlyViewSet):
+class QuestionOptionViewSet(BaseManageViewSet):
     queryset = QuestionOption.objects.select_related("question").active()
     serializer_class = QuestionOptionSerializer
 
