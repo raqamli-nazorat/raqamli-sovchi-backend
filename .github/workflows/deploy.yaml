@@ -37,6 +37,7 @@ jobs:
             pip install -r requirements.txt
             
             echo "3. Migratsiya va Statika"
+            python manage.py makemigrations --noinput
             python manage.py migrate --noinput
             python manage.py load_locations
             python manage.py load_questions
