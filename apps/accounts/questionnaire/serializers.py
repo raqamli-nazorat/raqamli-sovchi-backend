@@ -22,6 +22,8 @@ class QuestionOptionSerializer(BaseModelSerializer):
 
 class QuestionOptionBulkItemSerializer(serializers.Serializer):
     id = serializers.UUIDField(required=False, allow_null=True)
+    question = serializers.UUIDField(required=False, allow_null=True)
+    question_id = serializers.UUIDField(required=False, allow_null=True)
     option_letter = serializers.ChoiceField(
         choices=[("A", "A"), ("B", "B"), ("C", "C"), ("D", "D")], required=True
     )
