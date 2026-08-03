@@ -1,7 +1,8 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from apps.core.base.admin import BaseModelAdmin
-from .models import User, UserPledge, Role
+from .models import User, UserPledge, Role, BlockedFace
+from apps.core.utils.face import register_user_faces_as_blocked
 
 
 @admin.register(Role)
@@ -46,6 +47,8 @@ class UserAdmin(BaseModelAdmin):
         if obj.password and not obj.password.startswith("pbkdf2_"):
             obj.set_password(obj.password)
         super().save_model(request, obj, form, change)
+        if obj.is_blocked:
+            register_user_faces_as_blocked(obj, reason="Admin paneli orqali bloklandi")
 
 
 @admin.register(UserPledge)
@@ -60,3 +63,9 @@ class UserPledgeAdmin(BaseModelAdmin):
     )
     list_filter = ("accepted_terms", "has_serious_badge")
     search_fields = ("user__phone_number", "user__email", "ip_address")
+
+
+@admin.register(BlockedFace)
+class BlockedFaceAdmin(BaseModelAdmin):
+    list_display = ("id", "user", "reason", "created_at")
+    search_fields = ("user__phone_number", "user__email", "reason")
