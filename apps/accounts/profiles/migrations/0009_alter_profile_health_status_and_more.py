@@ -4,6 +4,56 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def populate_health_and_marital_statuses(apps, schema_editor):
+    HealthStatus = apps.get_model("references", "HealthStatus")
+    MaritalStatus = apps.get_model("references", "MaritalStatus")
+    Profile = apps.get_model("profiles", "Profile")
+
+    HEALTH_MAP = {
+        "healthy": "Sog'lom",
+        "disabled": "Nogironligi bor",
+    }
+
+    MARITAL_MAP = {
+        "never_married": "Turmush qurmagan / Bo'ydoq",
+        "divorced": "Ajrashgan",
+    }
+
+    health_objs = {}
+    for code, name in HEALTH_MAP.items():
+        obj, _ = HealthStatus.objects.get_or_create(name=name)
+        health_objs[code] = obj
+
+    marital_objs = {}
+    for code, name in MARITAL_MAP.items():
+        obj, _ = MaritalStatus.objects.get_or_create(name=name)
+        marital_objs[code] = obj
+
+    for p in Profile.objects.all():
+        old_health = getattr(p, "health_status", None)
+        old_marital = getattr(p, "marital_status", None)
+
+        updated_fields = []
+        if old_health:
+            if old_health in health_objs:
+                p.health_status_fk = health_objs[old_health]
+            else:
+                obj, _ = HealthStatus.objects.get_or_create(name=str(old_health))
+                p.health_status_fk = obj
+            updated_fields.append("health_status_fk")
+
+        if old_marital:
+            if old_marital in marital_objs:
+                p.marital_status_fk = marital_objs[old_marital]
+            else:
+                obj, _ = MaritalStatus.objects.get_or_create(name=str(old_marital))
+                p.marital_status_fk = obj
+            updated_fields.append("marital_status_fk")
+
+        if updated_fields:
+            p.save(update_fields=updated_fields)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -12,6 +62,52 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AddField(
+            model_name="profile",
+            name="health_status_fk",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="profiles_health_temp",
+                to="references.healthstatus",
+                verbose_name="Sog'liq holati",
+            ),
+        ),
+        migrations.AddField(
+            model_name="profile",
+            name="marital_status_fk",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="profiles_marital_temp",
+                to="references.maritalstatus",
+                verbose_name="Oilaviy holati",
+            ),
+        ),
+        migrations.RunPython(
+            populate_health_and_marital_statuses,
+            reverse_code=migrations.RunPython.noop,
+        ),
+        migrations.RemoveField(
+            model_name="profile",
+            name="health_status",
+        ),
+        migrations.RemoveField(
+            model_name="profile",
+            name="marital_status",
+        ),
+        migrations.RenameField(
+            model_name="profile",
+            old_name="health_status_fk",
+            new_name="health_status",
+        ),
+        migrations.RenameField(
+            model_name="profile",
+            old_name="marital_status_fk",
+            new_name="marital_status",
+        ),
         migrations.AlterField(
             model_name="profile",
             name="health_status",
