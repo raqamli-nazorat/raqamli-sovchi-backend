@@ -43,7 +43,11 @@ def can_view_profile_photos(request_user, target_profile):
     if is_female_candidate(target_profile):
         return has_accepted_match
 
-    if request_user.is_staff or request_user.is_superuser:
+    is_admin_role = (
+        getattr(request_user, "is_superuser", False)
+        or bool(request_user.role and not request_user.role.is_default)
+    )
+    if is_admin_role:
         return True
 
     if has_accepted_match:
