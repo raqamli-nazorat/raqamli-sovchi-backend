@@ -84,6 +84,8 @@ class UserSerializer(BaseModelSerializer):
                     "region": ["id", "name"],
                     "district": ["id", "name"],
                     "photos": ["id", "image", "is_main", "order", "created_at"],
+                    "health_status": ["id", "name"],
+                    "marital_status": ["id", "name"],
                 },
             },
         }
