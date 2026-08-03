@@ -35,17 +35,17 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "5 vaqt namozni masjidda/vaqtida ado etaman. Oilamda ham shariat hukmlari to‘liq bajarilishi "
-                        "shart. (Idealizatsiya nazorati)",
+                                "shart. (Idealizatsiya nazorati)",
                     },
                     {
                         "letter": "B",
                         "text": "Namozlarimni ado etishga harakat qilaman, lekin ba'zan vaqtida o‘qolmay qoladigan kunlarim ham "
-                        "bo‘ladi. Oilada majburlashga qarshiman.",
+                                "bo‘ladi. Oilada majburlashga qarshiman.",
                     },
                     {
                         "letter": "C",
                         "text": "Ibodatlarni muntazam qilmayman, lekin halol-haromni ajrataman va Islomiy axloqqa rioya "
-                        "qilaman.",
+                                "qilaman.",
                     },
                     {
                         "letter": "D",
@@ -63,17 +63,17 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Faqat hijobda bo‘lishi shart. Agar hijobda bo‘lmasa, to‘ydan keyin albatta o‘ranishi birinchi "
-                        "shartim.",
+                                "shartim.",
                     },
                     {
                         "letter": "B",
                         "text": "Hijobda bo‘lsa nur ustiga nur, lekin hijobda bo‘lmasa ham bosiq, avratini berkitib, iboli "
-                        "kiyinsa e'tirozim yo‘q.",
+                                "kiyinsa e'tirozim yo‘q.",
                     },
                     {
                         "letter": "C",
                         "text": "Kiyinish — uning shaxsiy xohishi. Zamonaviy kiyinsa ham, milliy kiyinsa ham qarshilik "
-                        "qilmayman.",
+                                "qilmayman.",
                     },
                     {
                         "letter": "D",
@@ -86,18 +86,18 @@ class Command(BaseCommand):
                 "section": "religious_spiritual",
                 "order": 3,
                 "text": "TIZIM TUZOQ SAVOLI (Lie Scale - Samimiylikni aniqlash): Moliyaviy tanglikda shubhali bo‘lsa-da, katta "
-                "daromad keltiradigan biror taklif tushsa, miyangizga birinchi bo‘lib qanday fikr keladi?",
+                        "daromad keltiradigan biror taklif tushsa, miyangizga birinchi bo‘lib qanday fikr keladi?",
                 "is_trap": True,
                 "options": [
                     {
                         "letter": "A",
                         "text": "Meni shubhali narsa umuman qiziqtirmaydi, darhol rad etaman, hech qachon ikkilanmaganman. "
-                        "(Puan: Samimiylik indeksi pasayadi — insoniy ikkillanish inkor qilingani uchun)",
+                                "(Puan: Samimiylik indeksi pasayadi — insoniy ikkillanish inkor qilingani uchun)",
                     },
                     {
                         "letter": "B",
                         "text": "Ichimda katta ikkillanish va vasvasa bo‘ladi, lekin xatodan qo‘rqib voz kechishga harakat "
-                        "qilaman. (Puan: Yuqori samimiylik)",
+                                "qilaman. (Puan: Yuqori samimiylik)",
                     },
                     {
                         "letter": "C",
@@ -119,7 +119,7 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Har kuni/haftada uyda birgalikda kitobxonlik va diniy dars soatlarini majburiy yo‘lga "
-                        "qo‘yamiz.",
+                                "qo‘yamiz.",
                     },
                     {
                         "letter": "B",
@@ -192,12 +192,12 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Ro‘zg‘or 100% mening bo‘ynimda. Ayolimning puli bo‘lsa ham, undan 1 so‘m so‘rashni erkaklik "
-                        "arimga ep ko‘rmayman.",
+                                "arimga ep ko‘rmayman.",
                     },
                     {
                         "letter": "B",
                         "text": "Asosiy xarajatlar menda, lekin ayolim ishlasa va xohlasa, o‘z ixtiyori bilan ro‘zg‘orga "
-                        "qarashishi mumkin.",
+                                "qarashishi mumkin.",
                     },
                     {
                         "letter": "C",
@@ -223,7 +223,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Faqat eroniy/erkaklardan xoli, ayollarga mos joyda (masalan, ta'lim, tibbiyot) ishlashiga "
-                        "ruxsat beraman.",
+                                "ruxsat beraman.",
                     },
                     {
                         "letter": "C",
@@ -278,7 +278,7 @@ class Command(BaseCommand):
                     {
                         "letter": "C",
                         "text": "Biznes va maqsadlarga tezroq erishish uchun bank kreditlaridan foydalanishni to‘g‘ri deb "
-                        "bilaman.",
+                                "bilaman.",
                     },
                     {
                         "letter": "D",
@@ -316,7 +316,7 @@ class Command(BaseCommand):
                 "section": "financial_governance",
                 "order": 12,
                 "text": "TIZIM TUZOQ SAVOLI (Moliyaviy inqiroz testi): Oila qurganingizdan keyin kutilmaganda ishingiz yurishmay, 6 "
-                "oy moliyaviy qiyinchilikda qolsangiz, ayolingizdan nimani kutasiz?",
+                        "oy moliyaviy qiyinchilikda qolsangiz, ayolingizdan nimani kutasiz?",
                 "is_trap": True,
                 "options": [
                     {
@@ -376,7 +376,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Ota-onamni tinglayman va hurmat qilaman, lekin oilamiz ichki qarorlarini ayolim bilan o‘zimiz "
-                        "olamiz.",
+                                "olamiz.",
                     },
                     {
                         "letter": "C",
@@ -393,7 +393,7 @@ class Command(BaseCommand):
                 "section": "relatives_relations",
                 "order": 15,
                 "text": "TIZIM TUZOQ SAVOLI (Ziddiyatli holat - Cross Validation): Onangiz va ayolingiz o‘rtasida kelishmovchilik "
-                "chiqib, onangiz nohaq bo‘lsa, nima qilasiz?",
+                        "chiqib, onangiz nohaq bo‘lsa, nima qilasiz?",
                 "is_trap": True,
                 "options": [
                     {
@@ -403,7 +403,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "O‘sha joyda indamayman, keyin alohida qolganda ayolimga vaziyatni bosiqlik bilan tushuntirib, "
-                        "ko‘nglini olaman.",
+                                "ko‘nglini olaman.",
                     },
                     {
                         "letter": "C",
@@ -429,7 +429,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Chidab bo‘lmas darajaga yetsagina ota-onam yoki xolis xakam (psixolog/domla) bilan "
-                        "maslahatlashaman.",
+                                "maslahatlashaman.",
                     },
                     {
                         "letter": "C",
@@ -452,7 +452,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Shariat va odob doirasida, oilamiz ishlariga xalaqit bermagan holda xohlagan paytida borishi "
-                        "mumkin.",
+                                "mumkin.",
                     },
                     {"letter": "C", "text": "Faqat men bilan birga borib keladi."},
                     {
@@ -475,7 +475,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Insoniylik va imkoniyat darajasida xizmat qiladi, ortiqcha rasmiyatchiliklarni talab "
-                        "qilmayman.",
+                                "qilmayman.",
                     },
                     {
                         "letter": "C",
@@ -489,18 +489,18 @@ class Command(BaseCommand):
                 "section": "character_crisis",
                 "order": 19,
                 "text": "TIZIM TUZOQ SAVOLI (Jahl va Emotsiya boshqaruvi - Lie Scale): Jahlingiz juda qattiq chiqqanda, o‘zingizni "
-                "tutishdagi haqiqiy holatingiz?",
+                        "tutishdagi haqiqiy holatingiz?",
                 "is_trap": True,
                 "options": [
                     {
                         "letter": "A",
                         "text": "Men umuman jahldor emasman, hech qachon baqirmayman, doim bosiqman. (Puan: Yolg‘onlik indeksi "
-                        "oshadi)",
+                                "oshadi)",
                     },
                     {
                         "letter": "B",
                         "text": "Ichimda kuchli g‘azab bo‘ladi, ba'zan baqirib yuborishim mumkin, lekin tez tinchlanib uzr "
-                        "so‘rayman. (Puan: Samimiy)",
+                                "so‘rayman. (Puan: Samimiy)",
                     },
                     {
                         "letter": "C",
@@ -773,12 +773,12 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Farz ibodatlarni (namoz, ro‘za) to‘liq ado etaman. Bo‘lajak oilamizda ham bu birinchi o‘rinda "
-                        "bo‘lishini xohlayman.",
+                                "bo‘lishini xohlayman.",
                     },
                     {
                         "letter": "B",
                         "text": "Ibodatlarni imkon qadar bajaraman, lekin ba'zan oqsaydigan vaqtlarim bo‘ladi. Majburlash va "
-                        "bosimga qarshiman.",
+                                "bosimga qarshiman.",
                     },
                     {
                         "letter": "C",
@@ -800,17 +800,17 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Shariatga muvofiq (hijobda) kiyinaman / to‘ydan keyin albatta hijobga kirish niyatidaman va "
-                        "erim buni qo‘llab-quvvatlashini xohlayman.",
+                                "erim buni qo‘llab-quvvatlashini xohlayman.",
                     },
                     {
                         "letter": "B",
                         "text": "Hijobda emasman, lekin milliy va odob doirasida bosiq, iboli kiyinaman. Erim kiyimim uchun "
-                        "doimiy bosim qilmasligini kutaman.",
+                                "doimiy bosim qilmasligini kutaman.",
                     },
                     {
                         "letter": "C",
                         "text": "Kiyinish uslubim o‘zimning erkin xohishim, bo‘lajak erim kiyimimga aralashmasligini "
-                        "xohlayman.",
+                                "xohlayman.",
                     },
                     {
                         "letter": "D",
@@ -823,18 +823,18 @@ class Command(BaseCommand):
                 "section": "religious_spiritual",
                 "order": 3,
                 "text": "TIZIM TUZOQ SAVOLI (Lie Scale - Samimiylikni aniqlash): Eringiz juda halol inson bo‘lsa-yu, lekin topishi "
-                "oz bo‘lib, dugonalaringizning erlaridan moddiy tomondan orqada qolsangiz, ichki reaksiyangiz?",
+                        "oz bo‘lib, dugonalaringizning erlaridan moddiy tomondan orqada qolsangiz, ichki reaksiyangiz?",
                 "is_trap": True,
                 "options": [
                     {
                         "letter": "A",
                         "text": "Men umuman kibr qilmayman, hech qachon boshqalarga havas qilmaganman, faqat shukr qilaman. "
-                        "(Puan: Yolg‘onlik indeksi oshadi)",
+                                "(Puan: Yolg‘onlik indeksi oshadi)",
                     },
                     {
                         "letter": "B",
                         "text": "Ba'zan ichimda havas yoki siqilish bo‘ladi, lekin erimning halolligini qadrlab, unga "
-                        "bildirmaslikka harakat qilaman. (Puan: Samimiy)",
+                                "bildirmaslikka harakat qilaman. (Puan: Samimiy)",
                     },
                     {
                         "letter": "C",
@@ -897,12 +897,12 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Erkak kishi oilaning mutlaq rahbari, oxirgi qaror va mas'uliyat doim unda bo‘lishi kerak va "
-                        "men unga bo‘ysunaman.",
+                                "men unga bo‘ysunaman.",
                     },
                     {
                         "letter": "B",
                         "text": "Erkak kishi yetakchi, lekin barcha qarorlar er-xotin o‘rtasidagi teng huquqli maslahat bilan "
-                        "qabul qilinadi.",
+                                "qabul qilinadi.",
                     },
                     {
                         "letter": "C",
@@ -928,7 +928,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Asosiy ta'minot erimning zimmasida bo‘ladi, lekin xohlasam va ishlasam, o‘z ixtiyorim bilan "
-                        "ro‘zg‘orga yordam berishim mumkin.",
+                                "ro‘zg‘orga yordam berishim mumkin.",
                     },
                     {
                         "letter": "C",
@@ -950,12 +950,12 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Uyda o‘tirib, oila va farzandlar tarbiyasi bilan shug‘ullanishni afzal ko‘raman "
-                        "(ishlamayman).",
+                                "(ishlamayman).",
                     },
                     {
                         "letter": "B",
                         "text": "Faqat ayollarga mos (ta'lim, tibbiyot va h.k.) va Islomiy shartlarga javob beradigan joyda "
-                        "ishlashimga/o‘qishimga ruxsat berishini xohlayman.",
+                                "ishlashimga/o‘qishimga ruxsat berishini xohlayman.",
                     },
                     {
                         "letter": "C",
@@ -1047,7 +1047,7 @@ class Command(BaseCommand):
                 "section": "financial_governance",
                 "order": 12,
                 "text": "TIZIM TUZOQ SAVOLI (Sabr va Moliya testi): Eringiz kasal bo‘lib yoki ishidan ayrilib, 6 oy uyda qolib "
-                "ketganida, harakatlaringiz?",
+                        "ketganida, harakatlaringiz?",
                 "is_trap": True,
                 "options": [
                     {
@@ -1078,7 +1078,7 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Doimiy ravishda qaynona-qaynotam bilan birga yashash va ularning xizmatini qilib duosini "
-                        "olish.",
+                                "olish.",
                     },
                     {
                         "letter": "B",
@@ -1108,7 +1108,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "O‘sha joyda indamayman, lekin keyin erimga alohida qolganda bosiqlik bilan tushuntirib "
-                        "beraman.",
+                                "beraman.",
                     },
                     {
                         "letter": "C",
@@ -1125,7 +1125,7 @@ class Command(BaseCommand):
                 "section": "relatives_relations",
                 "order": 15,
                 "text": "TIZIM TUZOQ SAVOLI (Qaynona va Ota-ona balansi - Cross Validation): Qaynonangiz va o‘z onangizning "
-                "qarashlari bir-biriga qarama-qarshi kelib qolsa, kimning gapiga amal qilasiz?",
+                        "qarashlari bir-biriga qarama-qarshi kelib qolsa, kimning gapiga amal qilasiz?",
                 "is_trap": True,
                 "options": [
                     {
@@ -1160,7 +1160,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Faqat juda chidab bo‘lmas holatdagina o‘z ota-onamga yoki xolis xakamga (psixolog/domla) "
-                        "murojaat qilaman.",
+                                "murojaat qilaman.",
                     },
                     {
                         "letter": "C",
@@ -1208,7 +1208,7 @@ class Command(BaseCommand):
                     {
                         "letter": "B",
                         "text": "Faqat Islomda bor va insoniylik doirasidagi xizmatlarni qilaman, ortiqcha urf-odatlarga hojat "
-                        "yo‘q.",
+                                "yo‘q.",
                     },
                     {
                         "letter": "C",
@@ -1225,18 +1225,18 @@ class Command(BaseCommand):
                 "section": "character_crisis",
                 "order": 19,
                 "text": "TIZIM TUZOQ SAVOLI (Jahl va Emotsiya boshqaruvi - Lie Scale): Eringiz sababsiz sizga baqirsa yoki "
-                "kayfiyatingizni buzsa, reaksiyangiz?",
+                        "kayfiyatingizni buzsa, reaksiyangiz?",
                 "is_trap": True,
                 "options": [
                     {
                         "letter": "A",
                         "text": "Men hech qachon xafa bo‘lmayman va jahlim chiqmaydi, doim kulib turaman. (Puan: Yolg‘onlik "
-                        "indeksi oshadi)",
+                                "indeksi oshadi)",
                     },
                     {
                         "letter": "B",
                         "text": "Ichimdan ranjiyman va yig‘lab olishim mumkin, lekin janjal qilmay, tinchlanishini kutaman. "
-                        "(Puan: Samimiy)",
+                                "(Puan: Samimiy)",
                     },
                     {
                         "letter": "C",
@@ -1258,7 +1258,7 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Oilamizda tinchlik saqlanishi uchun, kim haq bo‘lishidan qat'i nazar, birinchi bo‘lib yon "
-                        "bosaman.",
+                                "bosaman.",
                     },
                     {
                         "letter": "B",
@@ -1267,7 +1267,7 @@ class Command(BaseCommand):
                     {
                         "letter": "C",
                         "text": "Erkak kishi oilada katta bo‘lgani uchun har doim birinchi qadamni tashlab, ko‘nglimni olishi "
-                        "kerak.",
+                                "kerak.",
                     },
                     {
                         "letter": "D",
@@ -1285,12 +1285,12 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "To‘ydan keyin dugonalar bilan uchrashuvlar va ortiqcha xobbilar ikkinchi darajaga o‘tishi yoki "
-                        "to‘xtashi kerak.",
+                                "to‘xtashi kerak.",
                     },
                     {
                         "letter": "B",
                         "text": "Erimdan ruxsat olgan holda, oilamga va ro‘zg‘orimga zarar yetkazmagan tarzda me'yorida vaqt "
-                        "ajrataman.",
+                                "ajrataman.",
                     },
                     {
                         "letter": "C",
@@ -1503,7 +1503,7 @@ class Command(BaseCommand):
                     {
                         "letter": "A",
                         "text": "Erimning roziligini olgan baxtli kelin, mustahkam iymonli oila va solih/soliha farzandlarning "
-                        "onasi bo‘lish.",
+                                "onasi bo‘lish.",
                     },
                     {
                         "letter": "B",
@@ -1521,8 +1521,6 @@ class Command(BaseCommand):
             },
         ]
 
-        self.stdout.write("Savollar va variantlar bulk_create orqali yuklanmoqda...")
-
         SECTION_NAME_MAP = {
             "religious_spiritual": "I. Diniy-Ma'naviy Qadriyatlar va E'tiqod",
             "financial_governance": "II. Oila Boshqaruvi va Moliyaviy Qarashlar",
@@ -1536,41 +1534,73 @@ class Command(BaseCommand):
             sec_obj, _ = SectionType.objects.get_or_create(name=name)
             section_type_map[code] = sec_obj
 
+        existing_questions = {
+            (q.target_gender, q.order): q
+            for q in Question.objects.all()
+        }
+
         questions_to_create = []
+        data_to_process = []
+
         for item in questions_data:
             sec_code = item["section"]
             sec_instance = section_type_map.get(sec_code)
             if not sec_instance:
                 sec_instance, _ = SectionType.objects.get_or_create(name=sec_code)
 
-            questions_to_create.append(
-                Question(
+            key = (item["gender"], item["order"])
+
+            if key not in existing_questions:
+                q_obj = Question(
                     section=sec_instance,
                     text=item["text"],
                     target_gender=item["gender"],
                     is_trap_question=item["is_trap"],
                     order=item["order"],
                 )
-            )
+                questions_to_create.append(q_obj)
+                data_to_process.append((q_obj, item["options"]))
+            else:
+                q_obj = existing_questions[key]
+                data_to_process.append((q_obj, item["options"]))
 
-        created_questions = Question.objects.bulk_create(questions_to_create)
+        created_questions = []
+        if questions_to_create:
+            created_questions = Question.objects.bulk_create(questions_to_create)
+            self.stdout.write(f"{len(created_questions)} ta yangi savol bazaga qo'shildi.")
+        else:
+            self.stdout.write("Barcha savollar allaqachon bazada mavjud.")
+
+        all_question_ids = [q.id for q, _ in data_to_process if q.id]
+        existing_options = set(
+            QuestionOption.objects.filter(question_id__in=all_question_ids)
+            .values_list("question_id", "option_letter")
+        )
 
         options_to_create = []
-        for q_obj, item in zip(created_questions, questions_data):
-            for opt in item["options"]:
-                options_to_create.append(
-                    QuestionOption(
-                        question=q_obj,
-                        option_letter=opt["letter"],
-                        text=opt["text"],
-                        weight=0,
-                    )
-                )
+        for q_obj, options_list in data_to_process:
+            for opt in options_list:
+                opt_key = (q_obj.id, opt["letter"])
 
-        created_options = QuestionOption.objects.bulk_create(options_to_create)
+                if opt_key not in existing_options:
+                    options_to_create.append(
+                        QuestionOption(
+                            question=q_obj,
+                            option_letter=opt["letter"],
+                            text=opt["text"],
+                            weight=0,
+                        )
+                    )
+
+        created_options = []
+        if options_to_create:
+            created_options = QuestionOption.objects.bulk_create(options_to_create)
+            self.stdout.write(f"{len(created_options)} ta yangi variant bazaga qo'shildi.")
+        else:
+            self.stdout.write("Barcha variantlar allaqachon bazada mavjud.")
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Muvaffaqiyatli saqlandi! {len(created_questions)} ta savol va {len(created_options)} ta variant bulk_create orqali kiritildi."
+                f"Jarayon yakunlandi! {len(created_questions)} ta yangi savol va {len(created_options)} ta yangi variant yaratildi."
             )
         )
