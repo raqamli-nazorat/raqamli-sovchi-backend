@@ -1523,11 +1523,29 @@ class Command(BaseCommand):
 
         self.stdout.write("Savollar va variantlar bulk_create orqali yuklanmoqda...")
 
+        SECTION_NAME_MAP = {
+            "religious_spiritual": "I. Diniy-Ma'naviy Qadriyatlar va E'tiqod",
+            "financial_governance": "II. Oila Boshqaruvi va Moliyaviy Qarashlar",
+            "relatives_relations": "III. Qarindoshlar va Qaynona-Kelin Munosabatlari",
+            "character_crisis": "IV. Harakter, Psixologik Muvofiqlik va Inqiroz",
+            "future_plans": "V. Kelajak Rejalari va Maishiy Hayot",
+        }
+
+        section_type_map = {}
+        for code, name in SECTION_NAME_MAP.items():
+            sec_obj, _ = SectionType.objects.get_or_create(name=name)
+            section_type_map[code] = sec_obj
+
         questions_to_create = []
         for item in questions_data:
+            sec_code = item["section"]
+            sec_instance = section_type_map.get(sec_code)
+            if not sec_instance:
+                sec_instance, _ = SectionType.objects.get_or_create(name=sec_code)
+
             questions_to_create.append(
                 Question(
-                    section=item["section"],
+                    section=sec_instance,
                     text=item["text"],
                     target_gender=item["gender"],
                     is_trap_question=item["is_trap"],
