@@ -44,11 +44,33 @@ class QuestionOptionViewSet(BaseManageViewSet):
 
     @action(detail=False, methods=["post", "put", "patch"], url_path="bulk")
     def bulk_options(self, request, *args, **kwargs):
-        serializer = QuestionOptionBulkSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        """
+        Bulk create and bulk update question options in a single request.
+        Supports both direct Array [] payload and Dictionary {} payload.
+        """
+        if isinstance(request.data, list):
+            serializer = QuestionOptionBulkItemSerializer(data=request.data, many=True)
+            serializer.is_valid(raise_exception=True)
+            options_data = serializer.validated_data
+            if not options_data:
+                return Response(
+                    {"detail": "Kamida 1 ta variant yuborilishi kerak."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        question_id = serializer.validated_data["question_id"]
-        options_data = serializer.validated_data["options"]
+            question_id = options_data[0].get("question") or options_data[0].get(
+                "question_id"
+            )
+            if not question_id:
+                return Response(
+                    {"detail": "question yoki question_id ko'rsatilishi shart."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            serializer = QuestionOptionBulkSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            question_id = serializer.validated_data["question_id"]
+            options_data = serializer.validated_data["options"]
 
         existing_options = {
             opt.option_letter: opt
