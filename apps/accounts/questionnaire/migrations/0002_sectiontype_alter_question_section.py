@@ -5,6 +5,34 @@ import uuid
 from django.db import migrations, models
 
 
+def populate_section_types_and_link(apps, schema_editor):
+    SectionType = apps.get_model("questionnaire", "SectionType")
+    Question = apps.get_model("questionnaire", "Question")
+
+    SECTION_MAP = {
+        "religious_spiritual": "I. Diniy-Ma'naviy Qadriyatlar va E'tiqod",
+        "financial_governance": "II. Oila Boshqaruvi va Moliyaviy Qarashlar",
+        "relatives_relations": "III. Qarindoshlar va Qaynona-Kelin Munosabatlari",
+        "character_crisis": "IV. Harakter, Psixologik Muvofiqlik va Inqiroz",
+        "future_plans": "V. Kelajak Rejalari va Maishiy Hayot",
+    }
+
+    sec_objs = {}
+    for code, name in SECTION_MAP.items():
+        sec, _ = SectionType.objects.get_or_create(name=name)
+        sec_objs[code] = sec
+
+    for q in Question.objects.all():
+        old_val = getattr(q, "section", None)
+        if old_val:
+            if old_val in sec_objs:
+                q.section_id = sec_objs[old_val]
+            else:
+                sec, _ = SectionType.objects.get_or_create(name=str(old_val))
+                q.section_id = sec
+            q.save(update_fields=["section_id"])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -54,6 +82,30 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "Savol bo'limlari",
                 "db_table": "section_types",
             },
+        ),
+        migrations.AddField(
+            model_name="question",
+            name="section_id",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="questions_new",
+                to="questionnaire.sectiontype",
+                verbose_name="Bo'lim",
+            ),
+        ),
+        migrations.RunPython(
+            populate_section_types_and_link,
+            reverse_code=migrations.RunPython.noop,
+        ),
+        migrations.RemoveField(
+            model_name="question",
+            name="section",
+        ),
+        migrations.RenameField(
+            model_name="question",
+            old_name="section_id",
+            new_name="section",
         ),
         migrations.AlterField(
             model_name="question",
