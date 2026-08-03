@@ -90,21 +90,21 @@ class Command(BaseCommand):
                 "is_trap": True,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 2,
                         "text": "Meni shubhali narsa umuman qiziqtirmaydi, darhol rad etaman, hech qachon ikkilanmaganman. "
                         "(Puan: Samimiylik indeksi pasayadi — insoniy ikkillanish inkor qilingani uchun)",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Ichimda katta ikkillanish va vasvasa bo‘ladi, lekin xatodan qo‘rqib voz kechishga harakat "
                         "qilaman. (Puan: Yuqori samimiylik)",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "Vaziyatga qarayman, agar oilam juda muhtoj bo‘lsa, bir martaga ko‘z yumishim mumkin.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Asosiy maqsad — oilani qiyinchilikdan olib chiqish, imkoniyatdan foydalanaman.",
                     },
                 ],
@@ -117,20 +117,20 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 8,
                         "text": "Har kuni/haftada uyda birgalikda kitobxonlik va diniy dars soatlarini majburiy yo‘lga "
                         "qo‘yamiz.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Barchamiz mustaqil ilm olamiz, xohlovchilarga sharoit yaratib beraman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "Asosiy e'tiborni kasbiy, moliyaviy va IT/xorijiy dillarni o‘rganishga qaratamiz.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Hayotning o‘zi eng katta ta'lim, alohida dars rejalariga hojat yo‘q.",
                     },
                 ],
@@ -147,12 +147,12 @@ class Command(BaseCommand):
                         "text": "Islomiy tarbiya, namoz va Qur'on ta'limi.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 7,
                         "text": "Zamonaviy bilimlar, erkin fikrlash va dunyoviy muvaffaqiyat.",
                     },
-                    {"letter": "C", "weight": 5, "text": "Sport, jismoniy va ruhiy matonat."},
+                    {"letter": "C", "weight": 6, "text": "Sport, jismoniy va ruhiy matonat."},
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 4,
                         "text": "Kattalarga bo‘ysunish va so‘zsiz intizom.",
                     },
                 ],
@@ -165,19 +165,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 6,
                         "text": "Oxirgi qaror doim menda bo‘ladi. Ayolim mening qarorlarimga e'tirozsiz bo‘ysunishi kerak.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Barcha masalalarda maslahatlashamiz, lekin yakuniy mas'uliyat va qaror baribir menda bo‘ladi.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 8,
                         "text": "Oilada to‘liq tenglik bo‘ladi, muhim qarorlar faqat bir ovozdan maqullansa ijro etiladi.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 7,
                         "text": "Vaziyatga qarab, qaysi sohani kim yaxshi bilsa, o‘sha qaror qiladi.",
                     },
                 ],
@@ -195,7 +195,7 @@ class Command(BaseCommand):
                         "arimga ep ko‘rmayman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Asosiy xarajatlar menda, lekin ayolim ishlasa va xohlasa, o‘z ixtiyori bilan ro‘zg‘orga "
                         "qarashishi mumkin.",
                     },
@@ -204,7 +204,7 @@ class Command(BaseCommand):
                         "text": "Ro‘zg‘or va barcha xarajatlar er va xotin o‘rtasida teng (50/50) bo‘linishi kerak.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Kim ko‘proq topsa, o‘sha ko‘proq xarajatni qoplaydi.",
                     },
                 ],
@@ -217,20 +217,20 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 4,
                         "text": "Ishlashiga mutlaqo qarshiman. Ayolning joyi — uyda, oila va farzandlar bag‘rida.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Faqat eroniy/erkaklardan xoli, ayollarga mos joyda (masalan, ta'lim, tibbiyot) ishlashiga "
                         "ruxsat beraman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "O‘z karyerasini qurishiga, o‘qishiga va ishlashiga to‘liq erkinlik beraman.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 5,
                         "text": "Faqat oilada moliyaviy qiyinchilik bo‘lgan taqdirdagina ishlagani ma'qul.",
                     },
                 ],
@@ -243,19 +243,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 5,
                         "text": "Pulning hammasi menda turadi, ayolimga ehtiyojlariga qarab berib boraman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Topgan pulimni uyga keltiraman, kundalik ro‘zg‘or xarajatlarini ayolim taqsimlaydi.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Barcha daromadlar umumiy hisobga tushadi va har bir xarajat birgalikda rejalashtiriladi.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Aniq reja shart emas, har kim ehtiyojiga qarab ishlatadi.",
                     },
                 ],
@@ -276,7 +276,7 @@ class Command(BaseCommand):
                         "text": "Zarafatizatsiya va o‘ta zarur holatlarda (uy yoki davolanish) foizsiz qarz olishim mumkin.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 4,
                         "text": "Biznes va maqsadlarga tezroq erishish uchun bank kreditlaridan foydalanishni to‘g‘ri deb "
                         "bilaman.",
                     },
@@ -294,7 +294,7 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 4,
                         "text": "Moliya meniki bo‘lgani uchun bir o‘zim qaror qilaman.",
                     },
                     {
@@ -302,11 +302,11 @@ class Command(BaseCommand):
                         "text": "Ayolim bilan maslahatlashaman, lekin oxirgi to‘xtamni o‘zim qilaman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Ikkalamiz ham 100% rozi bo‘lmagunimizcha xarid qilinmaydi.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Kimning g‘oyasi yoki puli bo‘lsa, o‘sha hal qiladi.",
                     },
                 ],
@@ -320,15 +320,15 @@ class Command(BaseCommand):
                 "is_trap": True,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 8,
                         "text": "Sabr qilishini va hech qachon nolib, menga bosim o‘tkazmasligini.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Ma'naviy qo‘llab-quvvatlashini va xarajatlarni tejashini.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "O‘zi ham ishga kirib, ro‘zg‘orga pul olib kelishini.",
                     },
                     {
@@ -345,7 +345,7 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 5,
                         "text": "Doimiy ravishda ota-onam bilan birga yashaymiz. Ayolim ularga xizmat qiladi.",
                     },
                     {
@@ -353,11 +353,11 @@ class Command(BaseCommand):
                         "text": "Dastlab ota-onam bilan yashaymiz, vaqti kelib sharoit bo‘lsa alohida chiqamiz.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 9,
                         "text": "To‘ydan darhol alohida uyda (yoki ijarada) yashaymiz.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 10,
                         "text": "Ota-onamning salomatligi va ehtiyojiga qarab vaziyat hal qiladi.",
                     },
                 ],
@@ -370,20 +370,20 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 3,
                         "text": "Ota-onamning gapi men uchun qonun. Ularning har qanday aralashuviga ayolim bo‘ysunishi shart.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Ota-onamni tinglayman va hurmat qilaman, lekin oilamiz ichki qarorlarini ayolim bilan o‘zimiz "
                         "olamiz.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "Shaxsiy oilaviy masalalarimizga ota-onamni umuman aralashtirmayman.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 6,
                         "text": "Kim haq bo‘lsa, o‘shaning tarafida bo‘laman.",
                     },
                 ],
@@ -397,16 +397,16 @@ class Command(BaseCommand):
                 "is_trap": True,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 3,
                         "text": "Baribir onam tarafini olaman, chunki onaga raddiya berib bo‘lmaydi.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "O‘sha joyda indamayman, keyin alohida qolganda ayolimga vaziyatni bosiqlik bilan tushuntirib, "
                         "ko‘nglini olaman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "Onamga odob bilan nohaq ekanliklarini o‘sha yerning o‘zida tushuntiraman.",
                     },
                     {
@@ -432,10 +432,10 @@ class Command(BaseCommand):
                         "maslahatlashaman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 3,
                         "text": "Do‘stlarim va ota-onam bilan bo‘lishib, maslahat so‘rab turaman.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Vaziyatga qarab ish tutaman."},
+                    {"letter": "D", "weight": 4, "text": "Vaziyatga qarab ish tutaman."},
                 ],
             },
             {
@@ -446,17 +446,17 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 4,
                         "text": "Faqat men ruxsat bergan va belgilab qo‘ygan vaqtlardagina (masalan, haftada 1 marta) boradi.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Shariat va odob doirasida, oilamiz ishlariga xalaqit bermagan holda xohlagan paytida borishi "
                         "mumkin.",
                     },
-                    {"letter": "C", "weight": 5, "text": "Faqat men bilan birga borib keladi."},
+                    {"letter": "C", "weight": 6, "text": "Faqat men bilan birga borib keladi."},
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 8,
                         "text": "Bu masalani cheklamayman, o‘zi hal qiladi.",
                     },
                 ],
@@ -469,19 +469,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 5,
                         "text": "Xonadonimizning barcha milliy urf-odatlari va kelinlik xizmatlarini to‘liq bajarishi shart.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Insoniylik va imkoniyat darajasida xizmat qiladi, ortiqcha rasmiyatchiliklarni talab "
                         "qilmayman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 8,
                         "text": "Kelin — xizmatkor emas. Ota-onamga hurmat ko‘rsatsa yetarli, xizmat qilishga majbur emas.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Urf-odatlarga e'tibor bermayman."},
+                    {"letter": "D", "weight": 4, "text": "Urf-odatlarga e'tibor bermayman."},
                 ],
             },
             {
@@ -498,12 +498,12 @@ class Command(BaseCommand):
                         "oshadi)",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Ichimda kuchli g‘azab bo‘ladi, ba'zan baqirib yuborishim mumkin, lekin tez tinchlanib uzr "
                         "so‘rayman. (Puan: Samimiy)",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "Jim bo‘lib olaman, xonani tark etaman va bir necha soat umuman gaplashmayman.",
                     },
                     {
@@ -524,15 +524,15 @@ class Command(BaseCommand):
                         "text": "Erkak kishi sifatida oilamda tinchlik bo‘lishi uchun birinchi bo‘lib men qadam tashlayman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 5,
                         "text": "Kim aybdor va nohaq bo‘lsa, o‘sha kelib uzr so‘rashi shart.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 4,
                         "text": "Ayol kishi birinchi bo‘lib yon bosishi va hurmat ko‘rsatishi kerak.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Vaqt o‘zi hammasini joyiga solishini kutaman.",
                     },
                 ],
@@ -549,14 +549,14 @@ class Command(BaseCommand):
                         "text": "To‘ydan keyin choyxona va do‘stlar ikkinchi darajaga o‘tadi, asosiy vaqtim oilamniki bo‘ladi.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Oilaga zarar yetkazmagan holda, me'yorida do‘stlarim bilan ko‘rishib turaman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 3,
                         "text": "Do‘stlarim va xobbilarim daxlsiz, ayolim bunaqa narsalarga aralashmasligi kerak.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Vaziyat va kayfiyatga qarab."},
+                    {"letter": "D", "weight": 5, "text": "Vaziyat va kayfiyatga qarab."},
                 ],
             },
             {
@@ -571,14 +571,14 @@ class Command(BaseCommand):
                         "text": "Bosiqlik bilan tinglayman, agar e'tiroz o‘rinli bo‘lsa, o‘zimni tuzataman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Bosiqlik bilan tinglayman, lekin o‘z pozitsiyam va sabablarimni tushuntiraman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 3,
                         "text": "Ranjiyman va ayolimga ham uning kamchiliklarini ko‘rsatib qo‘yaman.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Tanqidni umuman yoqtirmayman."},
+                    {"letter": "D", "weight": 1, "text": "Tanqidni umuman yoqtirmayman."},
                 ],
             },
             {
@@ -589,19 +589,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 6,
                         "text": "Meni yolg‘iz qoldirishini va tegmasligini.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Yonimda bo‘lib, tinglashini va ma'naviy dalda berishini.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 8,
                         "text": "Hissiyotlarga berilmay, amaliy maslahat berishini.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 7,
                         "text": "Kayfiyatimni ko‘taradigan biror narsa qilishini.",
                     },
                 ],
@@ -614,14 +614,14 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 7,
                         "text": "Darhol va issig‘ida hammasini ochiq-oydin gaplashib olish.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Hissiyotlar va jahl bosilgach, 1-2 kundan keyin bosiqlik bilan gaplashish.",
                     },
-                    {"letter": "C", "weight": 5, "text": "Uchinchi shaxs orqali hal qilish."},
+                    {"letter": "C", "weight": 3, "text": "Uchinchi shaxs orqali hal qilish."},
                     {
                         "letter": "D", "weight": 2,
                         "text": "Vaqt o‘tishi bilan unutilib ketishini kutish.",
@@ -636,18 +636,18 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 8,
                         "text": "Iloji boricha tezroq (Alloh qachon bersa).",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "1-2 yil bir-birimizni tushunib, moliyaviy barqarorlashib keyin.",
                     },
                     {
                         "letter": "C", "weight": 5,
                         "text": "Avval karyera/maqsadlarni amalga oshirib, keyin.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Ayolim bilan birgalikda hal qilamiz."},
+                    {"letter": "D", "weight": 9, "text": "Ayolim bilan birgalikda hal qilamiz."},
                 ],
             },
             {
@@ -657,17 +657,17 @@ class Command(BaseCommand):
                 "text": "Farzand tarbiyasidagi asosiy shaxsiy uslubingiz?",
                 "is_trap": False,
                 "options": [
-                    {"letter": "A", "weight": 10, "text": "Qattiqqo‘llik, intizom va diniy ruhiyat."},
+                    {"letter": "A", "weight": 7, "text": "Qattiqqo‘llik, intizom va diniy ruhiyat."},
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Do‘stona, tushunadigan va har qanday holatda qo‘llab-quvvatlaydigan.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "Erkinlik beradigan va mustaqil bo‘lishiga qo‘yib beradigan.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Onasi tarbiya beradi, men faqat moddiy ta'minlayman.",
                     },
                 ],
@@ -680,16 +680,16 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 3,
                         "text": "Uy ishlari — to‘liq ayolning vazifasi, men aralashmayman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Sunnatga muvofiq, imkon va bo‘sh vaqtim bo‘lganda yordam berib turaman.",
                     },
-                    {"letter": "C", "weight": 5, "text": "Uy ishlari teng 50/50 bo‘linishi kerak."},
+                    {"letter": "C", "weight": 7, "text": "Uy ishlari teng 50/50 bo‘linishi kerak."},
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 5,
                         "text": "Faqat ayolim kasal bo‘lganda yoki ulgurmagandagina yordam beraman.",
                     },
                 ],
@@ -702,7 +702,7 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 9,
                         "text": "Uyda, ayolim va oilam davrasida tinchlikda.",
                     },
                     {
@@ -710,10 +710,10 @@ class Command(BaseCommand):
                         "text": "Sayohatlarda, tabiat qo‘ynida va faol tarzda.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Ota-onam va qarindoshlarimni ziyorat qilish bilan.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Do‘stlarim va jamoatim bilan."},
+                    {"letter": "D", "weight": 4, "text": "Do‘stlarim va jamoatim bilan."},
                 ],
             },
             {
@@ -724,15 +724,15 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 9,
                         "text": "Doimiy ravishda sport va to‘g‘ri ovqatlanishga e'tibor berish shart.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 4,
                         "text": "Kasal bo‘lgandagina shifokorga murojaat qilish yetarli.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Psixologik salomatlik va profilaktika juda muhim.",
                     },
                     {"letter": "D", "weight": 2, "text": "Bunga alohida e'tibor bermayman."},
@@ -750,15 +750,15 @@ class Command(BaseCommand):
                         "text": "Mustahkam iymonli oila, solih farzandlar va xonadonimda tinchlik.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 7,
                         "text": "Shaxsiy uy-joy, mashina va moliyaviy erkinlik.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 8,
                         "text": "Ayolim bilan birgalikda jamiyatda va sohamizda katta muvaffaqiyatga erishish.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 10,
                         "text": "Bir-birimizga bo‘lgan muhabbat va hurmatimiz saqlanib qolgani.",
                     },
                 ],
@@ -827,21 +827,21 @@ class Command(BaseCommand):
                 "is_trap": True,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 2,
                         "text": "Men umuman kibr qilmayman, hech qachon boshqalarga havas qilmaganman, faqat shukr qilaman. "
                         "(Puan: Yolg‘onlik indeksi oshadi)",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Ba'zan ichimda havas yoki siqilish bo‘ladi, lekin erimning halolligini qadrlab, unga "
                         "bildirmaslikka harakat qilaman. (Puan: Samimiy)",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "Erimga ko‘proq harakat qilishini va topishini tushuntirib, talab qo‘yaman.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "O‘zim ham ishga kirib, yetishmovchilikni yopishga harakat qilaman.",
                     },
                 ],
@@ -854,19 +854,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 8,
                         "text": "Erim bilan birgalikda kitobxonlik va ilm olish darslarini yo‘lga qo‘yishni orzu qilaman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Har kim o‘zi mustaqil ilm olgani ma'qul, alohida maxsus jadvallarga hojat yo‘q.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "Faqat kasbiy va dunyoviy rivojlanishga e'tibor qaratishimiz kerak.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Ilm olish bo‘sh vaqtga bog‘liq, bunga oilada alohida urg‘u bermayman.",
                     },
                 ],
@@ -880,11 +880,11 @@ class Command(BaseCommand):
                 "options": [
                     {"letter": "A", "weight": 10, "text": "Diniy ta'lim va go‘zal Islomiy axloq."},
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 7,
                         "text": "Zamonaviy bilimlar (chet dillari, IT) va mustaqil fikrlash.",
                     },
-                    {"letter": "C", "weight": 5, "text": "Sport va jismoniy salomatlik."},
-                    {"letter": "D", "weight": 2, "text": "Intizom va ota-onaga bo‘ysunish."},
+                    {"letter": "C", "weight": 6, "text": "Sport va jismoniy salomatlik."},
+                    {"letter": "D", "weight": 4, "text": "Intizom va ota-onaga bo‘ysunish."},
                 ],
             },
             {
@@ -900,7 +900,7 @@ class Command(BaseCommand):
                         "men unga bo‘ysunaman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Erkak kishi yetakchi, lekin barcha qarorlar er-xotin o‘rtasidagi teng huquqli maslahat bilan "
                         "qabul qilinadi.",
                     },
@@ -909,7 +909,7 @@ class Command(BaseCommand):
                         "text": "Oilada yetakchi yo‘q, barcha masalalarda to‘liq tenglik (demokratiya) bo‘lishi kerak.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Vaziyatga qarab, kimgadir mas'uliyat topshiriladi.",
                     },
                 ],
@@ -935,7 +935,7 @@ class Command(BaseCommand):
                         "text": "Byudjet umumiy bo‘lishi kerak, er-xotin birgalikda topib, birgalikda sarflaymiz.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Kim ko‘proq topsa, o‘sha ko‘proq xarajatlarni qoplagani ma'qul.",
                     },
                 ],
@@ -948,21 +948,21 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 4,
                         "text": "Uyda o‘tirib, oila va farzandlar tarbiyasi bilan shug‘ullanishni afzal ko‘raman "
                         "(ishlamayman).",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Faqat ayollarga mos (ta'lim, tibbiyot va h.k.) va Islomiy shartlarga javob beradigan joyda "
                         "ishlashimga/o‘qishimga ruxsat berishini xohlayman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "O‘z karyeramni qurishim va erkin ishlashim/o‘qishimga to‘sqinlik qilinmasligini kutaman.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 5,
                         "text": "Faqat oilada moliyaviy ehtiyoj tug‘ilgandagina ishlaganim ma'qul deb hisoblayman.",
                     },
                 ],
@@ -975,19 +975,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 5,
                         "text": "Erkak kishi (pulning hammasi erimda turadi, menga ehtiyojimga qarab beradi).",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Ayol kishi (erim topgan pulini uyga beradi, xarajatlarni men taqsimlaydi).",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Erim bilan birgalikda rejalashtiramiz va hisob-kitobni birga olib boramiz.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Aniq reja shart emas, ehtiyojga qarab sarflanaveradi.",
                     },
                 ],
@@ -1008,7 +1008,7 @@ class Command(BaseCommand):
                         "text": "Faqat juda zarur holatda (uy-joy yoki davolanish uchun) va foizsiz bo‘lsagina olish mumkin.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 4,
                         "text": "Biznes va maqsadlar uchun bank kreditlaridan foydalanishni normal holat deb bilaman.",
                     },
                     {
@@ -1025,7 +1025,7 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 4,
                         "text": "Erkak kishi sifatida erim bir o‘zi qaror qiladi.",
                     },
                     {
@@ -1033,11 +1033,11 @@ class Command(BaseCommand):
                         "text": "Men bilan maslahatlashadi, lekin oxirgi so‘zni erim aytadi.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Ikkalamiz ham bir ovozdan rozi bo‘lgandagina xarid qilinadi.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Pul kimniki bo‘lsa, qarorni ham o‘sha qabul qiladi.",
                     },
                 ],
@@ -1051,15 +1051,15 @@ class Command(BaseCommand):
                 "is_trap": True,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 8,
                         "text": "Bir og‘iz ham nolimasdan sabr qilaman va uni ma'naviy qo‘llab-quvvatlayman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Bosiqlik bilan tushuntirib, birgalikda yechim yoki unga yangi ish qidiramiz.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "O‘zim ishga kirib, ro‘zg‘orni va erimni ta'minlayman.",
                     },
                     {
@@ -1076,7 +1076,7 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 5,
                         "text": "Doimiy ravishda qaynona-qaynotam bilan birga yashash va ularning xizmatini qilib duosini "
                         "olish.",
                     },
@@ -1085,11 +1085,11 @@ class Command(BaseCommand):
                         "text": "Dastlab qaynona-qaynotam bilan yashab, keyinchalik sharoit bo‘lsa alohida chiqish.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 9,
                         "text": "To‘ydan darhol erim bilan alohida (ijarada yoki o‘z uyimizda) yashash.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 10,
                         "text": "Vaziyatga va erimning ota-onasining ehtiyojiga qarab hal qilinishi tarafdoriman.",
                     },
                 ],
@@ -1106,16 +1106,16 @@ class Command(BaseCommand):
                         "text": 'Qaynonam nohaq bo‘lsalar ham "xo‘p bo‘ladi" deb indamayman, duolarini olaman.',
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "O‘sha joyda indamayman, lekin keyin erimga alohida qolganda bosiqlik bilan tushuntirib "
                         "beraman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "O‘zimning haq ekanligimni qaynonamga odob bilan darhol tushuntirishga harakat qilaman.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 6,
                         "text": "O‘z ota-onamga aytib, ularni aralashtiraman.",
                     },
                 ],
@@ -1129,15 +1129,15 @@ class Command(BaseCommand):
                 "is_trap": True,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 3,
                         "text": "Qaynonamning gapiga, chunki endi u kishi mening asosiy onam hisoblanadi.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Erim bilan maslahatlashib, ikkala tarafni ham ranjitmaydigan o'rta yo'lni izlayman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "O‘z onamning gapiga, chunki u kishi men uchun birinchi o‘rinda.",
                     },
                     {
@@ -1163,10 +1163,10 @@ class Command(BaseCommand):
                         "murojaat qilaman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 3,
                         "text": "O‘z ota-onam va yaqin dugonalarim bilan maslahatlashib turaman.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Kimga aytishni vaziyat ko‘rsatadi."},
+                    {"letter": "D", "weight": 4, "text": "Kimga aytishni vaziyat ko‘rsatadi."},
                 ],
             },
             {
@@ -1177,19 +1177,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 4,
                         "text": "Qaynona-qaynotam va erim qachon ruxsat bersa va belgilab qo‘ysa, o‘shanda boraman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Belgilangan kunlarda (masalan, haftada 1 marta) erim bilan birga borib kelamiz.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "Xohlagan paytimda o‘z ota-onamnikiga borish huquqiga egaman.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 8,
                         "text": "Uy ishlaridan bo‘shaganimizdagina boraman.",
                     },
                 ],
@@ -1202,20 +1202,20 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 5,
                         "text": "Milliy urf-odatlar va kelinlik xizmatlarini to‘liq bajarishga tayyorman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Faqat Islomda bor va insoniylik doirasidagi xizmatlarni qilaman, ortiqcha urf-odatlarga hojat "
                         "yo‘q.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 8,
                         "text": "Kelin — xizmatkor emas, teng huquqli oila a'zosi. Barcha ishlar bo‘lishib qilinishi kerak.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 4,
                         "text": "Urf-odatlarga unchalik e'tibor bermayman.",
                     },
                 ],
@@ -1234,12 +1234,12 @@ class Command(BaseCommand):
                         "indeksi oshadi)",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Ichimdan ranjiyman va yig‘lab olishim mumkin, lekin janjal qilmay, tinchlanishini kutaman. "
                         "(Puan: Samimiy)",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "O‘sha joyning o‘zida men ham e'tiroz bildirib, haq ekanligimni isbotlayman.",
                     },
                     {
@@ -1261,16 +1261,16 @@ class Command(BaseCommand):
                         "bosaman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 5,
                         "text": "Faqat haqiqiy aybdor taraf xatosini tan olib, birinchi qadamni tashlashi kerak.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 4,
                         "text": "Erkak kishi oilada katta bo‘lgani uchun har doim birinchi qadamni tashlab, ko‘nglimni olishi "
                         "kerak.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Vaqt o‘zi hammasini joyiga solishini kutaman.",
                     },
                 ],
@@ -1288,16 +1288,16 @@ class Command(BaseCommand):
                         "to‘xtashi kerak.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Erimdan ruxsat olgan holda, oilamga va ro‘zg‘orimga zarar yetkazmagan tarzda me'yorida vaqt "
                         "ajrataman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 3,
                         "text": "Dugonalarim va shaxsiy vaqtim daxlsiz bo‘lishi, erim bunaqa narsalarni cheklamasligi shart.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 5,
                         "text": "Erim qayerga borsa va qanday ruxsat bersa, shunga moslashaman.",
                     },
                 ],
@@ -1314,15 +1314,15 @@ class Command(BaseCommand):
                         "text": "Og‘rinmay, minnatdorchilik bilan qabul qilaman va darhol o‘zim ustimda ishlayman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 9,
                         "text": "Bosiqlik bilan tinglayman, lekin agar nohaq bo‘lsa, o‘zimni bosiqlik bilan tushuntiraman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 3,
                         "text": "Ranjiyman, xafa bo‘lib ichimga solaman va erimga ham uning kamchiligini eslataman.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 1,
                         "text": "Tanqidni umuman yoqtirmayman va menga tanbeh berilishiga qarshiman.",
                     },
                 ],
@@ -1335,19 +1335,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 6,
                         "text": "Meni biroz yolg‘iz qoldirishini va o‘zimga kelib olishimga imkon berishini.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Shunchaki yonimda bo‘lib, meni tinglashini, bag‘riga bosib ma'naviy dalda berishini.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 8,
                         "text": "Hissiyotlarga berilmay, muammoni hal qilish uchun aniq va amaliy maslahat berishini.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 7,
                         "text": "Kayfiyatimni ko‘taradigan biror syurpriz yoki xarid qilib berishini.",
                     },
                 ],
@@ -1360,14 +1360,14 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 7,
                         "text": "Darhol va issig‘ida hammasini ochiq-oydin gaplashib olish.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Hissiyotlar va jahl bosilgach, 1-2 kundan keyin bosiqlik bilan gaplashish.",
                     },
-                    {"letter": "C", "weight": 5, "text": "Uchinchi shaxs orqali hal qilish."},
+                    {"letter": "C", "weight": 3, "text": "Uchinchi shaxs orqali hal qilish."},
                     {
                         "letter": "D", "weight": 2,
                         "text": "Vaqt o‘tishi bilan o‘zi unutilib ketishini kutish.",
@@ -1382,11 +1382,11 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 8,
                         "text": "Iloji boricha tezroq (Alloh qachon bergan kuni).",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "1-2 yil bir-birimizni yaxshiroq bilib va yangi oilaga moslashib keyin.",
                     },
                     {
@@ -1394,7 +1394,7 @@ class Command(BaseCommand):
                         "text": "Avval o‘qishimni/karyeramni tugatib, keyin farzandli bo‘lish.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 9,
                         "text": "Buni to‘ydan keyin erim bilan birgalikda maslahatlashib hal qilamiz.",
                     },
                 ],
@@ -1406,17 +1406,17 @@ class Command(BaseCommand):
                 "text": "Farzandlaringiz tarbiyasidagi asosiy shaxsiy uslubingiz?",
                 "is_trap": False,
                 "options": [
-                    {"letter": "A", "weight": 10, "text": "Qattiqqo‘llik va qat'iy intizom orqali."},
+                    {"letter": "A", "weight": 7, "text": "Qattiqqo‘llik va qat'iy intizom orqali."},
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Do‘stona, tushunishga va mehrga asoslangan munosabat orqali.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 6,
                         "text": "Erkinlik berish va o‘z xatolaridan o‘zi saboq olishiga imkon yaratish.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 3,
                         "text": "Faqat Islomiy manbalarga va sunnatga tayanib tarbiya berish.",
                     },
                 ],
@@ -1429,19 +1429,19 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 3,
                         "text": "Uy ishlari — to‘liq ayol kishining vazifasi, erim aralashmasligi kerak deb hisoblayman.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 10,
                         "text": "Sunnatga muvofiq, erimning imkon va bo‘sh vaqti bo‘lganda yordam berishi go‘zal ish.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 7,
                         "text": "Uy ishlari va ro‘zg‘or yuki teng (50/50) bo‘linishi shart.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 5,
                         "text": "Faqat kasal bo‘lib qolganimda yoki ulgurmay qolganimdagina yordam berishi yetarli.",
                     },
                 ],
@@ -1454,7 +1454,7 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 9,
                         "text": "Uyda, erim va oilamiz davrasida tinchlikda.",
                     },
                     {
@@ -1462,10 +1462,10 @@ class Command(BaseCommand):
                         "text": "Tabiat qo‘ynida, sayohatlarda va faol tarzda.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Qaynona-qaynota hamda ota-onamizni ziyorat qilish bilan.",
                     },
-                    {"letter": "D", "weight": 2, "text": "Dugonalar va yaqinlarim bilan."},
+                    {"letter": "D", "weight": 4, "text": "Dugonalar va yaqinlarim bilan."},
                 ],
             },
             {
@@ -1476,15 +1476,15 @@ class Command(BaseCommand):
                 "is_trap": False,
                 "options": [
                     {
-                        "letter": "A", "weight": 10,
+                        "letter": "A", "weight": 9,
                         "text": "Doimiy ravishda sport va to‘g‘ri ovqatlanishga e'tibor berishim shart.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 4,
                         "text": "Kasal bo‘lib qolganimdagina shifokorga murojaat qilish yetarli deb bilaman.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 10,
                         "text": "Psixologik salomatlik, ichki xotirjamlik va profilaktika juda muhim.",
                     },
                     {
@@ -1506,15 +1506,15 @@ class Command(BaseCommand):
                         "onasi bo‘lish.",
                     },
                     {
-                        "letter": "B", "weight": 8,
+                        "letter": "B", "weight": 7,
                         "text": "Shaxsiy uy-joy, mashina va moliyaviy erkinlikka erishgan oila bo‘lish.",
                     },
                     {
-                        "letter": "C", "weight": 5,
+                        "letter": "C", "weight": 8,
                         "text": "Erim ikkalamizning ham o‘z sohamizda va jamiyatda erishgan muvaffaqiyatimiz.",
                     },
                     {
-                        "letter": "D", "weight": 2,
+                        "letter": "D", "weight": 10,
                         "text": "Erim bilan bir-birimizga bo‘lgan muhabbat va hurmatimiz saqlanib qolgani.",
                     },
                 ],
