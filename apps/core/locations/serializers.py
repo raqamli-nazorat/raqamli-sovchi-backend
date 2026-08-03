@@ -5,7 +5,7 @@ from .models import Region, District
 
 
 class RegionSerializer(BaseModelSerializer):
-    count = serializers.SerializerMethodField()
+    count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Region

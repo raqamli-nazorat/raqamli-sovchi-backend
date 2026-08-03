@@ -2,6 +2,8 @@ from rest_framework import status, views
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
+from django.db import transaction
 
 from apps.core.base.views import BaseManageViewSet
 from apps.core.base.mixins import AutoSchemaMixin
@@ -10,6 +12,7 @@ from .serializers import (
     SectionTypeSerializer,
     QuestionSerializer,
     QuestionOptionSerializer,
+    QuestionOptionBulkSerializer,
     UserAnswerSerializer,
     BulkUserAnswerSerializer,
 )
@@ -17,7 +20,7 @@ from .filters import QuestionFilter, UserAnswerFilter
 
 
 class SectionTypeViewSet(BaseManageViewSet):
-    queryset = SectionType.objects.prefetch_related('questions').active()
+    queryset = SectionType.objects.prefetch_related("questions").active()
     serializer_class = SectionTypeSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["name"]
@@ -38,6 +41,77 @@ class QuestionViewSet(BaseManageViewSet):
 class QuestionOptionViewSet(BaseManageViewSet):
     queryset = QuestionOption.objects.select_related("question").active()
     serializer_class = QuestionOptionSerializer
+
+    @action(detail=False, methods=["post", "put", "patch"], url_path="bulk")
+    def bulk_options(self, request, *args, **kwargs):
+        serializer = QuestionOptionBulkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        question_id = serializer.validated_data["question_id"]
+        options_data = serializer.validated_data["options"]
+
+        existing_options = {
+            opt.option_letter: opt
+            for opt in QuestionOption.objects.filter(question_id=question_id)
+        }
+
+        existing_by_id = {str(opt.id): opt for opt in existing_options.values()}
+
+        to_create = []
+        to_update = []
+
+        with transaction.atomic():
+            for item in options_data:
+                item_id = str(item.get("id")) if item.get("id") else None
+                letter = item["option_letter"]
+                text = item["text"]
+                weight = item["weight"]
+
+                target_opt = None
+                if item_id and item_id in existing_by_id:
+                    target_opt = existing_by_id[item_id]
+                elif letter in existing_options:
+                    target_opt = existing_options[letter]
+
+                if target_opt:
+                    target_opt.option_letter = letter
+                    target_opt.text = text
+                    target_opt.weight = weight
+                    to_update.append(target_opt)
+                else:
+                    new_opt = QuestionOption(
+                        question_id=question_id,
+                        option_letter=letter,
+                        text=text,
+                        weight=weight,
+                    )
+                    to_create.append(new_opt)
+
+            created_count = 0
+            updated_count = 0
+
+            if to_create:
+                QuestionOption.objects.bulk_create(to_create)
+                created_count = len(to_create)
+
+            if to_update:
+                QuestionOption.objects.bulk_update(
+                    to_update, fields=["option_letter", "text", "weight"]
+                )
+                updated_count = len(to_update)
+
+        result_options = QuestionOption.objects.filter(question_id=question_id).order_by("option_letter")
+        result_serializer = QuestionOptionSerializer(result_options, many=True)
+
+        return Response(
+            {
+                "message": f"Variantlar muvaffaqiyatli saqlandi ({created_count} ta yaratildi, {updated_count} ta yangilandi).",
+                "created_count": created_count,
+                "updated_count": updated_count,
+                "options": result_serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class UserAnswerViewSet(BaseManageViewSet):
