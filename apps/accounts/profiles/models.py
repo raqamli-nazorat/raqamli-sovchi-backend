@@ -158,9 +158,9 @@ class Profile(BaseModel):
     def save(self, *args, **kwargs):
         if self.latitude is not None and self.longitude is not None:
             try:
-                self.location = Point(
-                    float(self.longitude), float(self.latitude), srid=4326
-                )
+                point = Point(float(self.longitude), float(self.latitude), srid=4326)
+                if self.location is None or self.location.x != point.x or self.location.y != point.y:
+                    self.location = point
             except Exception:
                 pass
         elif self.location is not None:
