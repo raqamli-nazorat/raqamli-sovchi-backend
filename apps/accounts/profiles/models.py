@@ -163,9 +163,11 @@ class Profile(BaseModel):
                     self.location = point
             except Exception:
                 pass
-        elif self.location is not None:
+
+        if self.location is not None and (self.latitude is None or self.longitude is None):
             self.longitude = Decimal(str(self.location.x))
             self.latitude = Decimal(str(self.location.y))
+
         super().save(*args, **kwargs)
 
     def __str__(self):
