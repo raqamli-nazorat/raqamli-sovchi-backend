@@ -126,7 +126,8 @@ class UserPledge(BaseModel):
         db_table = "user_pledges"
 
     def __str__(self):
-        return f"{self.user.phone_number} - Badge: {self.has_serious_badge}"
+        identifier = self.user.phone_number or self.user.email or str(self.user.id)
+        return f"{identifier} - Badge: {self.has_serious_badge}"
 
 
 class BlockedFace(BaseModel):
