@@ -37,3 +37,78 @@ class EmailAuthTestCase(TestCase):
     def test_invalid_email_returns_400(self):
         response = self.client.post(self.url, {"email": "not-an-email"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class GoogleAuthTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = "/api/v1/accounts/auth/google/"
+
+    def test_google_auth_requires_code_or_token(self):
+        response = self.client.post(self.url, {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", response.data)
+
+    from unittest.mock import patch, MagicMock
+
+    @patch("apps.accounts.users.views.GoogleOAuth2Adapter")
+    def test_google_auth_with_code_creates_user_without_phone(self, mock_adapter_cls):
+        mock_adapter = MagicMock()
+        mock_adapter_cls.return_value = mock_adapter
+
+        mock_client = MagicMock()
+        mock_client.get_access_token.return_value = {
+            "access_token": "fake-access-token",
+            "id_token": "fake-id-token",
+        }
+        mock_adapter.get_client.return_value = mock_client
+        mock_adapter.provider_id = "google"
+
+        mock_social_login = MagicMock()
+        mock_social_login.account.uid = "google-uid-123"
+        mock_social_login.account.extra_data = {"email": "googleuser@example.com"}
+        mock_social_login.user = User(email="googleuser@example.com")
+        mock_adapter.complete_login.return_value = mock_social_login
+
+        response = self.client.post(
+            self.url,
+            {"code": "sample_auth_code_from_google"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["created"])
+        self.assertEqual(response.data["user"]["email"], "googleuser@example.com")
+        self.assertIsNone(response.data["user"]["phone_number"])
+        self.assertEqual(response.data["user"]["auth_provider"], AuthProvider.GOOGLE)
+
+        user = User.objects.get(email="googleuser@example.com")
+        self.assertEqual(user.auth_provider, AuthProvider.GOOGLE)
+        self.assertIsNone(user.phone_number)
+
+    @patch("apps.accounts.users.views.GoogleOAuth2Adapter")
+    def test_google_auth_with_authorization_code_alias(self, mock_adapter_cls):
+        mock_adapter = MagicMock()
+        mock_adapter_cls.return_value = mock_adapter
+
+        mock_client = MagicMock()
+        mock_client.get_access_token.return_value = {"access_token": "fake-access-token"}
+        mock_adapter.get_client.return_value = mock_client
+        mock_adapter.provider_id = "google"
+
+        mock_social_login = MagicMock()
+        mock_social_login.account.uid = "google-uid-456"
+        mock_social_login.account.extra_data = {"email": "aliasuser@example.com"}
+        mock_social_login.user = User(email="aliasuser@example.com")
+        mock_adapter.complete_login.return_value = mock_social_login
+
+        response = self.client.post(
+            self.url,
+            {"authorization_code": "auth_code_alias_123"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["created"])
+        self.assertEqual(response.data["user"]["email"], "aliasuser@example.com")
+

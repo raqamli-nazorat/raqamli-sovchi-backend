@@ -1,5 +1,6 @@
 import hashlib
 
+from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.contrib.auth.models import Permission
@@ -181,34 +182,89 @@ class UserPledgeViewSet(BaseManageViewSet):
 
 class GoogleLoginView(AutoSchemaMixin, views.APIView):
     permission_classes = []
+    serializer_class = GoogleLoginSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = GoogleLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        access_token = serializer.validated_data["access_token"]
-        phone_number = serializer.validated_data["phone_number"]
+        code = serializer.validated_data.get("code") or serializer.validated_data.get(
+            "authorization_code"
+        )
+        access_token = serializer.validated_data.get("access_token")
+        redirect_uri = serializer.validated_data.get("redirect_uri")
 
         adapter = GoogleOAuth2Adapter(request)
-        try:
-            token = adapter.parse_token({"access_token": access_token})
-            social_login = adapter.complete_login(
-                request,
-                adapter.get_provider().app,
-                token,
-                response={"access_token": access_token},
-            )
-        except OAuth2Error as exc:
-            raise ValidationError(str(exc))
+        app = adapter.get_provider().app
 
-        email = social_login.account.extra_data.get("email", "")
-        user, created = User.objects.get_or_create(
-            phone_number=phone_number,
-            defaults={
-                "email": email or None,
-                "auth_provider": AuthProvider.GOOGLE,
-            },
-        )
+        if code:
+            client = adapter.get_client(request, app)
+            client.callback_url = redirect_uri or "postmessage"
+            try:
+                token_data = client.get_access_token(code)
+            except Exception as exc:
+                if not redirect_uri:
+                    try:
+                        client.callback_url = adapter.get_callback_url(request, app)
+                        token_data = client.get_access_token(code)
+                    except Exception:
+                        raise ValidationError(
+                            f"Google OAuth kodi yaroqsiz yoki muddati o'tgan: {str(exc)}"
+                        )
+                else:
+                    raise ValidationError(
+                        f"Google OAuth kodi yaroqsiz yoki muddati o'tgan: {str(exc)}"
+                    )
+
+            try:
+                token = adapter.parse_token(token_data)
+                social_login = adapter.complete_login(
+                    request,
+                    app,
+                    token,
+                    response=token_data,
+                )
+            except OAuth2Error as exc:
+                raise ValidationError(str(exc))
+        else:
+            try:
+                token = adapter.parse_token({"access_token": access_token})
+                social_login = adapter.complete_login(
+                    request,
+                    app,
+                    token,
+                    response={"access_token": access_token},
+                )
+            except OAuth2Error as exc:
+                raise ValidationError(str(exc))
+
+        email = (
+            social_login.account.extra_data.get("email")
+            or getattr(social_login.user, "email", "")
+            or ""
+        ).lower().strip()
+
+        social_acc = SocialAccount.objects.filter(
+            provider=adapter.provider_id, uid=social_login.account.uid
+        ).first()
+
+        if social_acc:
+            user = social_acc.user
+            created = False
+        else:
+            user = None
+            if email:
+                user = User.objects.filter(email=email).first()
+
+            if user:
+                created = False
+            else:
+                user = User.objects.create(
+                    email=email or None,
+                    auth_provider=AuthProvider.GOOGLE,
+                    is_verified=True,
+                )
+                created = True
 
         if not created and user.is_blocked:
             return Response(
