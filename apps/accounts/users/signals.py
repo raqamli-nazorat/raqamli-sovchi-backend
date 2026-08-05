@@ -18,10 +18,12 @@ DEFAULT_PERMISSIONS_CODENAMES = [
     "change_representativeinfo",
     "delete_representativeinfo",
     "view_representativeinfo",
+
     # User Pledge
     "add_userpledge",
     "change_userpledge",
     "view_userpledge",
+
     # References (Read-only for default users)
     "view_region",
     "view_district",
@@ -30,6 +32,7 @@ DEFAULT_PERMISSIONS_CODENAMES = [
     "view_profession",
     "view_maritalstatus",
     "view_healthstatus",
+
     # Questionnaire
     "view_sectiontype",
     "view_question",
@@ -38,6 +41,7 @@ DEFAULT_PERMISSIONS_CODENAMES = [
     "change_useranswer",
     "delete_useranswer",
     "view_useranswer",
+
     # Matches & Chats
     "add_matchrequest",
     "change_matchrequest",
