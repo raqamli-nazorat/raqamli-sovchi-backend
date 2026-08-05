@@ -158,7 +158,14 @@ class UserPledgeSerializer(BaseModelSerializer):
 
 class GoogleLoginSerializer(serializers.Serializer):
     authorization_code = serializers.CharField(
-        help_text="Google OAuth authorization code",
+        help_text="Google OAuth authorization code (serverAuthCode from google_sign_in Flutter package)",
+    )
+    redirect_uri = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        default=None,
+        help_text="redirect_uri used when obtaining the code. Leave empty for mobile (google_sign_in), use 'postmessage' for web.",
     )
 
 class PhoneAuthSerializer(serializers.Serializer):
