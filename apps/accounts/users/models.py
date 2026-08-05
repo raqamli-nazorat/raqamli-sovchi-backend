@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser, Permission
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.accounts.users.managers import UserManager
@@ -46,10 +47,14 @@ class Role(BaseModel):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        if self.is_default:
+            raise ValidationError("Boshlang'ich rolni o'chirish mumkin emas.")
         self.is_active = False
         self.save()
 
     def hard_delete(self, *args, **kwargs):
+        if self.is_default:
+            raise ValidationError("Boshlang'ich rolni o'chirish mumkin emas.")
         super().delete(*args, **kwargs)
 
     def __str__(self):
