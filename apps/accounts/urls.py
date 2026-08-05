@@ -5,4 +5,5 @@ urlpatterns = [
     path("", include("apps.accounts.profiles.urls")),
     path("", include("apps.accounts.questionnaire.urls")),
     path("telegram-bot/", include("apps.accounts.telegram_bot.urls")),
+    path("allauth/", include("allauth.urls")),
 ]
