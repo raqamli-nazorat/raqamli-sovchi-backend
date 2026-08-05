@@ -1,8 +1,7 @@
 import hashlib
+import requests as http_requests
 
 from allauth.socialaccount.models import SocialAccount
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
@@ -188,40 +187,25 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         serializer = GoogleLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        code = serializer.validated_data["authorization_code"]
-        redirect_uri = serializer.validated_data.get("redirect_uri") or ""
+        id_token_str = serializer.validated_data["id_token"]
 
-        adapter = GoogleOAuth2Adapter(request)
-        app = adapter.get_provider().app
-        client = adapter.get_client(request, app)
-        client.callback_url = redirect_uri
+        resp = http_requests.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": id_token_str},
+            timeout=10,
+        )
+        if resp.status_code != 200 or "error" in resp.json():
+            raise ValidationError("Google ID token yaroqsiz yoki muddati o'tgan.")
 
-        try:
-            token_data = client.get_access_token(code)
-        except Exception:
-            raise ValidationError(
-                f"Google OAuth kodi yaroqsiz yoki muddati o'tgan."
-            )
+        user_info = resp.json()
+        google_uid = user_info.get("sub")
+        email = (user_info.get("email") or "").lower().strip()
 
-        try:
-            token = adapter.parse_token(token_data)
-            social_login = adapter.complete_login(
-                request,
-                app,
-                token,
-                response=token_data,
-            )
-        except OAuth2Error as exc:
-            raise ValidationError(str(exc))
-
-        email = (
-            social_login.account.extra_data.get("email")
-            or getattr(social_login.user, "email", "")
-            or ""
-        ).lower().strip()
+        if not google_uid:
+            raise ValidationError("Google foydalanuvchi ma'lumotlarini olishda xatolik.")
 
         social_acc = SocialAccount.objects.filter(
-            provider=adapter.provider_id, uid=social_login.account.uid
+            provider="google", uid=google_uid
         ).first()
 
         if social_acc:
@@ -231,7 +215,6 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
             user = None
             if email:
                 user = User.objects.filter(email=email).first()
-
             if user:
                 created = False
             else:
@@ -260,9 +243,12 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         if update_fields:
             user.save(update_fields=update_fields)
 
-        social_login.user = user
-        social_login.lookup()
-        social_login.save(request, connect=True)
+        if not social_acc:
+            SocialAccount.objects.get_or_create(
+                provider="google",
+                uid=google_uid,
+                defaults={"user": user, "extra_data": user_info},
+            )
 
         tokens = get_tokens_for_user(user)
         return Response(
