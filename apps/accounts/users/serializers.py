@@ -157,38 +157,9 @@ class UserPledgeSerializer(BaseModelSerializer):
 
 
 class GoogleLoginSerializer(serializers.Serializer):
-    code = serializers.CharField(
-        required=False,
-        allow_blank=True,
+    authorization_code = serializers.CharField(
         help_text="Google OAuth authorization code",
     )
-    authorization_code = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        help_text="Google OAuth authorization code (code o'rnida ishlatish mumkin)",
-    )
-    access_token = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        help_text="Google OAuth access token",
-    )
-    redirect_uri = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        default="",
-        help_text="OAuth redirect URI (default: postmessage)",
-    )
-
-    def validate(self, attrs):
-        code = attrs.get("code") or attrs.get("authorization_code")
-        access_token = attrs.get("access_token")
-        if not code and not access_token:
-            raise serializers.ValidationError(
-                "Kamida 'code' (authorization_code) yoki 'access_token' yuborilishi kerak."
-            )
-        return attrs
-
-
 
 class PhoneAuthSerializer(serializers.Serializer):
     phone_number = serializers.CharField(validators=[phone_validator])

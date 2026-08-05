@@ -188,55 +188,30 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         serializer = GoogleLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        code = serializer.validated_data.get("code") or serializer.validated_data.get(
-            "authorization_code"
-        )
-        access_token = serializer.validated_data.get("access_token")
-        redirect_uri = serializer.validated_data.get("redirect_uri")
+        code = serializer.validated_data["authorization_code"]
 
         adapter = GoogleOAuth2Adapter(request)
         app = adapter.get_provider().app
+        client = adapter.get_client(request, app)
+        client.callback_url = "postmessage"
 
-        if code:
-            client = adapter.get_client(request, app)
-            client.callback_url = redirect_uri or "postmessage"
-            try:
-                token_data = client.get_access_token(code)
-            except Exception as exc:
-                if not redirect_uri:
-                    try:
-                        client.callback_url = adapter.get_callback_url(request, app)
-                        token_data = client.get_access_token(code)
-                    except Exception:
-                        raise ValidationError(
-                            f"Google OAuth kodi yaroqsiz yoki muddati o'tgan: {str(exc)}"
-                        )
-                else:
-                    raise ValidationError(
-                        f"Google OAuth kodi yaroqsiz yoki muddati o'tgan: {str(exc)}"
-                    )
+        try:
+            token_data = client.get_access_token(code)
+        except Exception as exc:
+            raise ValidationError(
+                f"Google OAuth kodi yaroqsiz yoki muddati o'tgan: {str(exc)}"
+            )
 
-            try:
-                token = adapter.parse_token(token_data)
-                social_login = adapter.complete_login(
-                    request,
-                    app,
-                    token,
-                    response=token_data,
-                )
-            except OAuth2Error as exc:
-                raise ValidationError(str(exc))
-        else:
-            try:
-                token = adapter.parse_token({"access_token": access_token})
-                social_login = adapter.complete_login(
-                    request,
-                    app,
-                    token,
-                    response={"access_token": access_token},
-                )
-            except OAuth2Error as exc:
-                raise ValidationError(str(exc))
+        try:
+            token = adapter.parse_token(token_data)
+            social_login = adapter.complete_login(
+                request,
+                app,
+                token,
+                response=token_data,
+            )
+        except OAuth2Error as exc:
+            raise ValidationError(str(exc))
 
         email = (
             social_login.account.extra_data.get("email")
