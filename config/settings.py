@@ -160,6 +160,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTHENTICATION_BACKENDS = [
     "apps.accounts.users.backends.RoleBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 AUTH_USER_MODEL = "users.User"
