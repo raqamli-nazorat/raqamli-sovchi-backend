@@ -189,15 +189,16 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         serializer.is_valid(raise_exception=True)
 
         code = serializer.validated_data["authorization_code"]
+        redirect_uri = serializer.validated_data.get("redirect_uri") or ""
 
         adapter = GoogleOAuth2Adapter(request)
         app = adapter.get_provider().app
         client = adapter.get_client(request, app)
-        client.callback_url = "postmessage"
+        client.callback_url = redirect_uri
 
         try:
             token_data = client.get_access_token(code)
-        except Exception as exc:
+        except Exception:
             raise ValidationError(
                 f"Google OAuth kodi yaroqsiz yoki muddati o'tgan."
             )
