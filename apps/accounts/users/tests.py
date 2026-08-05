@@ -112,3 +112,27 @@ class GoogleAuthTestCase(TestCase):
         self.assertTrue(response.data["created"])
         self.assertEqual(response.data["user"]["email"], "aliasuser@example.com")
 
+
+from django.core.exceptions import ValidationError
+from apps.accounts.users.models import Role
+
+
+class RoleDeleteTestCase(TestCase):
+    def setUp(self):
+        self.default_role = Role.objects.create(name="Default Role Test", is_default=True)
+        self.normal_role = Role.objects.create(name="Normal Role Test", is_default=False)
+
+    def test_default_role_delete_raises_validation_error(self):
+        with self.assertRaises(ValidationError):
+            self.default_role.delete()
+
+    def test_default_role_hard_delete_raises_validation_error(self):
+        with self.assertRaises(ValidationError):
+            self.default_role.hard_delete()
+
+    def test_non_default_role_can_be_deleted(self):
+        self.normal_role.delete()
+        self.normal_role.refresh_from_db()
+        self.assertFalse(self.normal_role.is_active)
+
+
