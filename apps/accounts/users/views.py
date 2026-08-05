@@ -199,7 +199,7 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
             token_data = client.get_access_token(code)
         except Exception as exc:
             raise ValidationError(
-                f"Google OAuth kodi yaroqsiz yoki muddati o'tgan: {str(exc)}"
+                f"Google OAuth kodi yaroqsiz yoki muddati o'tgan."
             )
 
         try:
