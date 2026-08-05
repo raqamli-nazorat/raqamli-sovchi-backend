@@ -158,29 +158,8 @@ class UserPledgeSerializer(BaseModelSerializer):
 
 class GoogleLoginSerializer(serializers.Serializer):
     id_token = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        help_text="Google ID token (from google_sign_in Flutter package: GoogleSignInAuthentication.idToken)",
+        help_text="Google ID token (GoogleSignInAuthentication.idToken — works for both mobile and web)",
     )
-    authorization_code = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        help_text="Google OAuth authorization code (serverAuthCode) — alternative to id_token",
-    )
-    redirect_uri = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        default=None,
-        help_text="redirect_uri — only needed when using authorization_code on web ('postmessage').",
-    )
-
-    def validate(self, attrs):
-        if not attrs.get("id_token") and not attrs.get("authorization_code"):
-            raise serializers.ValidationError(
-                "id_token yoki authorization_code yuborilishi shart."
-            )
-        return attrs
 
 
 class PhoneAuthSerializer(serializers.Serializer):

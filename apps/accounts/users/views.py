@@ -2,8 +2,6 @@ import hashlib
 import requests as http_requests
 
 from allauth.socialaccount.models import SocialAccount
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
@@ -185,73 +183,23 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
     permission_classes = []
     serializer_class = GoogleLoginSerializer
 
-    def _get_google_user_info_from_id_token(self, id_token_str):
-        """
-        Flutter google_sign_in paketi bergan idToken ni Google tokeninfo API orqali tekshiradi.
-        Redirect_uri muammosi yo'q.
-        """
+    def post(self, request, *args, **kwargs):
+        serializer = GoogleLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        id_token_str = serializer.validated_data["id_token"]
+
         resp = http_requests.get(
             "https://oauth2.googleapis.com/tokeninfo",
             params={"id_token": id_token_str},
             timeout=10,
         )
-        if resp.status_code != 200:
+        if resp.status_code != 200 or "error" in resp.json():
             raise ValidationError("Google ID token yaroqsiz yoki muddati o'tgan.")
-        data = resp.json()
-        if "error" in data:
-            raise ValidationError("Google ID token yaroqsiz yoki muddati o'tgan.")
-        return data
 
-    def _get_google_user_info_from_code(self, request, code, redirect_uri):
-        """
-        authorization_code (serverAuthCode) ni access_token ga almashtiradi.
-        Asosan web flow uchun (redirect_uri='postmessage').
-        """
-        adapter = GoogleOAuth2Adapter(request)
-        app = adapter.get_provider().app
-        client = adapter.get_client(request, app)
-        client.callback_url = redirect_uri or "postmessage"
-        try:
-            token_data = client.get_access_token(code)
-        except Exception:
-            raise ValidationError("Google OAuth kodi yaroqsiz yoki muddati o'tgan.")
-        try:
-            token = adapter.parse_token(token_data)
-            social_login = adapter.complete_login(request, app, token, response=token_data)
-        except OAuth2Error as exc:
-            raise ValidationError(str(exc))
-        extra_data = social_login.account.extra_data
-        return {
-            "sub": social_login.account.uid,
-            "email": (
-                extra_data.get("email")
-                or getattr(social_login.user, "email", "")
-                or ""
-            ).lower().strip(),
-        }, social_login
-
-    def post(self, request, *args, **kwargs):
-        serializer = GoogleLoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        id_token_str = serializer.validated_data.get("id_token")
-        code = serializer.validated_data.get("authorization_code")
-        redirect_uri = serializer.validated_data.get("redirect_uri")
-
-        social_login = None
-
-        if id_token_str:
-            # Mobile (Flutter google_sign_in) — id_token flow
-            user_info = self._get_google_user_info_from_id_token(id_token_str)
-            google_uid = user_info.get("sub")
-            email = (user_info.get("email") or "").lower().strip()
-        else:
-            # Web — authorization_code flow
-            user_info, social_login = self._get_google_user_info_from_code(
-                request, code, redirect_uri
-            )
-            google_uid = user_info["sub"]
-            email = user_info["email"]
+        user_info = resp.json()
+        google_uid = user_info.get("sub")
+        email = (user_info.get("email") or "").lower().strip()
 
         if not google_uid:
             raise ValidationError("Google foydalanuvchi ma'lumotlarini olishda xatolik.")
@@ -267,7 +215,6 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
             user = None
             if email:
                 user = User.objects.filter(email=email).first()
-
             if user:
                 created = False
             else:
@@ -296,16 +243,11 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         if update_fields:
             user.save(update_fields=update_fields)
 
-        # SocialAccount saqlash
-        if social_login:
-            social_login.user = user
-            social_login.lookup()
-            social_login.save(request, connect=True)
-        elif not social_acc:
+        if not social_acc:
             SocialAccount.objects.get_or_create(
                 provider="google",
                 uid=google_uid,
-                defaults={"user": user, "extra_data": {}},
+                defaults={"user": user, "extra_data": user_info},
             )
 
         tokens = get_tokens_for_user(user)
