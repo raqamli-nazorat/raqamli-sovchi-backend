@@ -195,8 +195,7 @@ class UserDeviceViewSet(BaseManageViewSet):
         return qs.filter(user=user)
 
     def perform_destroy(self, instance):
-        instance.is_active = False
-        instance.save(update_fields=["is_active"])
+        instance.delete()
         from .services import revoke_device_in_redis
         revoke_device_in_redis(instance.user_id, instance.device_id)
 
