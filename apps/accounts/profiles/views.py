@@ -20,6 +20,7 @@ from apps.core.utils.face import (
 
 from .filters import ProfileFilter
 from .models import Profile, ProfilePhoto, RepresentativeInfo
+from .permissions import HasChangeMeProfilePermission
 from .serializers import (
     FaceVerificationSerializer,
     ProfileMeSerializer,
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProfileMeView(AutoSchemaMixin, generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [HasChangeMeProfilePermission]
     serializer_class = ProfileMeSerializer
 
     def get_object(self):

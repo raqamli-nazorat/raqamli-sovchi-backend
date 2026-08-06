@@ -154,6 +154,10 @@ class Profile(BaseModel):
         verbose_name = "Profil Anketa"
         verbose_name_plural = "Profil Anketalari"
         db_table = "profiles"
+        permissions = [
+            ("change_me_profile", "O'z profilini tahrirlash"),
+            ("delete_me_profile", "O'z profilini o'chirish"),
+        ]
 
     def save(self, *args, **kwargs):
         if self.latitude is not None and self.longitude is not None:
