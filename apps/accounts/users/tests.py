@@ -92,7 +92,9 @@ class GoogleAuthTestCase(TestCase):
         mock_adapter_cls.return_value = mock_adapter
 
         mock_client = MagicMock()
-        mock_client.get_access_token.return_value = {"access_token": "fake-access-token"}
+        mock_client.get_access_token.return_value = {
+            "access_token": "fake-access-token"
+        }
         mock_adapter.get_client.return_value = mock_client
         mock_adapter.provider_id = "google"
 
@@ -119,8 +121,12 @@ from apps.accounts.users.models import Role
 
 class RoleDeleteTestCase(TestCase):
     def setUp(self):
-        self.default_role = Role.objects.create(name="Default Role Test", is_default=True)
-        self.normal_role = Role.objects.create(name="Normal Role Test", is_default=False)
+        self.default_role = Role.objects.create(
+            name="Default Role Test", is_default=True
+        )
+        self.normal_role = Role.objects.create(
+            name="Normal Role Test", is_default=False
+        )
 
     def test_default_role_delete_raises_validation_error(self):
         with self.assertRaises(ValidationError):
@@ -134,5 +140,3 @@ class RoleDeleteTestCase(TestCase):
         self.normal_role.delete()
         self.normal_role.refresh_from_db()
         self.assertFalse(self.normal_role.is_active)
-
-

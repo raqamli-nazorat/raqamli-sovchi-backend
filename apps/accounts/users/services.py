@@ -61,12 +61,18 @@ def register_or_update_user_device(user, request):
     if not request or not user or not user.is_authenticated:
         return None
 
-    device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+    device_id = request.headers.get("X-Device-Id") or request.META.get(
+        "HTTP_X_DEVICE_ID"
+    )
     if not device_id:
         return None
 
-    device_name = request.headers.get("X-Device-Name") or request.META.get("HTTP_X_DEVICE_NAME")
-    device_os = request.headers.get("X-Device-OS") or request.META.get("HTTP_X_DEVICE_OS")
+    device_name = request.headers.get("X-Device-Name") or request.META.get(
+        "HTTP_X_DEVICE_NAME"
+    )
+    device_os = request.headers.get("X-Device-OS") or request.META.get(
+        "HTTP_X_DEVICE_OS"
+    )
 
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
@@ -80,15 +86,22 @@ def register_or_update_user_device(user, request):
         defaults={
             "device_name": device_name,
             "device_os": device_os,
-            "ip_address": ip_address
+            "ip_address": ip_address,
         },
     )
 
     set_device_active_in_redis(user.id, device_id, is_active=True)
 
     if created:
-        logger.info("Yangi qurilma ro'yxatga olindi: UserID=%s | DeviceID=%s | Name=%s", user.id, device_id, device_name)
+        logger.info(
+            "Yangi qurilma ro'yxatga olindi: UserID=%s | DeviceID=%s | Name=%s",
+            user.id,
+            device_id,
+            device_name,
+        )
     else:
-        logger.debug("Qurilma ma'lumoti yangilandi: UserID=%s | DeviceID=%s", user.id, device_id)
+        logger.debug(
+            "Qurilma ma'lumoti yangilandi: UserID=%s | DeviceID=%s", user.id, device_id
+        )
 
     return device

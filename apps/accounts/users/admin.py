@@ -88,4 +88,10 @@ class UserDeviceAdmin(BaseModelAdmin):
         "is_active",
     )
     list_filter = ("is_active", "device_os")
-    search_fields = ("user__phone_number", "user__email", "device_name", "device_id", "ip_address")
+    search_fields = (
+        "user__phone_number",
+        "user__email",
+        "device_name",
+        "device_id",
+        "ip_address",
+    )

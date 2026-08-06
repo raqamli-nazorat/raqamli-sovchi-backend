@@ -197,14 +197,18 @@ class UserDeviceViewSet(BaseManageViewSet):
     def perform_destroy(self, instance):
         instance.delete()
         from .services import revoke_device_in_redis
+
         revoke_device_in_redis(instance.user_id, instance.device_id)
 
     @action(detail=False, methods=["post"], url_path="logout-all-others")
     def logout_all_others(self, request):
         user = request.user
-        current_device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+        current_device_id = request.headers.get("X-Device-Id") or request.META.get(
+            "HTTP_X_DEVICE_ID"
+        )
 
         from .services import revoke_all_other_devices
+
         count = revoke_all_other_devices(user, current_device_id)
 
         return Response(
@@ -239,7 +243,9 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         email = (user_info.get("email") or "").lower().strip()
 
         if not google_uid:
-            raise ValidationError("Google foydalanuvchi ma'lumotlarini olishda xatolik.")
+            raise ValidationError(
+                "Google foydalanuvchi ma'lumotlarini olishda xatolik."
+            )
 
         social_acc = SocialAccount.objects.filter(
             provider="google", uid=google_uid
@@ -288,6 +294,7 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
             )
 
         from .services import register_or_update_user_device
+
         register_or_update_user_device(user, request)
 
         tokens = get_tokens_for_user(user)
@@ -327,6 +334,7 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
             user.save(update_fields=["auth_provider"])
 
         from .services import register_or_update_user_device
+
         register_or_update_user_device(user, request)
 
         tokens = get_tokens_for_user(user)
@@ -367,6 +375,7 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
             user.save(update_fields=["auth_provider"])
 
         from .services import register_or_update_user_device
+
         register_or_update_user_device(user, request)
 
         tokens = get_tokens_for_user(user)

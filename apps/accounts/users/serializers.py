@@ -197,6 +197,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         request = self.context.get("request")
         if request:
             from apps.accounts.users.services import register_or_update_user_device
+
             register_or_update_user_device(user, request)
 
         return data
@@ -223,7 +224,9 @@ class UserDeviceSerializer(BaseModelSerializer):
         request = self.context.get("request")
         if not request:
             return False
-        current_device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+        current_device_id = request.headers.get("X-Device-Id") or request.META.get(
+            "HTTP_X_DEVICE_ID"
+        )
         return obj.device_id == current_device_id
 
 
