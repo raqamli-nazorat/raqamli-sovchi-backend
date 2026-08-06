@@ -80,6 +80,19 @@ class ProfileSerializer(BaseModelSerializer):
 
         return calculate_compatibility_score(user_profile, obj)
 
+    def validate_location(self, value):
+        if not value:
+            return None
+        if isinstance(value, str):
+            try:
+                from django.contrib.gis.geos import GEOSGeometry
+                return GEOSGeometry(value)
+            except Exception:
+                raise serializers.ValidationError(
+                    "GPS joylashuvi to'g'ri ko'rinishda emas (WKT formatida bo'lishi kerak)."
+                )
+        return value
+
 
 class ProfileMeSerializer(BaseModelSerializer):
     class Meta:
