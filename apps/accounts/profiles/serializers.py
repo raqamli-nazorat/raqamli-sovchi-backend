@@ -86,6 +86,7 @@ class ProfileSerializer(BaseModelSerializer):
         if isinstance(value, str):
             try:
                 from django.contrib.gis.geos import GEOSGeometry
+
                 return GEOSGeometry(value)
             except Exception:
                 return None

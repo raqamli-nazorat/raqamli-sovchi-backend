@@ -17,7 +17,7 @@ from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
-from .models import AuthProvider, Role, User, UserPledge
+from .models import AuthProvider, Role, User, UserPledge, UserDevice
 from .serializers import (
     CustomTokenObtainPairSerializer,
     GoogleLoginSerializer,
@@ -27,6 +27,7 @@ from .serializers import (
     RoleSerializer,
     UserPledgeSerializer,
     UserSerializer,
+    UserDeviceSerializer,
     ChangePasswordSerializer,
 )
 from .utils import get_tokens_for_user
@@ -179,6 +180,46 @@ class UserPledgeViewSet(BaseManageViewSet):
     ordering_fields = ["created_at"]
 
 
+class UserDeviceViewSet(BaseManageViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserDeviceSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["last_active", "created_at"]
+    http_method_names = ["get", "delete", "post", "head", "options"]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = UserDevice.objects.filter(is_active=True)
+        if user.is_staff or user.is_superuser:
+            return qs
+        return qs.filter(user=user)
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        from .services import revoke_device_in_redis
+
+        revoke_device_in_redis(instance.user_id, instance.device_id)
+
+    @action(detail=False, methods=["post"], url_path="logout-all-others")
+    def logout_all_others(self, request):
+        user = request.user
+        current_device_id = request.headers.get("X-Device-Id") or request.META.get(
+            "HTTP_X_DEVICE_ID"
+        )
+
+        from .services import revoke_all_other_devices
+
+        count = revoke_all_other_devices(user, current_device_id)
+
+        return Response(
+            {
+                "message": f"Boshqa barcha qurilmalar ({count} ta) seansi muvaffaqiyatli tugatildi.",
+                "terminated_count": count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class GoogleLoginView(AutoSchemaMixin, views.APIView):
     permission_classes = []
     serializer_class = GoogleLoginSerializer
@@ -202,7 +243,9 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         email = (user_info.get("email") or "").lower().strip()
 
         if not google_uid:
-            raise ValidationError("Google foydalanuvchi ma'lumotlarini olishda xatolik.")
+            raise ValidationError(
+                "Google foydalanuvchi ma'lumotlarini olishda xatolik."
+            )
 
         social_acc = SocialAccount.objects.filter(
             provider="google", uid=google_uid
@@ -250,7 +293,12 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
                 defaults={"user": user, "extra_data": user_info},
             )
 
-        tokens = get_tokens_for_user(user)
+        from .services import register_or_update_user_device
+
+        device = register_or_update_user_device(user, request)
+        device_id = device.device_id if device else request.headers.get("X-Device-Id")
+
+        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
@@ -286,7 +334,12 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
             user.auth_provider = AuthProvider.PHONE
             user.save(update_fields=["auth_provider"])
 
-        tokens = get_tokens_for_user(user)
+        from .services import register_or_update_user_device
+
+        device = register_or_update_user_device(user, request)
+        device_id = device.device_id if device else request.headers.get("X-Device-Id")
+
+        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
@@ -323,7 +376,12 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
             user.auth_provider = AuthProvider.EMAIL
             user.save(update_fields=["auth_provider"])
 
-        tokens = get_tokens_for_user(user)
+        from .services import register_or_update_user_device
+
+        device = register_or_update_user_device(user, request)
+        device_id = device.device_id if device else request.headers.get("X-Device-Id")
+
+        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,

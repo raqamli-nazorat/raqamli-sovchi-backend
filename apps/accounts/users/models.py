@@ -160,3 +160,48 @@ class BlockedFace(BaseModel):
     def __str__(self):
         user_str = str(self.user) if self.user else "Anonim/Tizim"
         return f"BlockedFace ({user_str}) - {self.created_at}"
+
+
+class UserDevice(BaseModel):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="devices",
+        verbose_name="Foydalanuvchi",
+    )
+    device_id = models.CharField(
+        max_length=255,
+        db_index=True,
+        verbose_name="Qurilma ID",
+    )
+    device_name = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name="Qurilma nomi",
+    )
+    device_os = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Qurilma operatsion tizimi",
+    )
+    ip_address = models.GenericIPAddressField(
+        blank=True,
+        null=True,
+        verbose_name="IP manzil",
+    )
+    last_active = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Oxirgi faollik vaqti",
+    )
+
+    class Meta:
+        verbose_name = "Foydalanuvchi qurilmasi"
+        verbose_name_plural = "Foydalanuvchi qurilmalari"
+        db_table = "user_devices"
+        unique_together = ("user", "device_id")
+
+    def __str__(self):
+        name = self.device_name or self.device_id
+        return f"{self.user} - {name}"
