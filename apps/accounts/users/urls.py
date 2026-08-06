@@ -12,6 +12,7 @@ from .views import (
     UserMeView,
     UserPledgeViewSet,
     UserViewSet,
+    UserDeviceViewSet,
     ChangePasswordView,
 )
 
@@ -20,6 +21,7 @@ router.register(r"permissions", PermissionViewSet, basename="permission")
 router.register(r"roles", RoleViewSet, basename="role")
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"pledges", UserPledgeViewSet, basename="user-pledge")
+router.register(r"devices", UserDeviceViewSet, basename="user-device")
 
 urlpatterns = [
     path("users/me/", UserMeView.as_view(), name="user-me"),

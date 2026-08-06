@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 from apps.core.base.admin import BaseModelAdmin
-from .models import User, UserPledge, Role, BlockedFace
+from .models import User, UserPledge, Role, BlockedFace, UserDevice
 from apps.core.utils.face import register_user_faces_as_blocked
 
 
@@ -73,3 +73,19 @@ class UserPledgeAdmin(BaseModelAdmin):
 class BlockedFaceAdmin(BaseModelAdmin):
     list_display = ("id", "user", "reason", "created_at")
     search_fields = ("user__phone_number", "user__email", "reason")
+
+
+@admin.register(UserDevice)
+class UserDeviceAdmin(BaseModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "device_name",
+        "device_os",
+        "device_id",
+        "ip_address",
+        "last_active",
+        "is_active",
+    )
+    list_filter = ("is_active", "device_os")
+    search_fields = ("user__phone_number", "user__email", "device_name", "device_id", "ip_address")

@@ -17,7 +17,7 @@ from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
-from .models import AuthProvider, Role, User, UserPledge
+from .models import AuthProvider, Role, User, UserPledge, UserDevice
 from .serializers import (
     CustomTokenObtainPairSerializer,
     GoogleLoginSerializer,
@@ -27,6 +27,7 @@ from .serializers import (
     RoleSerializer,
     UserPledgeSerializer,
     UserSerializer,
+    UserDeviceSerializer,
     ChangePasswordSerializer,
 )
 from .utils import get_tokens_for_user
@@ -179,6 +180,40 @@ class UserPledgeViewSet(BaseManageViewSet):
     ordering_fields = ["created_at"]
 
 
+class UserDeviceViewSet(BaseManageViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserDeviceSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["last_active", "created_at"]
+    http_method_names = ["get", "delete", "post", "head", "options"]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = UserDevice.objects.filter(is_active=True)
+        if user.is_staff or user.is_superuser:
+            return qs
+        return qs.filter(user=user)
+
+    @action(detail=False, methods=["post"], url_path="logout-all-others")
+    def logout_all_others(self, request):
+        user = request.user
+        current_device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+
+        qs = UserDevice.objects.filter(user=user, is_active=True)
+        if current_device_id:
+            qs = qs.exclude(device_id=current_device_id)
+
+        count = qs.update(is_active=False)
+
+        return Response(
+            {
+                "message": f"Boshqa barcha qurilmalar ({count} ta) seansi muvaffaqiyatli tugatildi.",
+                "terminated_count": count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class GoogleLoginView(AutoSchemaMixin, views.APIView):
     permission_classes = []
     serializer_class = GoogleLoginSerializer
@@ -250,6 +285,9 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
                 defaults={"user": user, "extra_data": user_info},
             )
 
+        from .services import register_or_update_user_device
+        register_or_update_user_device(user, request)
+
         tokens = get_tokens_for_user(user)
         return Response(
             {
@@ -285,6 +323,9 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
         if not created and user.auth_provider != AuthProvider.PHONE:
             user.auth_provider = AuthProvider.PHONE
             user.save(update_fields=["auth_provider"])
+
+        from .services import register_or_update_user_device
+        register_or_update_user_device(user, request)
 
         tokens = get_tokens_for_user(user)
         return Response(
@@ -322,6 +363,9 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
         if not created and user.auth_provider != AuthProvider.EMAIL:
             user.auth_provider = AuthProvider.EMAIL
             user.save(update_fields=["auth_provider"])
+
+        from .services import register_or_update_user_device
+        register_or_update_user_device(user, request)
 
         tokens = get_tokens_for_user(user)
         return Response(

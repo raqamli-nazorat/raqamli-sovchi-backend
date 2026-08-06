@@ -4,7 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.core.base.serializers import BaseModelSerializer
 from apps.core.utils.validators import phone_validator
-from .models import Role, User, UserPledge
+from .models import Role, User, UserPledge, UserDevice
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -194,7 +194,37 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             "role": user.role.name if user.role else None,
         }
 
+        request = self.context.get("request")
+        if request:
+            from apps.accounts.users.services import register_or_update_user_device
+            register_or_update_user_device(user, request)
+
         return data
+
+
+class UserDeviceSerializer(BaseModelSerializer):
+    is_current = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserDevice
+        fields = [
+            "id",
+            "device_id",
+            "device_name",
+            "device_os",
+            "ip_address",
+            "last_active",
+            "is_active",
+            "is_current",
+            "created_at",
+        ]
+
+    def get_is_current(self, obj):
+        request = self.context.get("request")
+        if not request:
+            return False
+        current_device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+        return obj.device_id == current_device_id
 
 
 class ChangePasswordSerializer(serializers.Serializer):
