@@ -168,7 +168,9 @@ class Profile(BaseModel):
                 pass
 
         try:
-            if self.location is not None and (self.latitude is None or self.longitude is None):
+            if self.location is not None and (
+                self.latitude is None or self.longitude is None
+            ):
                 self.longitude = Decimal(str(self.location.x))
                 self.latitude = Decimal(str(self.location.y))
         except Exception:
