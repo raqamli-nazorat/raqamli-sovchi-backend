@@ -7,9 +7,9 @@ from apps.accounts.users.models import Role, User
 
 DEFAULT_PERMISSIONS_CODENAMES = [
     # Profiles & Candidates
-    "add_profile",
-    "change_profile",
     "view_profile",
+    "change_me_profile",
+    "delete_me_profile",
     "add_profilephoto",
     "change_profilephoto",
     "delete_profilephoto",
@@ -70,7 +70,7 @@ def create_default_role_after_migration(sender, **kwargs):
                 else:
                     role = Role.objects.create(name="Foydalanuvchi", is_default=True)
 
-            if role and role.permissions.count() == 0:
+            if role:
                 perms = Permission.objects.filter(
                     codename__in=DEFAULT_PERMISSIONS_CODENAMES
                 )
