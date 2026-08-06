@@ -28,4 +28,16 @@ class BlockedUserMiddleware:
                     status=403,
                 )
 
+            device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+            if device_id:
+                from apps.accounts.users.services import is_device_active_in_redis
+                if not is_device_active_in_redis(user.id, device_id):
+                    return JsonResponse(
+                        {
+                            "detail": "Ushbu qurilma seansi tugatilgan. Qaytadan tizimga kiring.",
+                            "_error_code": "device_revoked",
+                        },
+                        status=401,
+                    )
+
         return self.get_response(request)

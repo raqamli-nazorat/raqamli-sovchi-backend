@@ -194,16 +194,19 @@ class UserDeviceViewSet(BaseManageViewSet):
             return qs
         return qs.filter(user=user)
 
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save(update_fields=["is_active"])
+        from .services import revoke_device_in_redis
+        revoke_device_in_redis(instance.user_id, instance.device_id)
+
     @action(detail=False, methods=["post"], url_path="logout-all-others")
     def logout_all_others(self, request):
         user = request.user
         current_device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
 
-        qs = UserDevice.objects.filter(user=user, is_active=True)
-        if current_device_id:
-            qs = qs.exclude(device_id=current_device_id)
-
-        count = qs.update(is_active=False)
+        from .services import revoke_all_other_devices
+        count = revoke_all_other_devices(user, current_device_id)
 
         return Response(
             {
