@@ -295,9 +295,10 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
 
         from .services import register_or_update_user_device
 
-        register_or_update_user_device(user, request)
+        device = register_or_update_user_device(user, request)
+        device_id = device.device_id if device else request.headers.get("X-Device-Id")
 
-        tokens = get_tokens_for_user(user)
+        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
@@ -335,9 +336,10 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
 
         from .services import register_or_update_user_device
 
-        register_or_update_user_device(user, request)
+        device = register_or_update_user_device(user, request)
+        device_id = device.device_id if device else request.headers.get("X-Device-Id")
 
-        tokens = get_tokens_for_user(user)
+        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
@@ -376,9 +378,10 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
 
         from .services import register_or_update_user_device
 
-        register_or_update_user_device(user, request)
+        device = register_or_update_user_device(user, request)
+        device_id = device.device_id if device else request.headers.get("X-Device-Id")
 
-        tokens = get_tokens_for_user(user)
+        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
