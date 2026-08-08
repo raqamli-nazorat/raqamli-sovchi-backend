@@ -1,9 +1,9 @@
 import logging
+import math
 import os
 import tempfile
 import uuid
 from contextlib import contextmanager
-import math
 
 from PIL import Image
 
@@ -27,7 +27,9 @@ REQUIRE_ANTISPOOFING = True
 def _temp_jpeg_files(*labels):
     request_id = uuid.uuid4().hex
     temp_dir = tempfile.gettempdir()
-    paths = [os.path.join(temp_dir, f"{label}_{request_id}.jpg") for label in labels]
+    paths = [
+        os.path.join(temp_dir, f"{label}_{request_id}.jpg") for label in labels
+    ]
     try:
         yield paths
     finally:
@@ -159,7 +161,7 @@ def verify_profile_photo(uploaded_file):
 
         except ValueError:
             return False, "Rasmda yuz topilmadi. Iltimos, aniq rasm yuboring.", None
-        except Exception as e:
+        except Exception:
             logger.exception("verify_profile_photo kutilmagan xatolik")
             return (
                 False,
@@ -181,7 +183,10 @@ def hash_compare(profile_or_user, uploaded_file):
     if not hasattr(profile, "photos"):
         return False, "Foydalanuvchi profili topilmadi."
 
-    main_photo = profile.photos.filter(is_active=True, is_main=True).first()
+    main_photo = profile.photos.filter(
+        is_active=True,
+        is_main=True,
+    ).first()
     if not main_photo:
         return False, "Asosiy profil rasmi topilmadi. Avval asosiy rasmni belgilang."
 
@@ -233,12 +238,16 @@ def hash_compare(profile_or_user, uploaded_file):
                         )
 
             if not photo_embedding:
-                return False, "Asosiy profil rasmidan yuz ma'lumotini olishning imkoni bo'lmadi."
+                return (
+                    False,
+                    "Asosiy profil rasmidan yuz ma'lumotini olishning imkoni bo'lmadi.",
+                )
 
             distance = calculate_cosine_distance(probe_embedding, photo_embedding)
             if distance <= MAX_DISTANCE:
                 logger.info(
-                    "Yuz tekshiruvi tasdiqlandi: ProfileID=%s | UserID=%s | PhotoID=%s | distance=%.4f",
+                    "Yuz tekshiruvi tasdiqlandi: ProfileID=%s | UserID=%s | "
+                    "PhotoID=%s | distance=%.4f",
                     profile_id,
                     user_id,
                     photo.id,

@@ -2,9 +2,11 @@ import os
 
 from PIL import Image
 from rest_framework import serializers
+
 from apps.core.base.serializers import BaseModelSerializer
 from apps.core.utils.face import verify_profile_photo
 
+from .mixins import VoiceIntroValidationMixin
 from .models import Profile, ProfilePhoto, RepresentativeInfo
 from .utils import can_view_profile_photos
 
@@ -14,33 +16,6 @@ MAX_PHOTO_BYTES = 10 * 1024 * 1024
 MAX_PHOTO_DIMENSION = 4096
 ALLOWED_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_PHOTO_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
-MAX_VOICE_INTRO_BYTES = 1024 * 1024
-ALLOWED_VOICE_EXTENSIONS = {".aac", ".m4a"}
-ALLOWED_VOICE_MIME_TYPES = {"audio/aac", "audio/mp4", "audio/x-m4a"}
-
-
-class VoiceIntroValidationMixin:
-    def validate_voice_intro(self, value):
-        if not value:
-            return value
-
-        extension = os.path.splitext(value.name)[1].lower()
-        content_type = getattr(value, "content_type", None)
-        if extension not in ALLOWED_VOICE_EXTENSIONS:
-            raise serializers.ValidationError(
-                "Faqat AAC yoki M4A ovoz fayli qabul qilinadi.", code="voice_type"
-            )
-        if content_type and content_type.lower() not in ALLOWED_VOICE_MIME_TYPES:
-            raise serializers.ValidationError(
-                "Ovoz faylining MIME turi qo'llab-quvvatlanmaydi.", code="voice_mime"
-            )
-        if value.size > MAX_VOICE_INTRO_BYTES:
-            raise serializers.ValidationError(
-                "Ovoz fayli 1 MB dan katta bo'lmasligi kerak.", code="voice_size"
-            )
-        return value
-
-
 class ProfilePhotoSerializer(BaseModelSerializer):
     class Meta:
         model = ProfilePhoto
@@ -64,7 +39,10 @@ class ProfilePhotoSerializer(BaseModelSerializer):
             )
         try:
             with Image.open(value) as image:
-                if image.width > MAX_PHOTO_DIMENSION or image.height > MAX_PHOTO_DIMENSION:
+                if (
+                    image.width > MAX_PHOTO_DIMENSION
+                    or image.height > MAX_PHOTO_DIMENSION
+                ):
                     raise serializers.ValidationError(
                         "Rasm o'lchami 4096x4096 dan oshmasligi kerak.",
                         code="photo_dimensions",
