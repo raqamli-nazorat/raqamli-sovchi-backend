@@ -103,7 +103,7 @@ class UserSerializer(BaseModelSerializer):
     def get_candidate_type(self, obj):
         profile = getattr(obj, "profile", None)
         if profile and profile.candidate_type:
-            return profile.get_candidate_type_display()
+            return profile.candidate_type
         return None
 
     def get_completion_percentage(self, obj):
@@ -122,7 +122,7 @@ class UserSerializer(BaseModelSerializer):
             score += 10
         if profile.birth_year:
             score += 10
-        if profile.height and profile.weight:
+        if profile.height:
             score += 10
         if profile.region:
             score += 10
@@ -150,10 +150,35 @@ class UserSerializer(BaseModelSerializer):
 
 
 class UserPledgeSerializer(BaseModelSerializer):
+    accepted_terms = serializers.BooleanField(required=True)
+
     class Meta:
         model = UserPledge
         fields = "__all__"
         related_fields = {"user": ["id", "phone_number"]}
+        extra_kwargs = {
+            "user": {"required": False},
+            "ip_address": {"required": False},
+        }
+
+    def validate_accepted_terms(self, value):
+        if value is not True:
+            raise serializers.ValidationError(
+                "Shartlarni qabul qilish majburiy.", code="terms_required"
+            )
+        return value
+
+
+class UserPledgeCreateSerializer(serializers.Serializer):
+    accepted_terms = serializers.BooleanField()
+    has_serious_badge = serializers.BooleanField(required=False, default=False)
+
+    def validate_accepted_terms(self, value):
+        if value is not True:
+            raise serializers.ValidationError(
+                "Shartlarni qabul qilish majburiy.", code="terms_required"
+            )
+        return value
 
 
 class GoogleLoginSerializer(serializers.Serializer):

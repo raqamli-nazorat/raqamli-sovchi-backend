@@ -4,6 +4,7 @@ import requests as http_requests
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
+from drf_spectacular.utils import extend_schema
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status, views
 from rest_framework.decorators import action
@@ -26,6 +27,7 @@ from .serializers import (
     EmailAuthSerializer,
     RoleSerializer,
     UserPledgeSerializer,
+    UserPledgeCreateSerializer,
     UserSerializer,
     UserDeviceSerializer,
     ChangePasswordSerializer,
@@ -178,6 +180,45 @@ class UserPledgeViewSet(BaseManageViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserPledgeFilter
     ordering_fields = ["created_at"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            return qs
+        return qs.filter(user=self.request.user)
+
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            serializer.fields["user"].read_only = True
+            serializer.fields["ip_address"].read_only = True
+        return serializer
+
+    @extend_schema(
+        request=UserPledgeCreateSerializer,
+        responses={200: UserPledgeSerializer, 201: UserPledgeSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        if request.user.is_staff or request.user.is_superuser:
+            return super().create(request, *args, **kwargs)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        defaults = {
+            "accepted_terms": serializer.validated_data["accepted_terms"],
+            "ip_address": request.META.get("REMOTE_ADDR"),
+        }
+        if "has_serious_badge" in serializer.validated_data:
+            defaults["has_serious_badge"] = serializer.validated_data["has_serious_badge"]
+        pledge, created = UserPledge.objects.update_or_create(
+            user=request.user,
+            defaults=defaults,
+        )
+        response_serializer = self.get_serializer(pledge)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
 
 class UserDeviceViewSet(BaseManageViewSet):

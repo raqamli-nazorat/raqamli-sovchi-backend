@@ -7,6 +7,7 @@ from apps.accounts.users.models import Role, User
 
 DEFAULT_PERMISSIONS_CODENAMES = [
     # Profiles & Candidates
+    "add_profile",
     "view_profile",
     "change_me_profile",
     "delete_me_profile",

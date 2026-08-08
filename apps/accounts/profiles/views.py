@@ -1,11 +1,14 @@
 import logging
 
+from django.db import IntegrityError, transaction
+from django.db.models import Max
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, permissions, status
-from rest_framework.exceptions import NotFound
+from rest_framework import generics, permissions, serializers, status
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema, inline_serializer
 
 from apps.core.base.mixins import AutoSchemaMixin
 from apps.core.base.views import BaseManageViewSet
@@ -69,6 +72,12 @@ class ProfileViewSet(BaseManageViewSet):
     search_fields = ["first_name", "last_name", "bio"]
     ordering_fields = ["created_at", "birth_year", "height", "weight"]
 
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            serializer.fields["user"].read_only = True
+        return serializer
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
@@ -102,7 +111,23 @@ class ProfileViewSet(BaseManageViewSet):
         return Response(serializer.data)
 
     def perform_create(self, serializer):
-        profile = serializer.save()
+        user = self.request.user
+        target_user = (
+            serializer.validated_data.get("user")
+            if user.is_staff or user.is_superuser
+            else user
+        )
+        if not target_user:
+            raise ValidationError(
+                {"user": "Profil uchun foydalanuvchi tanlanishi kerak."},
+                code="profile_user_required",
+            )
+        if Profile.objects.filter(user=target_user).exists():
+            raise ValidationError(
+                {"user": "Profil allaqachon mavjud. Uni /profiles/me/ orqali yangilang."},
+                code="profile_already_exists",
+            )
+        profile = serializer.save(user=target_user)
         logger.info(
             "Yangi profil yaratildi: ProfileID=%s | UserID=%s",
             profile.id,
@@ -136,12 +161,84 @@ class ProfilePhotoViewSet(BaseManageViewSet):
             return qs
         return qs.filter(profile__user=user)
 
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer(*args, **kwargs)
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            serializer.fields["profile"].read_only = True
+        return serializer
+
+    @staticmethod
+    def _validation_error(field, message, code):
+        raise ValidationError({field: message}, code=code)
+
+    def _create_photo(self, serializer, profile):
+        photos = ProfilePhoto.objects.select_for_update().filter(
+            profile=profile, is_active=True
+        )
+        if photos.count() >= 4:
+            self._validation_error(
+                "image", "Profilga ko'pi bilan 4 ta rasm yuklash mumkin.", "max_photos"
+            )
+
+        order = serializer.validated_data.get("order")
+        if order is None:
+            order = (photos.aggregate(max_order=Max("order"))["max_order"] or 0) + 1
+        if order > 4:
+            self._validation_error(
+                "order", "Rasm tartibi 1 dan 4 gacha bo'lishi kerak.", "photo_order"
+            )
+        if photos.filter(order=order).exists():
+            self._validation_error(
+                "order", "Bu rasm tartibi allaqachon band.", "duplicate_order"
+            )
+
+        if serializer.validated_data.get("is_main"):
+            photos.filter(is_main=True).update(is_main=False)
+        try:
+            return serializer.save(profile=profile, order=order)
+        except IntegrityError:
+            self._validation_error(
+                "order",
+                "Rasmni saqlashda tartib to'qnashuvi yuz berdi. Qayta urinib ko'ring.",
+                "photo_conflict",
+            )
+
+    def _update_photo(self, serializer):
+        photo = serializer.instance
+        with transaction.atomic():
+            photos = ProfilePhoto.objects.select_for_update().filter(
+                profile=photo.profile, is_active=True
+            )
+            order = serializer.validated_data.get("order")
+            if order is not None and photos.exclude(pk=photo.pk).filter(order=order).exists():
+                self._validation_error(
+                    "order", "Bu rasm tartibi allaqachon band.", "duplicate_order"
+                )
+            if serializer.validated_data.get("is_main"):
+                photos.exclude(pk=photo.pk).filter(is_main=True).update(is_main=False)
+            try:
+                return serializer.save()
+            except IntegrityError:
+                self._validation_error(
+                    "order",
+                    "Rasmni saqlashda to'qnashuv yuz berdi. Qayta urinib ko'ring.",
+                    "photo_conflict",
+                )
+
     def perform_create(self, serializer):
-        profile = getattr(self.request.user, "profile", None)
-        if profile and not serializer.validated_data.get("profile"):
-            photo = serializer.save(profile=profile)
-        else:
-            photo = serializer.save()
+        user = self.request.user
+        profile = (
+            serializer.validated_data.get("profile")
+            if user.is_staff or user.is_superuser
+            else getattr(user, "profile", None)
+        )
+        if not profile:
+            self._validation_error(
+                "profile", "Avval profil yarating, keyin rasm yuklang.", "profile_required"
+            )
+        with transaction.atomic():
+            profile = Profile.objects.select_for_update().get(pk=profile.pk)
+            photo = self._create_photo(serializer, profile)
 
         logger.info(
             "Profil rasmi yuklandi: PhotoID=%s | ProfileID=%s",
@@ -150,7 +247,7 @@ class ProfilePhotoViewSet(BaseManageViewSet):
         )
 
     def perform_update(self, serializer):
-        photo = serializer.save()
+        photo = self._update_photo(serializer)
         logger.info(
             "Profil rasmi yangilandi: PhotoID=%s | ProfileID=%s",
             photo.id,
@@ -198,6 +295,35 @@ class RepresentativeInfoViewSet(BaseManageViewSet):
 class FaceVerificationView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=FaceVerificationSerializer,
+        responses={
+            200: inline_serializer(
+                name="FaceVerificationSuccess",
+                fields={
+                    "message": serializers.CharField(),
+                    "verified": serializers.BooleanField(),
+                },
+            ),
+            400: inline_serializer(
+                name="FaceVerificationFailure",
+                fields={
+                    "detail": serializers.CharField(),
+                    "verified": serializers.BooleanField(),
+                    "retryable": serializers.BooleanField(),
+                },
+            ),
+            403: inline_serializer(
+                name="FaceVerificationBlocked",
+                fields={
+                    "detail": serializers.CharField(),
+                    "verified": serializers.BooleanField(),
+                    "retryable": serializers.BooleanField(),
+                    "is_blocked": serializers.BooleanField(),
+                },
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         user = request.user
         logger.info("Yuz tekshiruvi so'rovi kelib tushdi: UserID=%s", user.id)
@@ -209,7 +335,15 @@ class FaceVerificationView(AutoSchemaMixin, APIView):
                 user.id,
                 serializer.errors,
             )
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "detail": serializer.errors,
+                    "verified": False,
+                    "retryable": True,
+                    "_error_code": "face_validation_error",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         uploaded_file = serializer.validated_data["image"]
 
@@ -219,7 +353,23 @@ class FaceVerificationView(AutoSchemaMixin, APIView):
                 "Yuz tekshiruvi xatosi: Profil yaratilmagan. UserID=%s", user.id
             )
             return Response(
-                {"detail": "Foydalanuvchi profili mavjud emas. Avval profil yarating!"},
+                {
+                    "detail": "Foydalanuvchi profili mavjud emas. Avval profil yarating!",
+                    "verified": False,
+                    "retryable": True,
+                    "_error_code": "profile_required",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not profile.photos.filter(is_active=True, is_main=True).exists():
+            return Response(
+                {
+                    "detail": "Asosiy profil rasmi mavjud emas. Avval bir rasmni asosiy deb belgilang.",
+                    "verified": False,
+                    "retryable": True,
+                    "_error_code": "main_photo_required",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -254,6 +404,8 @@ class FaceVerificationView(AutoSchemaMixin, APIView):
                                 "detail": "Ushbu yuz egasiga tegishli bloklangan hisob aniqlandi! Tizimdan foydalanish taqiqlanadi va ushbu hisobingiz ham bloklandi.",
                                 "verified": False,
                                 "is_blocked": True,
+                                "retryable": False,
+                                "_error_code": "blocked_face",
                             },
                             status=status.HTTP_403_FORBIDDEN,
                         )
@@ -279,5 +431,11 @@ class FaceVerificationView(AutoSchemaMixin, APIView):
             msg,
         )
         return Response(
-            {"detail": msg, "verified": False}, status=status.HTTP_400_BAD_REQUEST
+            {
+                "detail": msg,
+                "verified": False,
+                "retryable": True,
+                "_error_code": "face_mismatch",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
