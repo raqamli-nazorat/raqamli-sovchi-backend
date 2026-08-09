@@ -1,9 +1,9 @@
 import logging
+import math
 import os
 import tempfile
 import uuid
 from contextlib import contextmanager
-import math
 
 from PIL import Image
 
@@ -27,7 +27,9 @@ REQUIRE_ANTISPOOFING = True
 def _temp_jpeg_files(*labels):
     request_id = uuid.uuid4().hex
     temp_dir = tempfile.gettempdir()
-    paths = [os.path.join(temp_dir, f"{label}_{request_id}.jpg") for label in labels]
+    paths = [
+        os.path.join(temp_dir, f"{label}_{request_id}.jpg") for label in labels
+    ]
     try:
         yield paths
     finally:
@@ -115,7 +117,7 @@ def extract_embedding(image_path):
     return None
 
 
-def verify_face_image(uploaded_file):
+def verify_profile_photo(uploaded_file):
     if not DEEPFACE_AVAILABLE:
         logger.error("DeepFace o'rnatilmagan — profil rasmi rad etildi.")
         return (
@@ -137,7 +139,7 @@ def verify_face_image(uploaded_file):
                 img_path=temp_path,
                 detector_backend=DETECTOR_BACKEND,
                 enforce_detection=True,
-                anti_spoofing=REQUIRE_ANTISPOOFING,
+                anti_spoofing=False,
             )
 
             if not faces:
@@ -154,25 +156,22 @@ def verify_face_image(uploaded_file):
                     None,
                 )
 
-            if REQUIRE_ANTISPOOFING and not faces[0].get("is_real", False):
-                return (
-                    False,
-                    "Tiriklikni tasdiqlab bo'lmadi. Iltimos, yorug' joyda kameraga to'g'ri qarab qaytadan urinib ko'ring.",
-                    None,
-                )
-
             embedding = extract_embedding(temp_path)
             return True, "Yuz muvaffaqiyatli aniqlandi.", embedding
 
         except ValueError:
             return False, "Rasmda yuz topilmadi. Iltimos, aniq rasm yuboring.", None
-        except Exception as e:
-            logger.exception("verify_face_image kutilmagan xatolik")
+        except Exception:
+            logger.exception("verify_profile_photo kutilmagan xatolik")
             return (
                 False,
                 "Rasmni tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.",
                 None,
             )
+
+
+# Backwards-compatible name for callers outside this repository.
+verify_face_image = verify_profile_photo
 
 
 def hash_compare(profile_or_user, uploaded_file):
@@ -184,9 +183,12 @@ def hash_compare(profile_or_user, uploaded_file):
     if not hasattr(profile, "photos"):
         return False, "Foydalanuvchi profili topilmadi."
 
-    photos = list(profile.photos.filter(is_active=True).order_by("-is_main", "order"))
-    if not photos:
-        return False, "Profil rasmlari topilmadi. Avval profil rasmingizni yuklang."
+    main_photo = profile.photos.filter(
+        is_active=True,
+        is_main=True,
+    ).first()
+    if not main_photo:
+        return False, "Asosiy profil rasmi topilmadi. Avval asosiy rasmni belgilang."
 
     profile_id = getattr(profile, "id", "Unknown")
     user_id = getattr(profile, "user_id", "Unknown")
@@ -217,39 +219,41 @@ def hash_compare(profile_or_user, uploaded_file):
             if not probe_embedding:
                 return False, "Yuklangan selfie rasmda yuz aniqlanmadi."
 
-            for photo in photos:
-                if not photo.image or not photo.image.name:
-                    continue
+            photo = main_photo
+            if not photo.image or not photo.image.name:
+                return False, "Asosiy profil rasmi mavjud emas. Uni qayta yuklang."
 
-                photo_embedding = photo.embedding
+            photo_embedding = photo.embedding
+            if not photo_embedding:
+                with _temp_jpeg_files(f"base_{photo.id}") as (base_path,):
+                    try:
+                        _write_field_file_to_path(photo.image, base_path)
+                        photo_embedding = extract_embedding(base_path)
+                        if photo_embedding:
+                            photo.embedding = photo_embedding
+                            photo.save(update_fields=["embedding", "updated_at"])
+                    except Exception as e:
+                        logger.warning(
+                            "PhotoID=%s embedding olishda xatolik: %s", photo.id, e
+                        )
 
-                if not photo_embedding:
-                    with _temp_jpeg_files(f"base_{photo.id}") as (base_path,):
-                        try:
-                            _write_field_file_to_path(photo.image, base_path)
-                            photo_embedding = extract_embedding(base_path)
-                            if photo_embedding:
-                                photo.embedding = photo_embedding
-                                photo.save(update_fields=["embedding", "updated_at"])
-                        except Exception as e:
-                            logger.warning(
-                                "PhotoID=%s embedding olishda xatolik: %s", photo.id, e
-                            )
-                            continue
+            if not photo_embedding:
+                return (
+                    False,
+                    "Asosiy profil rasmidan yuz ma'lumotini olishning imkoni bo'lmadi.",
+                )
 
-                if not photo_embedding:
-                    continue
-
-                distance = calculate_cosine_distance(probe_embedding, photo_embedding)
-                if distance <= MAX_DISTANCE:
-                    logger.info(
-                        "Yuz tekshiruvi tasdiqlandi: ProfileID=%s | UserID=%s | PhotoID=%s | distance=%.4f",
-                        profile_id,
-                        user_id,
-                        photo.id,
-                        distance,
-                    )
-                    return True, "Yuz muvaffaqiyatli tasdiqlandi."
+            distance = calculate_cosine_distance(probe_embedding, photo_embedding)
+            if distance <= MAX_DISTANCE:
+                logger.info(
+                    "Yuz tekshiruvi tasdiqlandi: ProfileID=%s | UserID=%s | "
+                    "PhotoID=%s | distance=%.4f",
+                    profile_id,
+                    user_id,
+                    photo.id,
+                    distance,
+                )
+                return True, "Yuz muvaffaqiyatli tasdiqlandi."
 
             logger.info(
                 "Yuz tekshiruvi rad etildi (hech bir rasm mos kelmadi): ProfileID=%s | UserID=%s",

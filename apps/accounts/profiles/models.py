@@ -50,7 +50,9 @@ class Profile(BaseModel):
     )
     birth_year = models.PositiveIntegerField(verbose_name="Tug'ilgan yili")
     height = models.PositiveIntegerField(verbose_name="Bo'yi (sm)")
-    weight = models.PositiveIntegerField(verbose_name="Vazni (kg)")
+    weight = models.PositiveIntegerField(
+        blank=True, null=True, verbose_name="Vazni (kg)"
+    )
 
     region = models.ForeignKey(
         Region,
@@ -198,6 +200,18 @@ class ProfilePhoto(BaseModel):
         verbose_name_plural = "Profil rasmlari"
         ordering = ["order"]
         db_table = "profile_photos"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profile", "order"],
+                condition=models.Q(is_active=True),
+                name="unique_active_profile_photo_order",
+            ),
+            models.UniqueConstraint(
+                fields=["profile"],
+                condition=models.Q(is_active=True, is_main=True),
+                name="unique_active_main_profile_photo",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.profile.first_name} photo #{self.order}"

@@ -1,7 +1,12 @@
+from unittest.mock import MagicMock, patch
+
+from django.contrib.auth.models import Permission
+from django.core.exceptions import ValidationError
 from django.test import TestCase
-from rest_framework.test import APIClient
 from rest_framework import status
-from apps.accounts.users.models import User, AuthProvider
+from rest_framework.test import APIClient
+
+from apps.accounts.users.models import AuthProvider, Role, User, UserPledge
 
 
 class EmailAuthTestCase(TestCase):
@@ -48,8 +53,6 @@ class GoogleAuthTestCase(TestCase):
         response = self.client.post(self.url, {}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("non_field_errors", response.data)
-
-    from unittest.mock import patch, MagicMock
 
     @patch("apps.accounts.users.views.GoogleOAuth2Adapter")
     def test_google_auth_with_code_creates_user_without_phone(self, mock_adapter_cls):
@@ -115,10 +118,6 @@ class GoogleAuthTestCase(TestCase):
         self.assertEqual(response.data["user"]["email"], "aliasuser@example.com")
 
 
-from django.core.exceptions import ValidationError
-from apps.accounts.users.models import Role
-
-
 class RoleDeleteTestCase(TestCase):
     def setUp(self):
         self.default_role = Role.objects.create(
@@ -140,3 +139,51 @@ class RoleDeleteTestCase(TestCase):
         self.normal_role.delete()
         self.normal_role.refresh_from_db()
         self.assertFalse(self.normal_role.is_active)
+
+
+class UserPledgeOnboardingTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create(email="pledge@example.com")
+        self.other = User.objects.create(email="other-pledge@example.com")
+        self.user.user_permissions.add(
+            Permission.objects.get(codename="add_userpledge")
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_pledge_binds_user_and_ip_and_is_idempotent(self):
+        response = self.client.post(
+            "/api/v1/accounts/pledges/",
+            {
+                "user": str(self.other.id),
+                "ip_address": "203.0.113.1",
+                "accepted_terms": True,
+            },
+            format="json",
+            REMOTE_ADDR="198.51.100.2",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        pledge = UserPledge.objects.get()
+        self.assertEqual(pledge.user, self.user)
+        self.assertEqual(pledge.ip_address, "198.51.100.2")
+
+        response = self.client.post(
+            "/api/v1/accounts/pledges/",
+            {"accepted_terms": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(UserPledge.objects.count(), 1)
+
+    def test_pledge_requires_terms_and_only_lists_own_record(self):
+        response = self.client.post(
+            "/api/v1/accounts/pledges/",
+            {"accepted_terms": False},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        UserPledge.objects.create(user=self.other, accepted_terms=True)
+
+        response = self.client.get("/api/v1/accounts/pledges/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]), 0)
