@@ -19,4 +19,17 @@ class ProfileMePermission(permissions.BasePermission):
         return True
 
 
-HasChangeMeProfilePermission = ProfileMePermission
+class IsProfileOwnerOrStaff(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        return getattr(obj, "user_id", None) == request.user.id
+

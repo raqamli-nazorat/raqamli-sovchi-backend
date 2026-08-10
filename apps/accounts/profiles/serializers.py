@@ -44,6 +44,9 @@ class ProfileSerializer(BaseModelSerializer):
     class Meta:
         model = Profile
         fields = "__all__"
+        extra_kwargs = {
+            "user": {"required": False, "allow_null": True},
+        }
         related_fields = {
             "user": [
                 "id",

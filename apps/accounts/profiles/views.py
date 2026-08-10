@@ -20,7 +20,7 @@ from apps.core.utils.face import (
 
 from .filters import ProfileFilter
 from .models import Profile, ProfilePhoto, RepresentativeInfo
-from .permissions import HasChangeMeProfilePermission
+from .permissions import ProfileMePermission, IsProfileOwnerOrStaff
 from .serializers import (
     FaceVerificationSerializer,
     ProfileMeSerializer,
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProfileMeView(AutoSchemaMixin, generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [HasChangeMeProfilePermission]
+    permission_classes = [ProfileMePermission]
     serializer_class = ProfileMeSerializer
 
     def get_object(self):
@@ -64,6 +64,7 @@ class ProfileViewSet(BaseManageViewSet):
         .active()
     )
     serializer_class = ProfileSerializer
+    permission_classes = [IsProfileOwnerOrStaff]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProfileFilter
     search_fields = ["first_name", "last_name", "bio"]
@@ -102,7 +103,16 @@ class ProfileViewSet(BaseManageViewSet):
         return Response(serializer.data)
 
     def perform_create(self, serializer):
-        profile = serializer.save()
+        user = self.request.user
+        target_user = user
+        if (user.is_staff or user.is_superuser) and serializer.validated_data.get("user"):
+            target_user = serializer.validated_data["user"]
+
+        if Profile.objects.filter(user=target_user, is_active=True).exists():
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"user": "Ushbu foydalanuvchida allaqachon profil mavjud."})
+
+        profile = serializer.save(user=target_user)
         logger.info(
             "Yangi profil yaratildi: ProfileID=%s | UserID=%s",
             profile.id,
@@ -110,6 +120,10 @@ class ProfileViewSet(BaseManageViewSet):
         )
 
     def perform_update(self, serializer):
+        user = self.request.user
+        if not (user.is_staff or user.is_superuser):
+            serializer.validated_data.pop("user", None)
+
         profile = serializer.save()
         logger.info(
             "Profil yangilandi: ProfileID=%s | UserID=%s", profile.id, profile.user_id
