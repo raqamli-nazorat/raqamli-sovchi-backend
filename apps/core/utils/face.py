@@ -5,7 +5,7 @@ import uuid
 from contextlib import contextmanager
 import math
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 try:
     from deepface import DeepFace
@@ -41,6 +41,7 @@ def _temp_jpeg_files(*labels):
 
 def _save_as_rgb_jpeg(source, dest_path):
     with Image.open(source) as image:
+        image = ImageOps.exif_transpose(image)
         image.load()
         if image.mode != "RGB":
             image = image.convert("RGB")
@@ -137,7 +138,7 @@ def verify_face_image(uploaded_file):
                 img_path=temp_path,
                 detector_backend=DETECTOR_BACKEND,
                 enforce_detection=True,
-                anti_spoofing=REQUIRE_ANTISPOOFING,
+                anti_spoofing=False,
             )
 
             if not faces:
@@ -154,12 +155,14 @@ def verify_face_image(uploaded_file):
                     None,
                 )
 
-            if REQUIRE_ANTISPOOFING and not faces[0].get("is_real", False):
-                return (
-                    False,
-                    "Tiriklikni tasdiqlab bo'lmadi. Iltimos, yorug' joyda kameraga to'g'ri qarab qaytadan urinib ko'ring.",
-                    None,
-                )
+            if REQUIRE_ANTISPOOFING:
+                is_real, spoof_msg = _check_liveness(temp_path)
+                if not is_real and spoof_msg != "no_face":
+                    return (
+                        False,
+                        "Tiriklikni tasdiqlab bo'lmadi. Iltimos, yorug' joyda kameraga to'g'ri qarab qaytadan urinib ko'ring.",
+                        None,
+                    )
 
             embedding = extract_embedding(temp_path)
             return True, "Yuz muvaffaqiyatli aniqlandi.", embedding
