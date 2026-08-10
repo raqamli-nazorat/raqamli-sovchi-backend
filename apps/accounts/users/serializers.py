@@ -173,10 +173,9 @@ class EmailAuthSerializer(serializers.Serializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = "phone_number"
 
-    @classmethod
-    def get_token(cls, user):
+    def get_token(self, user):
         token = super().get_token(user)
-        request = cls.context.get("request")
+        request = getattr(self, "context", {}).get("request") if hasattr(self, "context") else None
         if request:
             device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
             if device_id:
