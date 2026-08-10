@@ -144,14 +144,14 @@ def verify_face_image(uploaded_file):
             if not faces:
                 return (
                     False,
-                    "Rasmda yuz aniqlanmadi. Iltimos, yuzingiz aniq ko'ringan rasm yuklang.",
+                    "Yuz aniqlanmadi. Iltimos, yuzingizni kameraga aniq ko'rsatib qayta urinib ko'ring.",
                     None,
                 )
 
             if len(faces) > 1:
                 return (
                     False,
-                    "Rasmda bir nechta yuz bor. Faqat o'zingiz bo'lgan rasm yuboring.",
+                    "Kadrda bir nechta yuz aniqlandi. Faqat o'zingiz ko'rinishingiz kerak.",
                     None,
                 )
 
@@ -168,12 +168,12 @@ def verify_face_image(uploaded_file):
             return True, "Yuz muvaffaqiyatli aniqlandi.", embedding
 
         except ValueError:
-            return False, "Rasmda yuz topilmadi. Iltimos, aniq rasm yuboring.", None
+            return False, "Yuz aniqlanmadi. Iltimos, kameraga to'g'ri qarab qayta urinib ko'ring.", None
         except Exception as e:
             logger.exception("verify_face_image kutilmagan xatolik")
             return (
                 False,
-                "Rasmni tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.",
+                "Tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.",
                 None,
             )
 
@@ -224,17 +224,17 @@ def hash_compare(profile_or_user, uploaded_file):
                     anti_spoofing=False,
                 )
                 if not faces:
-                    return False, "Rasmda yuz aniqlanmadi. Iltimos, yuzingiz aniq ko'ringan rasm yuboring."
+                    return False, "Yuz aniqlanmadi. Iltimos, yuzingizni kameraga aniq ko'rsatib qayta urinib ko'ring."
                 if len(faces) > 1:
-                    return False, "Rasmda bir nechta yuz aniqlandi. Faqat o'zingiz bo'lgan rasm yuboring."
+                    return False, "Kadrda bir nechta yuz aniqlandi. Faqat o'zingiz ko'rinishingiz kerak."
             except ValueError:
-                return False, "Rasmda yuz aniqlanmadi. Iltimos, yuzingiz aniq ko'ringan rasm yuboring."
+                return False, "Yuz aniqlanmadi. Iltimos, yuzingizni kameraga aniq ko'rsatib qayta urinib ko'ring."
             except Exception as e:
                 logger.warning("DeepFace extract_faces xatoligi: %s", e)
 
             probe_embedding = extract_embedding(probe_path)
             if not probe_embedding:
-                return False, "Rasmda yuz aniqlanmadi. Iltimos, aniq rasm yuboring."
+                return False, "Yuz aniqlanmadi. Iltimos, kameraga to'g'ri qarab qayta urinib ko'ring."
 
             for photo in photos:
                 if not photo.image or not photo.image.name:
