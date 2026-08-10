@@ -224,17 +224,17 @@ def hash_compare(profile_or_user, uploaded_file):
                     anti_spoofing=False,
                 )
                 if not faces:
-                    return False, "Yuklangan rasmda yuz aniqlanmadi. Iltimos, yuzingiz aniq ko'ringan rasm yuboring."
+                    return False, "Rasmda yuz aniqlanmadi. Iltimos, yuzingiz aniq ko'ringan rasm yuboring."
                 if len(faces) > 1:
                     return False, "Rasmda bir nechta yuz aniqlandi. Faqat o'zingiz bo'lgan rasm yuboring."
             except ValueError:
-                return False, "Yuklangan rasmda yuz aniqlanmadi. Iltimos, yuzingiz aniq ko'ringan rasm yuboring."
+                return False, "Rasmda yuz aniqlanmadi. Iltimos, yuzingiz aniq ko'ringan rasm yuboring."
             except Exception as e:
                 logger.warning("DeepFace extract_faces xatoligi: %s", e)
 
             probe_embedding = extract_embedding(probe_path)
             if not probe_embedding:
-                return False, "Yuklangan rasmda yuz aniqlanmadi. Iltimos, aniq rasm yuboring."
+                return False, "Rasmda yuz aniqlanmadi. Iltimos, aniq rasm yuboring."
 
             for photo in photos:
                 if not photo.image or not photo.image.name:
