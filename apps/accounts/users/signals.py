@@ -6,17 +6,9 @@ from django.dispatch import receiver
 from apps.accounts.users.models import Role, User
 
 DEFAULT_PERMISSIONS_CODENAMES = [
-    # Profiles & Candidates
+    # Profiles & Candidates (Read-only by default; self-management is handled via /me/)
     "view_profile",
-    "change_me_profile",
-    "delete_me_profile",
-    "add_profilephoto",
-    "change_profilephoto",
-    "delete_profilephoto",
     "view_profilephoto",
-    "add_representativeinfo",
-    "change_representativeinfo",
-    "delete_representativeinfo",
     "view_representativeinfo",
     # User Pledge
     "add_userpledge",

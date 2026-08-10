@@ -50,7 +50,9 @@ class Profile(BaseModel):
     )
     birth_year = models.PositiveIntegerField(verbose_name="Tug'ilgan yili")
     height = models.PositiveIntegerField(verbose_name="Bo'yi (sm)")
-    weight = models.PositiveIntegerField(verbose_name="Vazni (kg)")
+    weight = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name="Vazni (kg)"
+    )
 
     region = models.ForeignKey(
         Region,
@@ -154,10 +156,6 @@ class Profile(BaseModel):
         verbose_name = "Profil Anketa"
         verbose_name_plural = "Profil Anketalari"
         db_table = "profiles"
-        permissions = [
-            ("change_me_profile", "O'z profilini tahrirlash"),
-            ("delete_me_profile", "O'z profilini o'chirish"),
-        ]
 
     def save(self, *args, **kwargs):
         if self.latitude is not None and self.longitude is not None:
