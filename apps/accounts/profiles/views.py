@@ -151,8 +151,23 @@ class ProfilePhotoViewSet(BaseManageViewSet):
         return qs.filter(profile__user=user)
 
     def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError
+        from .serializers import MAX_PHOTOS_PER_PROFILE
+
         profile = getattr(self.request.user, "profile", None)
         if profile and not serializer.validated_data.get("profile"):
+            current_count = ProfilePhoto.objects.filter(
+                profile=profile, is_active=True
+            ).count()
+            if current_count >= MAX_PHOTOS_PER_PROFILE:
+                raise ValidationError(
+                    {
+                        "image": (
+                            f"Profilga maksimal {MAX_PHOTOS_PER_PROFILE} ta rasm yuklash mumkin. "
+                            "Yangi rasm qo'shish uchun avval bitta rasmni o'chiring."
+                        )
+                    }
+                )
             photo = serializer.save(profile=profile)
         else:
             photo = serializer.save()
