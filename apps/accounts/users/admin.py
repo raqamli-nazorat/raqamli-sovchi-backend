@@ -1,5 +1,4 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
 from apps.core.base.admin import BaseModelAdmin
 from .models import User, UserPledge, Role, BlockedFace, UserDevice
 from apps.core.utils.face import register_user_faces_as_blocked

@@ -2,13 +2,21 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.core.base.views import BaseManageViewSet
-from .models import EducationLevel, Nationality, Profession, MaritalStatus, HealthStatus
+from .models import (
+    EducationLevel,
+    Nationality,
+    Profession,
+    MaritalStatus,
+    HealthStatus,
+    Kinship,
+)
 from .serializers import (
     EducationLevelSerializer,
     NationalitySerializer,
     ProfessionSerializer,
     MaritalStatusSerializer,
     HealthStatusSerializer,
+    KinshipSerializer,
 )
 
 
@@ -47,6 +55,14 @@ class MaritalStatusViewSet(BaseManageViewSet):
 class HealthStatusViewSet(BaseManageViewSet):
     queryset = HealthStatus.objects.active()
     serializer_class = HealthStatusSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ["name"]
+    ordering_fields = ["name", "created_at"]
+
+
+class KinshipViewSet(BaseManageViewSet):
+    queryset = Kinship.objects.active()
+    serializer_class = KinshipSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ["name"]
     ordering_fields = ["name", "created_at"]

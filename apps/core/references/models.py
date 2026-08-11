@@ -57,3 +57,15 @@ class HealthStatus(BaseModel):
 
     def __str__(self):
         return self.name
+
+
+class Kinship(BaseModel):
+    name = models.CharField(max_length=255, unique=True, verbose_name="Nomi")
+
+    class Meta:
+        verbose_name = "Qarindoshlik holati"
+        verbose_name_plural = "Qarindoshlik holatlari"
+        db_table = "kinships"
+
+    def __str__(self):
+        return self.name

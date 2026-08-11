@@ -32,7 +32,11 @@ class AutoSchemaMixin:
                 except Exception:
                     pass
 
-            if not tag_name and hasattr(cls, "serializer_class") and cls.serializer_class:
+            if (
+                not tag_name
+                and hasattr(cls, "serializer_class")
+                and cls.serializer_class
+            ):
                 meta = getattr(cls.serializer_class, "Meta", None)
                 if meta and hasattr(meta, "model"):
                     tag_name = meta.model.__name__

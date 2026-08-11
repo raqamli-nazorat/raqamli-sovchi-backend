@@ -5,6 +5,7 @@ from .views import (
     ProfessionViewSet,
     MaritalStatusViewSet,
     HealthStatusViewSet,
+    KinshipViewSet,
 )
 
 router = DefaultRouter()
@@ -13,5 +14,6 @@ router.register("nationalities", NationalityViewSet, basename="nationalities")
 router.register("professions", ProfessionViewSet, basename="professions")
 router.register("marital-statuses", MaritalStatusViewSet, basename="marital-statuses")
 router.register("health-statuses", HealthStatusViewSet, basename="health-statuses")
+router.register("kinships", KinshipViewSet, basename="kinships")
 
 urlpatterns = router.urls

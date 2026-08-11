@@ -168,7 +168,11 @@ def verify_face_image(uploaded_file):
             return True, "Yuz muvaffaqiyatli aniqlandi.", embedding
 
         except ValueError:
-            return False, "Yuz aniqlanmadi. Iltimos, kameraga to'g'ri qarab qayta urinib ko'ring.", None
+            return (
+                False,
+                "Yuz aniqlanmadi. Iltimos, kameraga to'g'ri qarab qayta urinib ko'ring.",
+                None,
+            )
         except Exception as e:
             logger.exception("verify_face_image kutilmagan xatolik")
             return (
@@ -224,17 +228,29 @@ def hash_compare(profile_or_user, uploaded_file):
                     anti_spoofing=False,
                 )
                 if not faces:
-                    return False, "Yuz aniqlanmadi. Iltimos, yuzingizni kameraga aniq ko'rsatib qayta urinib ko'ring."
+                    return (
+                        False,
+                        "Yuz aniqlanmadi. Iltimos, yuzingizni kameraga aniq ko'rsatib qayta urinib ko'ring.",
+                    )
                 if len(faces) > 1:
-                    return False, "Kadrda bir nechta yuz aniqlandi. Faqat o'zingiz ko'rinishingiz kerak."
+                    return (
+                        False,
+                        "Kadrda bir nechta yuz aniqlandi. Faqat o'zingiz ko'rinishingiz kerak.",
+                    )
             except ValueError:
-                return False, "Yuz aniqlanmadi. Iltimos, yuzingizni kameraga aniq ko'rsatib qayta urinib ko'ring."
+                return (
+                    False,
+                    "Yuz aniqlanmadi. Iltimos, yuzingizni kameraga aniq ko'rsatib qayta urinib ko'ring.",
+                )
             except Exception as e:
                 logger.warning("DeepFace extract_faces xatoligi: %s", e)
 
             probe_embedding = extract_embedding(probe_path)
             if not probe_embedding:
-                return False, "Yuz aniqlanmadi. Iltimos, kameraga to'g'ri qarab qayta urinib ko'ring."
+                return (
+                    False,
+                    "Yuz aniqlanmadi. Iltimos, kameraga to'g'ri qarab qayta urinib ko'ring.",
+                )
 
             for photo in photos:
                 if not photo.image or not photo.image.name:
@@ -362,9 +378,6 @@ def register_user_faces_as_blocked(user, reason=None, embedding=None):
 
 
 def remove_user_faces_from_blocked(user):
-    """
-    When a user is unblocked, remove their BlockedFace records from blacklists.
-    """
     if not user:
         return
 

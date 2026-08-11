@@ -208,10 +208,12 @@ class RepresentativeInfo(BaseModel):
         related_name="representative_info",
         verbose_name="Vakil profili",
     )
-    kinship = models.CharField(
-        max_length=100,
-        blank=True,
+    kinship = models.ForeignKey(
+        "references.Kinship",
+        on_delete=models.SET_NULL,
         null=True,
+        blank=True,
+        related_name="representatives",
         verbose_name="Qarindoshlik holati",
     )
     candidate_role = models.CharField(

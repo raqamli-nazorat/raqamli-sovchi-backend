@@ -1,13 +1,10 @@
 import hashlib
-import requests as http_requests
 
-from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status, views
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -17,7 +14,7 @@ from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
-from .models import AuthProvider, Role, User, UserPledge, UserDevice
+from .models import Role, User, UserPledge, UserDevice
 from .serializers import (
     CustomTokenObtainPairSerializer,
     GoogleLoginSerializer,
@@ -30,7 +27,6 @@ from .serializers import (
     UserDeviceSerializer,
     ChangePasswordSerializer,
 )
-from .utils import get_tokens_for_user
 
 
 class PermissionViewSet(BaseReadOnlyViewSet):
@@ -228,47 +224,13 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
         serializer = GoogleLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        id_token_str = serializer.validated_data["id_token"]
+        from .services import authenticate_google_user
 
-        resp = http_requests.get(
-            "https://oauth2.googleapis.com/tokeninfo",
-            params={"id_token": id_token_str},
-            timeout=10,
+        user, tokens, is_blocked = authenticate_google_user(
+            serializer.validated_data["id_token"], request
         )
-        if resp.status_code != 200 or "error" in resp.json():
-            raise ValidationError("Google ID token yaroqsiz yoki muddati o'tgan.")
 
-        user_info = resp.json()
-        google_uid = user_info.get("sub")
-        email = (user_info.get("email") or "").lower().strip()
-
-        if not google_uid:
-            raise ValidationError(
-                "Google foydalanuvchi ma'lumotlarini olishda xatolik."
-            )
-
-        social_acc = SocialAccount.objects.filter(
-            provider="google", uid=google_uid
-        ).first()
-
-        if social_acc:
-            user = social_acc.user
-            created = False
-        else:
-            user = None
-            if email:
-                user = User.objects.filter(email=email).first()
-            if user:
-                created = False
-            else:
-                user = User.objects.create(
-                    email=email or None,
-                    auth_provider=AuthProvider.GOOGLE,
-                    is_verified=True,
-                )
-                created = True
-
-        if not created and user.is_blocked:
+        if is_blocked:
             return Response(
                 {
                     "detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."
@@ -276,36 +238,12 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        update_fields = []
-        if not user.email and email:
-            user.email = email
-            update_fields.append("email")
-        if not created and user.auth_provider != AuthProvider.GOOGLE:
-            user.auth_provider = AuthProvider.GOOGLE
-            update_fields.append("auth_provider")
-        if update_fields:
-            user.save(update_fields=update_fields)
-
-        if not social_acc:
-            SocialAccount.objects.get_or_create(
-                provider="google",
-                uid=google_uid,
-                defaults={"user": user, "extra_data": user_info},
-            )
-
-        from .services import register_or_update_user_device
-
-        device = register_or_update_user_device(user, request)
-        device_id = device.device_id if device else request.headers.get("X-Device-Id")
-
-        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
                 "tokens": tokens,
-                "created": created,
             },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            status=status.HTTP_200_OK,
         )
 
 
@@ -316,13 +254,13 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
         serializer = PhoneAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        phone_number = serializer.validated_data["phone_number"]
-        user, created = User.objects.get_or_create(
-            phone_number=phone_number,
-            defaults={"auth_provider": AuthProvider.PHONE},
+        from .services import authenticate_phone_user
+
+        user, tokens, is_blocked = authenticate_phone_user(
+            serializer.validated_data["phone_number"], request
         )
 
-        if not created and user.is_blocked:
+        if is_blocked:
             return Response(
                 {
                     "detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."
@@ -330,23 +268,12 @@ class PhoneAuthView(AutoSchemaMixin, views.APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if not created and user.auth_provider != AuthProvider.PHONE:
-            user.auth_provider = AuthProvider.PHONE
-            user.save(update_fields=["auth_provider"])
-
-        from .services import register_or_update_user_device
-
-        device = register_or_update_user_device(user, request)
-        device_id = device.device_id if device else request.headers.get("X-Device-Id")
-
-        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
                 "tokens": tokens,
-                "created": created,
             },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            status=status.HTTP_200_OK,
         )
 
 
@@ -358,13 +285,13 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
         serializer = EmailAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data["email"].lower()
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={"auth_provider": AuthProvider.EMAIL},
+        from .services import authenticate_email_user
+
+        user, tokens, is_blocked = authenticate_email_user(
+            serializer.validated_data["email"], request
         )
 
-        if not created and user.is_blocked:
+        if is_blocked:
             return Response(
                 {
                     "detail": "Sizning hisobingiz bloklangan. Iltimos, qo'llab-quvvatlash xizmatiga murojaat qiling."
@@ -372,23 +299,12 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if not created and user.auth_provider != AuthProvider.EMAIL:
-            user.auth_provider = AuthProvider.EMAIL
-            user.save(update_fields=["auth_provider"])
-
-        from .services import register_or_update_user_device
-
-        device = register_or_update_user_device(user, request)
-        device_id = device.device_id if device else request.headers.get("X-Device-Id")
-
-        tokens = get_tokens_for_user(user, device_id=device_id)
         return Response(
             {
                 "user": UserSerializer(user).data,
                 "tokens": tokens,
-                "created": created,
             },
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            status=status.HTTP_200_OK,
         )
 
 

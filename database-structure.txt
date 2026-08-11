@@ -64,7 +64,7 @@ PROFILES & CANDIDATES
     RepresentativeInfo ==> Vakil ma'lumoti
         id: uuid
         profile: O2O Profile
-        kinship: string [null]
+        kinship: FK Kinship [null]
         candidate_role: enum (GROOM, BRIDE)
         created_at: timestamp
         updated_at: timestamp
@@ -130,6 +130,12 @@ REFERENCES (Ma'lumotnomalar)
         updated_at: timestamp
     
     HealthStatus ==> Sog'liq holati
+        id: uuid
+        name: string [unique]
+        created_at: timestamp
+        updated_at: timestamp
+
+    Kinship ==> Qarindoshlik holati (Vakillik turi)
         id: uuid
         name: string [unique]
         created_at: timestamp

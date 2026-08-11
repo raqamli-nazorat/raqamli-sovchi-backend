@@ -33,7 +33,10 @@ def _validate_voice_intro(value):
     ext = os.path.splitext(filename)[-1].lstrip(".").lower()
     content_type = getattr(value, "content_type", "") or ""
 
-    if ext not in ALLOWED_AUDIO_EXTENSIONS and content_type not in ALLOWED_AUDIO_CONTENT_TYPES:
+    if (
+        ext not in ALLOWED_AUDIO_EXTENSIONS
+        and content_type not in ALLOWED_AUDIO_CONTENT_TYPES
+    ):
         raise serializers.ValidationError(
             f"Noto'g'ri fayl formati. Ruxsat etilgan formatlar: "
             f"{', '.join(sorted(ALLOWED_AUDIO_EXTENSIONS))}."
@@ -113,6 +116,9 @@ class RepresentativeInfoSerializer(BaseModelSerializer):
     class Meta:
         model = RepresentativeInfo
         fields = "__all__"
+        related_fields = {
+            "kinship": ["id", "name"],
+        }
 
 
 class ProfileSerializer(BaseModelSerializer):
@@ -174,62 +180,6 @@ class ProfileSerializer(BaseModelSerializer):
             except Exception:
                 return None
         return value
-
-
-class ProfileMeSerializer(BaseModelSerializer):
-    class Meta:
-        model = Profile
-        fields = [
-            "id",
-            "first_name",
-            "last_name",
-            "middle_name",
-            "gender",
-            "candidate_type",
-            "birth_year",
-            "height",
-            "weight",
-            "region",
-            "district",
-            "health_status",
-            "marital_status",
-            "education_level",
-            "nationality",
-            "profession",
-            "has_children",
-            "children_count",
-            "expectations",
-            "bio",
-            "voice_intro",
-            "latitude",
-            "longitude",
-            "location",
-            "blur_photos",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ["id", "created_at", "updated_at"]
-        related_fields = {
-            "user": [
-                "id",
-                "phone_number",
-                "email",
-                "auth_provider",
-                "is_verified",
-                "created_at",
-            ],
-            "region": ["id", "name"],
-            "district": ["id", "name"],
-            "education_level": ["id", "name"],
-            "nationality": ["id", "name"],
-            "profession": ["id", "name"],
-            "health_status": ["id", "name"],
-            "marital_status": ["id", "name"],
-            "photos": ["id", "image", "is_main", "order", "created_at"],
-        }
-
-    def validate_voice_intro(self, value):
-        return _validate_voice_intro(value)
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)

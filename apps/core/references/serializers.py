@@ -1,5 +1,5 @@
 from apps.core.base.serializers import BaseModelSerializer
-from .models import EducationLevel, Nationality, Profession, MaritalStatus, HealthStatus
+from .models import EducationLevel, Nationality, Profession, MaritalStatus, HealthStatus, Kinship
 
 
 class EducationLevelSerializer(BaseModelSerializer):
@@ -29,4 +29,10 @@ class MaritalStatusSerializer(BaseModelSerializer):
 class HealthStatusSerializer(BaseModelSerializer):
     class Meta:
         model = HealthStatus
+        fields = "__all__"
+
+
+class KinshipSerializer(BaseModelSerializer):
+    class Meta:
+        model = Kinship
         fields = "__all__"

@@ -1,6 +1,6 @@
 import django_filters
 from apps.core.base.filters import UUIDInFilter
-from .models import Profile, ProfilePhoto
+from .models import Profile
 
 
 class ProfileFilter(django_filters.FilterSet):

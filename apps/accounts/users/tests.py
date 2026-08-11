@@ -1,7 +1,9 @@
+from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
 from apps.accounts.users.models import User, AuthProvider
+
 
 
 class EmailAuthTestCase(TestCase):
@@ -48,8 +50,6 @@ class GoogleAuthTestCase(TestCase):
         response = self.client.post(self.url, {}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("non_field_errors", response.data)
-
-    from unittest.mock import patch, MagicMock
 
     @patch("apps.accounts.users.views.GoogleOAuth2Adapter")
     def test_google_auth_with_code_creates_user_without_phone(self, mock_adapter_cls):

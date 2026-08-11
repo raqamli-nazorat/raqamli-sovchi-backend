@@ -30,7 +30,9 @@ class BlockedUserMiddleware:
                     status=403,
                 )
 
-            device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+            device_id = request.headers.get("X-Device-Id") or request.META.get(
+                "HTTP_X_DEVICE_ID"
+            )
 
             if not device_id:
                 if not validated_token:
@@ -39,7 +41,9 @@ class BlockedUserMiddleware:
                         if header:
                             raw_token = self.jwt_auth.get_raw_token(header)
                             if raw_token:
-                                validated_token = self.jwt_auth.get_validated_token(raw_token)
+                                validated_token = self.jwt_auth.get_validated_token(
+                                    raw_token
+                                )
                     except Exception:
                         pass
 

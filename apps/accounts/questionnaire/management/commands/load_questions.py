@@ -3,7 +3,6 @@ from django.db import transaction
 from apps.accounts.questionnaire.models import (
     Question,
     QuestionOption,
-    TargetGender,
     SectionType,
 )
 

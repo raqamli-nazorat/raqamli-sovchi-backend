@@ -99,9 +99,117 @@ def register_or_update_user_device(user, request):
             device_id,
             device_name,
         )
+    return device
+
+
+def authenticate_google_user(id_token_str, request):
+    import requests as http_requests
+    from allauth.socialaccount.models import SocialAccount
+    from rest_framework.exceptions import ValidationError
+    from apps.accounts.users.models import User, AuthProvider
+    from apps.accounts.users.utils import get_tokens_for_user
+
+    resp = http_requests.get(
+        "https://oauth2.googleapis.com/tokeninfo",
+        params={"id_token": id_token_str},
+        timeout=10,
+    )
+    if resp.status_code != 200 or "error" in resp.json():
+        raise ValidationError("Google ID token yaroqsiz yoki muddati o'tgan.")
+
+    user_info = resp.json()
+    google_uid = user_info.get("sub")
+    email = (user_info.get("email") or "").lower().strip()
+
+    if not google_uid:
+        raise ValidationError("Google foydalanuvchi ma'lumotlarini olishda xatolik.")
+
+    social_acc = SocialAccount.objects.filter(provider="google", uid=google_uid).first()
+
+    if social_acc:
+        user = social_acc.user
+        created = False
     else:
-        logger.debug(
-            "Qurilma ma'lumoti yangilandi: UserID=%s | DeviceID=%s", user.id, device_id
+        user = User.objects.filter(email=email).first() if email else None
+        if user:
+            created = False
+        else:
+            user = User.objects.create(
+                email=email or None,
+                auth_provider=AuthProvider.GOOGLE,
+                is_verified=True,
+            )
+            created = True
+
+    if not created and user.is_blocked:
+        return None, None, True
+
+    update_fields = []
+    if not user.email and email:
+        user.email = email
+        update_fields.append("email")
+    if not created and user.auth_provider != AuthProvider.GOOGLE:
+        user.auth_provider = AuthProvider.GOOGLE
+        update_fields.append("auth_provider")
+    if update_fields:
+        user.save(update_fields=update_fields)
+
+    if not social_acc:
+        SocialAccount.objects.get_or_create(
+            provider="google",
+            uid=google_uid,
+            defaults={"user": user, "extra_data": user_info},
         )
 
-    return device
+    device = register_or_update_user_device(user, request)
+    device_id = device.device_id if device else request.headers.get("X-Device-Id")
+    tokens = get_tokens_for_user(user, device_id=device_id)
+
+    return user, tokens, created
+
+
+def authenticate_phone_user(phone_number, request):
+    from apps.accounts.users.models import User, AuthProvider
+    from apps.accounts.users.utils import get_tokens_for_user
+
+    user, created = User.objects.get_or_create(
+        phone_number=phone_number,
+        defaults={"auth_provider": AuthProvider.PHONE},
+    )
+
+    if not created and user.is_blocked:
+        return None, None, True
+
+    if not created and user.auth_provider != AuthProvider.PHONE:
+        user.auth_provider = AuthProvider.PHONE
+        user.save(update_fields=["auth_provider"])
+
+    device = register_or_update_user_device(user, request)
+    device_id = device.device_id if device else request.headers.get("X-Device-Id")
+    tokens = get_tokens_for_user(user, device_id=device_id)
+
+    return user, tokens, created
+
+
+def authenticate_email_user(email, request):
+    from apps.accounts.users.models import User, AuthProvider
+    from apps.accounts.users.utils import get_tokens_for_user
+
+    email_clean = email.lower()
+    user, created = User.objects.get_or_create(
+        email=email_clean,
+        defaults={"auth_provider": AuthProvider.EMAIL},
+    )
+
+    if not created and user.is_blocked:
+        return None, None, True
+
+    if not created and user.auth_provider != AuthProvider.EMAIL:
+        user.auth_provider = AuthProvider.EMAIL
+        user.save(update_fields=["auth_provider"])
+
+    device = register_or_update_user_device(user, request)
+    device_id = device.device_id if device else request.headers.get("X-Device-Id")
+    tokens = get_tokens_for_user(user, device_id=device_id)
+
+    return user, tokens, created

@@ -175,9 +175,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def get_token(self, user):
         token = super().get_token(user)
-        request = getattr(self, "context", {}).get("request") if hasattr(self, "context") else None
+        request = (
+            getattr(self, "context", {}).get("request")
+            if hasattr(self, "context")
+            else None
+        )
         if request:
-            device_id = request.headers.get("X-Device-Id") or request.META.get("HTTP_X_DEVICE_ID")
+            device_id = request.headers.get("X-Device-Id") or request.META.get(
+                "HTTP_X_DEVICE_ID"
+            )
             if device_id:
                 token["device_id"] = str(device_id)
         return token
