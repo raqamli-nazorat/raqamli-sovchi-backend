@@ -22,12 +22,15 @@ class BaseConfig(AppConfig):
     def ready(self):
         class_prepared.connect(register_auditlog)
 
-        from auditlog.registry import auditlog
-        from apps.core.base.models import BaseModel
+        try:
+            from auditlog.registry import auditlog
+            from apps.core.base.models import BaseModel
 
-        for model in apps.get_models():
-            if issubclass(model, BaseModel) and not model._meta.abstract:
-                try:
-                    auditlog.register(model)
-                except Exception:
-                    pass
+            for model in apps.get_models():
+                if issubclass(model, BaseModel) and not model._meta.abstract:
+                    try:
+                        auditlog.register(model)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
