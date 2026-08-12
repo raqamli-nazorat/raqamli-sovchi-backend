@@ -165,7 +165,7 @@ def authenticate_google_user(id_token_str, request):
     device_id = device.device_id if device else request.headers.get("X-Device-Id")
     tokens = get_tokens_for_user(user, device_id=device_id)
 
-    return user, tokens, created
+    return user, tokens, False
 
 
 def authenticate_phone_user(phone_number, request):
@@ -188,7 +188,7 @@ def authenticate_phone_user(phone_number, request):
     device_id = device.device_id if device else request.headers.get("X-Device-Id")
     tokens = get_tokens_for_user(user, device_id=device_id)
 
-    return user, tokens, created
+    return user, tokens, False
 
 
 def authenticate_email_user(email, request):
@@ -212,4 +212,4 @@ def authenticate_email_user(email, request):
     device_id = device.device_id if device else request.headers.get("X-Device-Id")
     tokens = get_tokens_for_user(user, device_id=device_id)
 
-    return user, tokens, created
+    return user, tokens, False
