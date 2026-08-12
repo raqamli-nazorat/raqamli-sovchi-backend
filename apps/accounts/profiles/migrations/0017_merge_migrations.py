@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("profiles", "0015_alter_profile_weight"),
+        ("profiles", "0014_alter_profile_options"),
         ("profiles", "0016_alter_representativeinfo_kinship"),
     ]
 
