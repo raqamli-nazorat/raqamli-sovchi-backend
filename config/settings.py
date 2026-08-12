@@ -67,11 +67,14 @@ LOCAL_APPS = [
     "apps.accounts.profiles",
     "apps.accounts.questionnaire",
     "apps.accounts.telegram_bot",
+    "apps.accounts.notifications",
     "apps.matches.match_requests",
     "apps.matches.chats",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+ASGI_APPLICATION = "config.asgi.application"
 
 # Auth / AllAuth & Social Account Settings
 SITE_ID = 1
@@ -318,3 +321,19 @@ LOGGING = {
 }
 
 TELEGRAM_BOT_TOKEN = env.str("TELEGRAM_BOT_TOKEN", default="")
+
+FIREBASE_CREDENTIALS_PATH = env.str(
+    "FIREBASE_CREDENTIALS_PATH",
+    default=os.path.join(BASE_DIR, "firebase-credentials.json"),
+)
+
+if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+    try:
+        import firebase_admin
+        from firebase_admin import credentials
+
+        if not firebase_admin._apps:
+            cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+            firebase_admin.initialize_app(cred)
+    except ImportError:
+        pass

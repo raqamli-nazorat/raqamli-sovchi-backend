@@ -24,6 +24,7 @@ requests==2.34.2
 aiogram==3.30.0
 gunicorn==23.0.0
 mutagen==1.48.1
+firebase-admin==6.6.0
 
 deepface==0.0.100
 retina-face==0.0.17

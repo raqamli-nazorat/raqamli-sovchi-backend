@@ -4,7 +4,7 @@ from apps.accounts.users.models import UserDevice
 
 logger = logging.getLogger(__name__)
 
-DEVICE_CACHE_TIMEOUT = 30 * 24 * 3600  # 30 kun
+DEVICE_CACHE_TIMEOUT = 30 * 24 * 3600
 
 
 def get_device_cache_key(user_id, device_id):
@@ -102,6 +102,29 @@ def register_or_update_user_device(user, request):
     return device
 
 
+def _reactivate_user_if_needed(user, new_auth_provider=None):
+    if not user or user.is_active:
+        return
+
+    user.is_active = True
+    if new_auth_provider:
+        user.auth_provider = new_auth_provider
+    user.save(update_fields=["is_active", "auth_provider", "updated_at"])
+
+    profile = getattr(user, "profile", None)
+    if profile:
+        profile.hard_delete()
+
+    from apps.accounts.users.models import UserDevice, UserPledge
+    from apps.accounts.notifications.models import Notification
+    from allauth.socialaccount.models import SocialAccount
+
+    UserDevice.objects.filter(user=user).delete()
+    UserPledge.objects.filter(user=user).delete()
+    Notification.objects.filter(user=user).delete()
+    SocialAccount.objects.filter(user=user).delete()
+
+
 def authenticate_google_user(id_token_str, request):
     import requests as http_requests
     from allauth.socialaccount.models import SocialAccount
@@ -141,6 +164,8 @@ def authenticate_google_user(id_token_str, request):
             )
             created = True
 
+    _reactivate_user_if_needed(user)
+
     if not created and user.is_blocked:
         return None, None, True
 
@@ -172,10 +197,17 @@ def authenticate_phone_user(phone_number, request):
     from apps.accounts.users.models import User, AuthProvider
     from apps.accounts.users.utils import get_tokens_for_user
 
-    user, created = User.objects.get_or_create(
-        phone_number=phone_number,
-        defaults={"auth_provider": AuthProvider.PHONE},
-    )
+    user = User.objects.filter(phone_number=phone_number).first()
+
+    if not user:
+        user = User.objects.create(
+            phone_number=phone_number,
+            auth_provider=AuthProvider.PHONE,
+        )
+        created = True
+    else:
+        created = False
+        _reactivate_user_if_needed(user)
 
     if not created and user.is_blocked:
         return None, None, True
@@ -196,10 +228,17 @@ def authenticate_email_user(email, request):
     from apps.accounts.users.utils import get_tokens_for_user
 
     email_clean = email.lower()
-    user, created = User.objects.get_or_create(
-        email=email_clean,
-        defaults={"auth_provider": AuthProvider.EMAIL},
-    )
+    user = User.objects.filter(email=email_clean).first()
+
+    if not user:
+        user = User.objects.create(
+            email=email_clean,
+            auth_provider=AuthProvider.EMAIL,
+        )
+        created = True
+    else:
+        created = False
+        _reactivate_user_if_needed(user)
 
     if not created and user.is_blocked:
         return None, None, True

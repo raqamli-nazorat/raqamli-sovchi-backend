@@ -7,8 +7,14 @@ from apps.core.base.models import BaseModel
 
 class MatchRequestStatus(models.TextChoices):
     PENDING = "pending", "Kutilmoqda"
+    FORWARDED_TO_REPRESENTATIVE = "forwarded_to_representative", "Vakilga yo'naltirildi"
     ACCEPTED = "accepted", "Qabul qilindi"
     REJECTED = "rejected", "Rad etildi"
+
+
+class VisibilityScope(models.TextChoices):
+    ONLY_THIS_USER = "only_this_user", "Faqat shu odamga ochish"
+    FORWARD_TO_REPRESENTATIVE = "forward_to_representative", "Vakilim hal qilsin"
 
 
 class MatchRequest(BaseModel):
@@ -25,10 +31,16 @@ class MatchRequest(BaseModel):
         verbose_name="Qabul qiluvchi profil",
     )
     status = models.CharField(
-        max_length=20,
+        max_length=35,
         choices=MatchRequestStatus.choices,
         default=MatchRequestStatus.PENDING,
         verbose_name="Holati",
+    )
+    visibility_scope = models.CharField(
+        max_length=30,
+        choices=VisibilityScope.choices,
+        default=VisibilityScope.ONLY_THIS_USER,
+        verbose_name="Kimga ochiladi",
     )
     question = models.ForeignKey(
         Question,
@@ -37,6 +49,11 @@ class MatchRequest(BaseModel):
         blank=True,
         related_name="match_requests",
         verbose_name="Savol",
+    )
+    note = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Izoh / O'zi haqida xabar",
     )
 
     class Meta:

@@ -48,12 +48,22 @@ class BaseModelSerializer(serializers.ModelSerializer):
                     curr_model = field.related_model
 
                 if field:
-                    is_many = getattr(field, "many_to_many", False) or getattr(
-                        field, "one_to_many", False
+                    is_many = (
+                        getattr(field, "many_to_many", False)
+                        or getattr(field, "one_to_many", False)
+                        or getattr(field, "auto_created", False)
                     )
                 related_model = curr_model
-            except Exception:
+            except (AttributeError, Exception):
                 pass
+
+            if (
+                is_many
+                and hasattr(related_model, "objects")
+                and hasattr(related_model.objects, "active")
+            ):
+                if not (isinstance(val, dict) and "source" in val):
+                    source = f"{source}.active"
 
             if isinstance(fields_to_serialize, type) and issubclass(
                 fields_to_serialize, serializers.Serializer

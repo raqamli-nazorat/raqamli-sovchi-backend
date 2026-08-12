@@ -14,6 +14,7 @@ from .views import (
     UserViewSet,
     UserDeviceViewSet,
     ChangePasswordView,
+    BlockedUserViewSet,
 )
 
 router = DefaultRouter()
@@ -22,6 +23,7 @@ router.register(r"roles", RoleViewSet, basename="role")
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"pledges", UserPledgeViewSet, basename="user-pledge")
 router.register(r"devices", UserDeviceViewSet, basename="user-device")
+router.register(r"blocked-users", BlockedUserViewSet, basename="blocked-user")
 
 urlpatterns = [
     path("users/me/", UserMeView.as_view(), name="user-me"),

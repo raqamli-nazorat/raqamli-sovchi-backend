@@ -25,6 +25,14 @@ def can_view_profile_photos(request_user, target_profile):
     if target_profile.user_id == request_user.id:
         return True
 
+    is_admin_role = (
+        getattr(request_user, "is_superuser", False)
+        or getattr(request_user, "is_staff", False)
+        or bool(request_user.role and not request_user.role.is_default)
+    )
+    if is_admin_role:
+        return False
+
     from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
 
     user_profile = getattr(request_user, "profile", None)
@@ -44,12 +52,6 @@ def can_view_profile_photos(request_user, target_profile):
 
     if is_female_candidate(target_profile):
         return has_accepted_match
-
-    is_admin_role = getattr(request_user, "is_superuser", False) or bool(
-        request_user.role and not request_user.role.is_default
-    )
-    if is_admin_role:
-        return True
 
     if has_accepted_match:
         return True

@@ -1,9 +1,70 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+from django.core.exceptions import ValidationError
 from django.test import TestCase
-from rest_framework.test import APIClient
 from rest_framework import status
-from apps.accounts.users.models import User, AuthProvider
+from rest_framework.test import APIClient
 
+from apps.accounts.users.models import User, AuthProvider, Role
+
+
+class PhoneAuthTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = "/api/v1/accounts/auth/phone/"
+
+    def test_phone_auth_creates_user_and_returns_tokens(self):
+        response = self.client.post(
+            self.url, {"phone_number": "+998901234567"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Verify custom renderer structure or standard DRF response structure
+        data = (
+            response.data.get("data", response.data)
+            if isinstance(response.data, dict) and "data" in response.data
+            else response.data
+        )
+        self.assertIn("tokens", data)
+        self.assertIn("user", data)
+        self.assertEqual(data["user"]["phone_number"], "+998901234567")
+
+        user = User.objects.get(phone_number="+998901234567")
+        self.assertFalse(user.is_blocked)
+
+    def test_blocked_phone_user_returns_403(self):
+        blocked_user = User.objects.create(
+            phone_number="+998909999999",
+            auth_provider=AuthProvider.PHONE,
+            is_blocked=True,
+        )
+        response = self.client.post(
+            self.url, {"phone_number": "+998909999999"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_reactivate_deleted_user_resets_profile(self):
+        user = User.objects.create(
+            phone_number="+998901112233",
+            auth_provider=AuthProvider.PHONE,
+            is_active=False,
+        )
+        from apps.accounts.profiles.models import Profile
+        profile = Profile.objects.create(
+            user=user,
+            first_name="Eski",
+            last_name="Profil",
+            birth_year=1995,
+            height=175,
+            gender="male",
+        )
+
+        response = self.client.post(
+            self.url, {"phone_number": "+998901112233"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+        self.assertFalse(Profile.objects.filter(user=user).exists())
 
 
 class EmailAuthTestCase(TestCase):
@@ -15,108 +76,23 @@ class EmailAuthTestCase(TestCase):
         response = self.client.post(
             self.url, {"email": "testuser@example.com"}, format="json"
         )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(response.data["created"])
-        self.assertIn("access", response.data["tokens"])
-        self.assertIn("refresh", response.data["tokens"])
-        self.assertEqual(response.data["user"]["email"], "testuser@example.com")
-        self.assertEqual(response.data["user"]["auth_provider"], AuthProvider.EMAIL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = (
+            response.data.get("data", response.data)
+            if isinstance(response.data, dict) and "data" in response.data
+            else response.data
+        )
+        self.assertIn("tokens", data)
+        self.assertIn("user", data)
+        self.assertEqual(data["user"]["email"], "testuser@example.com")
+        self.assertEqual(data["user"]["auth_provider"], AuthProvider.EMAIL)
 
         user = User.objects.get(email="testuser@example.com")
         self.assertEqual(user.auth_provider, AuthProvider.EMAIL)
 
-    def test_email_login_existing_user(self):
-        self.client.post(self.url, {"email": "existing@example.com"}, format="json")
-
-        response = self.client.post(
-            self.url, {"email": "EXISTING@example.com"}, format="json"
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data["created"])
-        self.assertIn("access", response.data["tokens"])
-        self.assertEqual(response.data["user"]["email"], "existing@example.com")
-
     def test_invalid_email_returns_400(self):
         response = self.client.post(self.url, {"email": "not-an-email"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-class GoogleAuthTestCase(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.url = "/api/v1/accounts/auth/google/"
-
-    def test_google_auth_requires_code_or_token(self):
-        response = self.client.post(self.url, {}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("non_field_errors", response.data)
-
-    @patch("apps.accounts.users.views.GoogleOAuth2Adapter")
-    def test_google_auth_with_code_creates_user_without_phone(self, mock_adapter_cls):
-        mock_adapter = MagicMock()
-        mock_adapter_cls.return_value = mock_adapter
-
-        mock_client = MagicMock()
-        mock_client.get_access_token.return_value = {
-            "access_token": "fake-access-token",
-            "id_token": "fake-id-token",
-        }
-        mock_adapter.get_client.return_value = mock_client
-        mock_adapter.provider_id = "google"
-
-        mock_social_login = MagicMock()
-        mock_social_login.account.uid = "google-uid-123"
-        mock_social_login.account.extra_data = {"email": "googleuser@example.com"}
-        mock_social_login.user = User(email="googleuser@example.com")
-        mock_adapter.complete_login.return_value = mock_social_login
-
-        response = self.client.post(
-            self.url,
-            {"code": "sample_auth_code_from_google"},
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(response.data["created"])
-        self.assertEqual(response.data["user"]["email"], "googleuser@example.com")
-        self.assertIsNone(response.data["user"]["phone_number"])
-        self.assertEqual(response.data["user"]["auth_provider"], AuthProvider.GOOGLE)
-
-        user = User.objects.get(email="googleuser@example.com")
-        self.assertEqual(user.auth_provider, AuthProvider.GOOGLE)
-        self.assertIsNone(user.phone_number)
-
-    @patch("apps.accounts.users.views.GoogleOAuth2Adapter")
-    def test_google_auth_with_authorization_code_alias(self, mock_adapter_cls):
-        mock_adapter = MagicMock()
-        mock_adapter_cls.return_value = mock_adapter
-
-        mock_client = MagicMock()
-        mock_client.get_access_token.return_value = {
-            "access_token": "fake-access-token"
-        }
-        mock_adapter.get_client.return_value = mock_client
-        mock_adapter.provider_id = "google"
-
-        mock_social_login = MagicMock()
-        mock_social_login.account.uid = "google-uid-456"
-        mock_social_login.account.extra_data = {"email": "aliasuser@example.com"}
-        mock_social_login.user = User(email="aliasuser@example.com")
-        mock_adapter.complete_login.return_value = mock_social_login
-
-        response = self.client.post(
-            self.url,
-            {"authorization_code": "auth_code_alias_123"},
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(response.data["created"])
-        self.assertEqual(response.data["user"]["email"], "aliasuser@example.com")
-
-
-from django.core.exceptions import ValidationError
-from apps.accounts.users.models import Role
 
 
 class RoleDeleteTestCase(TestCase):

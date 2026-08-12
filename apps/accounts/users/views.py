@@ -14,7 +14,7 @@ from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
-from .models import Role, User, UserPledge, UserDevice
+from .models import Role, User, UserPledge, UserDevice, BlockedUser
 from .serializers import (
     CustomTokenObtainPairSerializer,
     GoogleLoginSerializer,
@@ -26,6 +26,7 @@ from .serializers import (
     UserSerializer,
     UserDeviceSerializer,
     ChangePasswordSerializer,
+    BlockedUserSerializer,
 )
 
 
@@ -361,3 +362,21 @@ class ChangePasswordView(AutoSchemaMixin, generics.UpdateAPIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BlockedUserViewSet(BaseManageViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BlockedUserSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ["created_at"]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = BlockedUser.objects.select_related(
+            "blocker", "blocked", "blocked__profile"
+        ).active()
+
+        return qs.filter(blocker=user)
+
+    def perform_create(self, serializer):
+        serializer.save(blocker=self.request.user)

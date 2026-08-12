@@ -4,7 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.core.base.serializers import BaseModelSerializer
 from apps.core.utils.validators import phone_validator
-from .models import Role, User, UserPledge, UserDevice
+from .models import Role, User, UserPledge, UserDevice, BlockedUser
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -130,7 +130,7 @@ class UserSerializer(BaseModelSerializer):
             score += 10
         if profile.marital_status:
             score += 10
-        if hasattr(profile, "photos") and bool(profile.photos.all()):
+        if profile and profile.pk and hasattr(profile, "photos") and bool(profile.photos.all()):
             score += 10
 
         return score
@@ -285,3 +285,18 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data["new_password"])
         user.save()
         return user
+
+
+class BlockedUserSerializer(BaseModelSerializer):
+    class Meta:
+        model = BlockedUser
+        fields = ["id", "blocker", "blocked", "reason", "created_at"]
+        read_only_fields = ["id", "blocker", "created_at"]
+        related_fields = {
+            "blocked": [
+                "id",
+                "phone_number",
+                "email",
+                "profile",
+            ]
+        }

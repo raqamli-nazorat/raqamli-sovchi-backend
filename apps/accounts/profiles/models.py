@@ -221,6 +221,24 @@ class RepresentativeInfo(BaseModel):
         choices=[("groom", "Kuyov"), ("bride", "Kelin")],
         verbose_name="Vakillik qilayotgan nomzod turi (Kuyov/Kelin)",
     )
+    candidate_contact = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name="Nomzodning telefon raqami yoki email manzili",
+    )
+    target_candidate = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="represented_by_infos",
+        verbose_name="Biriktirilgan nomzod (User)",
+    )
+    is_approved = models.BooleanField(
+        default=False,
+        verbose_name="Nomzod tomonidan rozilik berilganmi?",
+    )
 
     class Meta:
         verbose_name = "Vakil ma'lumoti"
@@ -228,4 +246,6 @@ class RepresentativeInfo(BaseModel):
         db_table = "representative_infos"
 
     def __str__(self):
-        return f"Vakil: {self.profile.first_name}"
+        return (
+            f"Vakil: {self.profile.first_name} -> {self.candidate_contact or 'Nomzod'}"
+        )

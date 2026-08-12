@@ -205,3 +205,33 @@ class UserDevice(BaseModel):
     def __str__(self):
         name = self.device_name or self.device_id
         return f"{self.user} - {name}"
+
+
+class BlockedUser(BaseModel):
+    blocker = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="blocked_users",
+        verbose_name="Bloklagan foydalanuvchi",
+    )
+    blocked = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="blocked_by_users",
+        verbose_name="Bloklangan foydalanuvchi",
+    )
+    reason = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Bloklash sababi",
+    )
+
+    class Meta:
+        verbose_name = "Bloklangan foydalanuvchi (Qora ro'yxat)"
+        verbose_name_plural = "Bloklangan foydalanuvchilar (Qora ro'yxatlar)"
+        db_table = "blocked_users"
+        unique_together = ("blocker", "blocked")
+
+    def __str__(self):
+        return f"{self.blocker} -> {self.blocked} (Blocked)"

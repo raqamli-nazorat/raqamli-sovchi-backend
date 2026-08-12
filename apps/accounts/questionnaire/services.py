@@ -24,24 +24,39 @@ def calculate_compatibility_score(source_profile, target_profile):
         return None
 
     if source_profile.id == target_profile.id:
-        return 100.0
+        return {
+            "overall_score": 100.0,
+            "sections": [],
+        }
 
-    source_answers = {
-        ans.question_id: ans.selected_option.weight
-        for ans in UserAnswer.objects.filter(profile=source_profile).select_related(
-            "selected_option"
-        )
-    }
+    source_answers_qs = UserAnswer.objects.filter(
+        profile=source_profile
+    ).select_related("selected_option", "question", "question__section")
+
+    source_answers = {}
+    for ans in source_answers_qs:
+        sec = ans.question.section
+        source_answers[ans.question_id] = {
+            "weight": ans.selected_option.weight,
+            "section_id": sec.id if sec else None,
+            "section_name": sec.name if sec else "Umumiy",
+        }
 
     if not source_answers:
         return None
 
-    target_answers = {
-        ans.question_id: ans.selected_option.weight
-        for ans in UserAnswer.objects.filter(profile=target_profile).select_related(
-            "selected_option"
-        )
-    }
+    target_answers_qs = UserAnswer.objects.filter(
+        profile=target_profile
+    ).select_related("selected_option", "question", "question__section")
+
+    target_answers = {}
+    for ans in target_answers_qs:
+        sec = ans.question.section
+        target_answers[ans.question_id] = {
+            "weight": ans.selected_option.weight,
+            "section_id": sec.id if sec else None,
+            "section_name": sec.name if sec else "Umumiy",
+        }
 
     if not target_answers:
         return None
@@ -52,30 +67,68 @@ def calculate_compatibility_score(source_profile, target_profile):
 
     total_score = 0
     total_max = 0
+    section_stats = {}
 
     for qid in common_qids:
-        w_a = source_answers[qid]
-        w_b = target_answers[qid]
+        w_a = source_answers[qid]["weight"]
+        w_b = target_answers[qid]["weight"]
+        sec_name = source_answers[qid]["section_name"]
+        sec_id = source_answers[qid]["section_id"]
+
         diff = abs(w_a - w_b)
-        total_score += max(0, 10 - diff)
+        q_score = max(0, 10 - diff)
+
+        total_score += q_score
         total_max += 10
+
+        if sec_name not in section_stats:
+            section_stats[sec_name] = {
+                "section_id": str(sec_id) if sec_id else None,
+                "score": 0,
+                "max": 0,
+            }
+        section_stats[sec_name]["score"] += q_score
+        section_stats[sec_name]["max"] += 10
 
     if total_max == 0:
         return None
 
-    return round((total_score / total_max) * 100.0, 1)
+    overall_score = round((total_score / total_max) * 100.0, 1)
+
+    sections_list = []
+    for sec_name, stats in section_stats.items():
+        if stats["max"] > 0:
+            sec_score = round((stats["score"] / stats["max"]) * 100.0, 1)
+            sections_list.append(
+                {
+                    "section_id": stats["section_id"],
+                    "section_name": sec_name,
+                    "score": sec_score,
+                }
+            )
+
+    return {
+        "overall_score": overall_score,
+        "sections": sections_list,
+    }
 
 
 def batch_calculate_compatibility_scores(source_profile, target_profiles):
     if not source_profile or not target_profiles:
         return {}
 
-    source_answers = {
-        ans.question_id: ans.selected_option.weight
-        for ans in UserAnswer.objects.filter(profile=source_profile).select_related(
-            "selected_option"
-        )
-    }
+    source_answers_qs = UserAnswer.objects.filter(
+        profile=source_profile
+    ).select_related("selected_option", "question", "question__section")
+
+    source_answers = {}
+    for ans in source_answers_qs:
+        sec = ans.question.section
+        source_answers[ans.question_id] = {
+            "weight": ans.selected_option.weight,
+            "section_id": sec.id if sec else None,
+            "section_name": sec.name if sec else "Umumiy",
+        }
 
     if not source_answers:
         return {p.id: None for p in target_profiles}
@@ -84,13 +137,18 @@ def batch_calculate_compatibility_scores(source_profile, target_profiles):
 
     target_answers_qs = UserAnswer.objects.filter(
         profile_id__in=target_ids
-    ).select_related("selected_option")
+    ).select_related("selected_option", "question", "question__section")
 
     target_answers_map = {}
     for ans in target_answers_qs:
         if ans.profile_id not in target_answers_map:
             target_answers_map[ans.profile_id] = {}
-        target_answers_map[ans.profile_id][ans.question_id] = ans.selected_option.weight
+        sec = ans.question.section
+        target_answers_map[ans.profile_id][ans.question_id] = {
+            "weight": ans.selected_option.weight,
+            "section_id": sec.id if sec else None,
+            "section_name": sec.name if sec else "Umumiy",
+        }
 
     scores = {}
     for p in target_profiles:
@@ -106,15 +164,46 @@ def batch_calculate_compatibility_scores(source_profile, target_profiles):
 
         total_score = 0
         total_max = 0
+        section_stats = {}
+
         for qid in common_ids:
-            w_a = source_answers[qid]
-            w_b = p_answers[qid]
+            w_a = source_answers[qid]["weight"]
+            w_b = p_answers[qid]["weight"]
+            sec_name = source_answers[qid]["section_name"]
+            sec_id = source_answers[qid]["section_id"]
+
             diff = abs(w_a - w_b)
-            total_score += max(0, 10 - diff)
+            q_score = max(0, 10 - diff)
+
+            total_score += q_score
             total_max += 10
 
+            if sec_name not in section_stats:
+                section_stats[sec_name] = {
+                    "section_id": str(sec_id) if sec_id else None,
+                    "score": 0,
+                    "max": 0,
+                }
+            section_stats[sec_name]["score"] += q_score
+            section_stats[sec_name]["max"] += 10
+
         if total_max > 0:
-            scores[p.id] = round((total_score / total_max) * 100.0, 1)
+            overall_score = round((total_score / total_max) * 100.0, 1)
+            sections_list = []
+            for sec_name, stats in section_stats.items():
+                if stats["max"] > 0:
+                    sec_score = round((stats["score"] / stats["max"]) * 100.0, 1)
+                    sections_list.append(
+                        {
+                            "section_id": stats["section_id"],
+                            "section_name": sec_name,
+                            "score": sec_score,
+                        }
+                    )
+            scores[p.id] = {
+                "overall_score": overall_score,
+                "sections": sections_list,
+            }
         else:
             scores[p.id] = None
 
