@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.matches.chats.models import ChatRoom, Message
-from apps.matches.match_requests.models import MatchRequest, MatchStatus
+from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
 from apps.accounts.profiles.models import Profile, GenderType, CandidateRole
 from apps.accounts.users.models import User, AuthProvider, Role
 
@@ -46,7 +46,7 @@ class ChatsTestCase(TestCase):
         self.match_req = MatchRequest.objects.create(
             from_profile=self.profile1,
             to_profile=self.profile2,
-            status=MatchStatus.ACCEPTED,
+            status=MatchRequestStatus.ACCEPTED,
         )
         self.chat_room = ChatRoom.objects.create(match_request=self.match_req)
 

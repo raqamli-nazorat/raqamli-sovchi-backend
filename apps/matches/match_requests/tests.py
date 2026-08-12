@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.matches.match_requests.models import MatchRequest, MatchStatus
+from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
 from apps.accounts.profiles.models import Profile, GenderType, CandidateRole
 from apps.accounts.users.models import User, AuthProvider, Role
 
@@ -54,13 +54,13 @@ class MatchRequestsTestCase(TestCase):
             from_profile=self.profile1, to_profile=self.profile2
         ).first()
         self.assertIsNotNone(match_req)
-        self.assertEqual(match_req.status, MatchStatus.PENDING)
+        self.assertEqual(match_req.status, MatchRequestStatus.PENDING)
 
     def test_accept_match_request(self):
         match_req = MatchRequest.objects.create(
             from_profile=self.profile1,
             to_profile=self.profile2,
-            status=MatchStatus.PENDING,
+            status=MatchRequestStatus.PENDING,
         )
         self.client.force_authenticate(user=self.user2)
         accept_url = f"{self.url}{match_req.id}/accept/"
@@ -68,4 +68,4 @@ class MatchRequestsTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         match_req.refresh_from_db()
-        self.assertEqual(match_req.status, MatchStatus.ACCEPTED)
+        self.assertEqual(match_req.status, MatchRequestStatus.ACCEPTED)
