@@ -178,7 +178,7 @@ class ProfileViewSet(BaseManageViewSet):
 
     @action(
         detail=True,
-        methods=["post", "delete"],
+        methods=["delete"],
         url_path="unsave",
         permission_classes=[permissions.IsAuthenticated],
     )
