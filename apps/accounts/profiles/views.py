@@ -166,7 +166,11 @@ class ProfilePhotoViewSet(BaseManageViewSet):
         user = self.request.user
         qs = ProfilePhoto.objects.select_related("profile").active()
 
-        if user.is_staff or user.is_superuser or bool(user.role and not user.role.is_default):
+        if (
+            user.is_staff
+            or user.is_superuser
+            or bool(user.role and not user.role.is_default)
+        ):
             return qs
         return qs.filter(profile__user=user)
 
@@ -258,5 +262,3 @@ class SavedProfileViewSet(BaseManageViewSet):
             serializer.instance = saved_obj
         else:
             serializer.save(user=self.request.user)
-
-

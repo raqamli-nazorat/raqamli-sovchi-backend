@@ -311,4 +311,3 @@ def bulk_save_user_answers(profile_id, answers_data):
         )
         created_answers.append(ans)
     return len(created_answers)
-

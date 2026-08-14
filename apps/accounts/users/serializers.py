@@ -130,7 +130,12 @@ class UserSerializer(BaseModelSerializer):
             score += 10
         if profile.marital_status:
             score += 10
-        if profile and profile.pk and hasattr(profile, "photos") and bool(profile.photos.all()):
+        if (
+            profile
+            and profile.pk
+            and hasattr(profile, "photos")
+            and bool(profile.photos.all())
+        ):
             score += 10
 
         return score

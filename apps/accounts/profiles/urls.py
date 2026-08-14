@@ -15,9 +15,7 @@ router.register(r"photos", ProfilePhotoViewSet, basename="profile-photo")
 router.register(
     r"representatives", RepresentativeInfoViewSet, basename="representative-info"
 )
-router.register(
-    r"saved-profiles", SavedProfileViewSet, basename="saved-profile"
-)
+router.register(r"saved-profiles", SavedProfileViewSet, basename="saved-profile")
 
 urlpatterns = [
     path("profiles/me/", ProfileMeView.as_view(), name="profile-me"),

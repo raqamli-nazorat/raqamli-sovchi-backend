@@ -17,7 +17,9 @@ class IsProfileOwnerOrStaff(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        if request.user.is_staff or bool(request.user.role and not request.user.role.is_default):
+        if request.user.is_staff or bool(
+            request.user.role and not request.user.role.is_default
+        ):
             if request.method == "POST":
                 return request.user.has_perm("profiles.add_profile")
             if request.method in ["PUT", "PATCH"]:

@@ -128,6 +128,7 @@ class ProfileSerializer(BaseModelSerializer):
             return False
 
         from .models import SavedProfile
+
         return SavedProfile.objects.filter(
             user=request.user, saved_profile=obj, is_active=True
         ).exists()

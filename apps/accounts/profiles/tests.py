@@ -229,6 +229,7 @@ class ProfileGenderFilterTestCase(TestCase):
 
     def test_representative_user_for_bride_sees_only_grooms(self):
         from apps.accounts.profiles.models import RepresentativeInfo
+
         RepresentativeInfo.objects.create(
             profile=self.profile_rep,
             candidate_role=CandidateRole.BRIDE,
@@ -245,6 +246,7 @@ class ProfileGenderFilterTestCase(TestCase):
 
     def test_representative_user_for_groom_sees_only_brides(self):
         from apps.accounts.profiles.models import RepresentativeInfo
+
         RepresentativeInfo.objects.create(
             profile=self.profile_rep,
             candidate_role=CandidateRole.GROOM,
@@ -261,6 +263,7 @@ class ProfileGenderFilterTestCase(TestCase):
 
     def test_representative_user_for_both_sees_all_candidates(self):
         from apps.accounts.profiles.models import RepresentativeInfo
+
         # Representative representing both a groom and a bride
         RepresentativeInfo.objects.create(
             profile=self.profile_rep,
@@ -391,5 +394,3 @@ class SavedProfileTestCase(TestCase):
         res11 = self.client.post(f"/api/v1/accounts/profiles/{p11.id}/save/")
         self.assertEqual(res11.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("10", str(res11.data))
-
-

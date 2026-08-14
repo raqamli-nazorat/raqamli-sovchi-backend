@@ -48,6 +48,7 @@ class PhoneAuthTestCase(TestCase):
             is_active=False,
         )
         from apps.accounts.profiles.models import Profile
+
         profile = Profile.objects.create(
             user=user,
             first_name="Eski",

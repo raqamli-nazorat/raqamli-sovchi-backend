@@ -325,4 +325,3 @@ def authenticate_email_user(email, request):
     tokens = get_tokens_for_user(user, device_id=device_id)
 
     return user, tokens, False
-

@@ -65,9 +65,7 @@ def validate_photo_limit(profile, max_photos=MAX_PHOTOS_PER_PROFILE):
 
     from .models import ProfilePhoto
 
-    current_count = ProfilePhoto.objects.filter(
-        profile=profile, is_active=True
-    ).count()
+    current_count = ProfilePhoto.objects.filter(profile=profile, is_active=True).count()
     if current_count >= max_photos:
         raise serializers.ValidationError(
             {

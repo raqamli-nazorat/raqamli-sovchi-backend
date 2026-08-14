@@ -104,5 +104,8 @@ class RepresentativeInfoAdmin(BaseModelAdmin):
 @admin.register(SavedProfile)
 class SavedProfileAdmin(BaseModelAdmin):
     list_display = ("id", "user", "saved_profile", "created_at")
-    search_fields = ("user__phone_number", "saved_profile__first_name", "saved_profile__last_name")
-
+    search_fields = (
+        "user__phone_number",
+        "saved_profile__first_name",
+        "saved_profile__last_name",
+    )

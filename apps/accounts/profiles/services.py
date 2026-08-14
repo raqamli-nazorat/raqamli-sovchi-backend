@@ -344,21 +344,21 @@ def filter_profiles_for_user(qs, user):
     if not user or not user.is_authenticated:
         return qs
 
-    if user.is_staff or user.is_superuser or bool(user.role and not user.role.is_default):
+    if (
+        user.is_staff
+        or user.is_superuser
+        or bool(user.role and not user.role.is_default)
+    ):
         return qs
 
     from apps.accounts.users.models import BlockedUser
     from .models import CandidateRole, GenderType, RepresentativeInfo
 
     blocked_user_ids = set(
-        BlockedUser.objects.filter(blocker=user).values_list(
-            "blocked_id", flat=True
-        )
+        BlockedUser.objects.filter(blocker=user).values_list("blocked_id", flat=True)
     )
     blocked_by_user_ids = set(
-        BlockedUser.objects.filter(blocked=user).values_list(
-            "blocker_id", flat=True
-        )
+        BlockedUser.objects.filter(blocked=user).values_list("blocker_id", flat=True)
     )
     all_blocked = blocked_user_ids | blocked_by_user_ids
     if all_blocked:
@@ -373,7 +373,9 @@ def filter_profiles_for_user(qs, user):
     if user_profile.candidate_type == CandidateRole.REPRESENTATIVE:
         rep_infos = RepresentativeInfo.objects.filter(profile=user_profile)
 
-        target_user_ids = [r.target_candidate_id for r in rep_infos if r.target_candidate_id]
+        target_user_ids = [
+            r.target_candidate_id for r in rep_infos if r.target_candidate_id
+        ]
         if target_user_ids:
             qs = qs.exclude(user_id__in=target_user_ids)
 
@@ -383,7 +385,10 @@ def filter_profiles_for_user(qs, user):
                 roles.add(rep.candidate_role)
             if rep.target_candidate_id and hasattr(rep.target_candidate, "profile"):
                 target_prof = rep.target_candidate.profile
-                if target_prof.candidate_type in [CandidateRole.GROOM, CandidateRole.BRIDE]:
+                if target_prof.candidate_type in [
+                    CandidateRole.GROOM,
+                    CandidateRole.BRIDE,
+                ]:
                     roles.add(target_prof.candidate_type)
                 elif target_prof.gender == GenderType.MALE:
                     roles.add(CandidateRole.GROOM)
@@ -397,11 +402,13 @@ def filter_profiles_for_user(qs, user):
             return qs.exclude(candidate_type=CandidateRole.REPRESENTATIVE)
         elif has_groom:
             return qs.filter(
-                models.Q(gender=GenderType.FEMALE) | models.Q(candidate_type=CandidateRole.BRIDE)
+                models.Q(gender=GenderType.FEMALE)
+                | models.Q(candidate_type=CandidateRole.BRIDE)
             ).exclude(candidate_type=CandidateRole.REPRESENTATIVE)
         elif has_bride:
             return qs.filter(
-                models.Q(gender=GenderType.MALE) | models.Q(candidate_type=CandidateRole.GROOM)
+                models.Q(gender=GenderType.MALE)
+                | models.Q(candidate_type=CandidateRole.GROOM)
             ).exclude(candidate_type=CandidateRole.REPRESENTATIVE)
         else:
             return qs.exclude(candidate_type=CandidateRole.REPRESENTATIVE)
@@ -417,11 +424,13 @@ def filter_profiles_for_user(qs, user):
 
     if is_groom and not is_bride:
         return qs.filter(
-            models.Q(gender=GenderType.FEMALE) | models.Q(candidate_type=CandidateRole.BRIDE)
+            models.Q(gender=GenderType.FEMALE)
+            | models.Q(candidate_type=CandidateRole.BRIDE)
         ).exclude(candidate_type=CandidateRole.REPRESENTATIVE)
     elif is_bride and not is_groom:
         return qs.filter(
-            models.Q(gender=GenderType.MALE) | models.Q(candidate_type=CandidateRole.GROOM)
+            models.Q(gender=GenderType.MALE)
+            | models.Q(candidate_type=CandidateRole.GROOM)
         ).exclude(candidate_type=CandidateRole.REPRESENTATIVE)
 
     return qs.exclude(candidate_type=CandidateRole.REPRESENTATIVE)
@@ -493,7 +502,9 @@ def unsave_profile_for_user(user, profile_id):
     ).first()
 
     if not saved_obj:
-        raise ValidationError({"detail": "Ushbu profil saqlanganlar ro'yxatida topilmadi."})
+        raise ValidationError(
+            {"detail": "Ushbu profil saqlanganlar ro'yxatida topilmadi."}
+        )
 
     saved_obj.hard_delete()
     return True
@@ -551,6 +562,7 @@ def get_saved_profile_objects_for_user(user):
     if not user or not user.is_authenticated:
         return SavedProfile.objects.none()
 
+
 def get_paginated_profiles_response(
     view_instance, request, queryset, extra_context=None
 ):
@@ -565,7 +577,9 @@ def get_paginated_profiles_response(
     :return: DRF Response (Response).
     """
     from rest_framework.response import Response
-    from apps.accounts.questionnaire.services import batch_calculate_compatibility_scores
+    from apps.accounts.questionnaire.services import (
+        batch_calculate_compatibility_scores,
+    )
 
     qs = view_instance.filter_queryset(queryset)
     page = view_instance.paginate_queryset(qs)
@@ -580,9 +594,7 @@ def get_paginated_profiles_response(
 
     batch_scores = None
     if user_profile and profiles_list:
-        batch_scores = batch_calculate_compatibility_scores(
-            user_profile, profiles_list
-        )
+        batch_scores = batch_calculate_compatibility_scores(user_profile, profiles_list)
 
     context = view_instance.get_serializer_context()
     context["batch_compatibility_scores"] = batch_scores
@@ -596,8 +608,3 @@ def get_paginated_profiles_response(
 
     serializer = view_instance.get_serializer(qs, many=True, context=context)
     return Response(serializer.data)
-
-
-
-
-
