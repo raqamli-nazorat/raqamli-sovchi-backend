@@ -551,17 +551,52 @@ def get_saved_profile_objects_for_user(user):
     if not user or not user.is_authenticated:
         return SavedProfile.objects.none()
 
-    return (
-        SavedProfile.objects.filter(user=user)
-        .select_related(
-            "saved_profile",
-            "saved_profile__user",
-            "saved_profile__region",
-            "saved_profile__district",
-        )
-        .prefetch_related("saved_profile__photos")
-        .active()
+def get_paginated_profiles_response(
+    view_instance, request, queryset, extra_context=None
+):
+    """
+    Profillar queryset-ini filtrlaydi, paginatsiya qiladi, moslik ballarini (batch scores)
+    va saqlangan profillar ma'lumotlarini serializer kontekstiga qo'shib, Response obyektini qaytaradi.
+
+    :param view_instance: DRF ViewSet instansiyasi (self).
+    :param request: HTTP Request obyekti.
+    :param queryset: Profillar QuerySet-i.
+    :param extra_context: Serializer kontekstiga qo'shimcha kiritiladigan lug'at (dict).
+    :return: DRF Response (Response).
+    """
+    from rest_framework.response import Response
+    from apps.accounts.questionnaire.services import batch_calculate_compatibility_scores
+
+    qs = view_instance.filter_queryset(queryset)
+    page = view_instance.paginate_queryset(qs)
+
+    profiles_list = list(page) if page is not None else list(qs)
+
+    user_profile = (
+        getattr(request.user, "profile", None)
+        if request.user and request.user.is_authenticated
+        else None
     )
+
+    batch_scores = None
+    if user_profile and profiles_list:
+        batch_scores = batch_calculate_compatibility_scores(
+            user_profile, profiles_list
+        )
+
+    context = view_instance.get_serializer_context()
+    context["batch_compatibility_scores"] = batch_scores
+
+    if extra_context:
+        context.update(extra_context)
+
+    if page is not None:
+        serializer = view_instance.get_serializer(page, many=True, context=context)
+        return view_instance.get_paginated_response(serializer.data)
+
+    serializer = view_instance.get_serializer(qs, many=True, context=context)
+    return Response(serializer.data)
+
 
 
 

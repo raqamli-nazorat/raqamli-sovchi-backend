@@ -27,6 +27,7 @@ from .services import (
     create_profile_photo,
     filter_profiles_for_user,
     get_nearby_profiles,
+    get_paginated_profiles_response,
     get_saved_profile_objects_for_user,
     get_saved_profiles_for_user,
     reject_representative_consent,
@@ -74,36 +75,7 @@ class ProfileViewSet(BaseManageViewSet):
         return filter_profiles_for_user(qs, self.request.user)
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-
-        profiles_list = list(page) if page is not None else list(queryset)
-
-        user_profile = (
-            getattr(request.user, "profile", None)
-            if request.user and request.user.is_authenticated
-            else None
-        )
-        batch_scores = None
-
-        if user_profile and profiles_list:
-            from apps.accounts.questionnaire.services import (
-                batch_calculate_compatibility_scores,
-            )
-
-            batch_scores = batch_calculate_compatibility_scores(
-                user_profile, profiles_list
-            )
-
-        context = self.get_serializer_context()
-        context["batch_compatibility_scores"] = batch_scores
-
-        if page is not None:
-            serializer = self.get_serializer(page, many=True, context=context)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True, context=context)
-        return Response(serializer.data)
+        return get_paginated_profiles_response(self, request, self.get_queryset())
 
     def perform_create(self, serializer):
         target_user = create_profile(self.request.user, serializer.validated_data)
@@ -134,30 +106,7 @@ class ProfileViewSet(BaseManageViewSet):
                 return Response(err.detail, status=status.HTTP_400_BAD_REQUEST)
             return Response({"detail": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-        qs = self.filter_queryset(qs)
-        page = self.paginate_queryset(qs)
-
-        profiles_list = list(page) if page is not None else list(qs)
-
-        batch_scores = None
-        if profiles_list:
-            from apps.accounts.questionnaire.services import (
-                batch_calculate_compatibility_scores,
-            )
-
-            batch_scores = batch_calculate_compatibility_scores(
-                user_profile, profiles_list
-            )
-
-        context = self.get_serializer_context()
-        context["batch_compatibility_scores"] = batch_scores
-
-        if page is not None:
-            serializer = self.get_serializer(page, many=True, context=context)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(qs, many=True, context=context)
-        return Response(serializer.data)
+        return get_paginated_profiles_response(self, request, qs)
 
     @action(
         detail=True,
@@ -200,32 +149,12 @@ class ProfileViewSet(BaseManageViewSet):
     )
     def saved(self, request):
         qs, saved_profile_ids = get_saved_profiles_for_user(request.user)
-
-        qs = self.filter_queryset(qs)
-        page = self.paginate_queryset(qs)
-        profiles_list = list(page) if page is not None else list(qs)
-
-        user_profile = getattr(request.user, "profile", None)
-        batch_scores = None
-        if user_profile and profiles_list:
-            from apps.accounts.questionnaire.services import (
-                batch_calculate_compatibility_scores,
-            )
-
-            batch_scores = batch_calculate_compatibility_scores(
-                user_profile, profiles_list
-            )
-
-        context = self.get_serializer_context()
-        context["batch_compatibility_scores"] = batch_scores
-        context["user_saved_profile_ids"] = saved_profile_ids
-
-        if page is not None:
-            serializer = self.get_serializer(page, many=True, context=context)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(qs, many=True, context=context)
-        return Response(serializer.data)
+        return get_paginated_profiles_response(
+            self,
+            request,
+            qs,
+            extra_context={"user_saved_profile_ids": saved_profile_ids},
+        )
 
 
 class ProfilePhotoViewSet(BaseManageViewSet):
