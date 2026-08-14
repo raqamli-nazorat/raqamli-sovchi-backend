@@ -5,10 +5,6 @@ from apps.core.base.models import BaseModel
 from apps.accounts.users.models import User
 
 
-def generate_code():
-    return ""
-
-
 def default_expires_at():
     return timezone.now() + timezone.timedelta(minutes=5)
 
