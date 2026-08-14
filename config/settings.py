@@ -59,11 +59,11 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    "apps.accounts.users",
     "apps.core.base",
     "apps.core.audits",
     "apps.core.locations",
     "apps.core.references",
-    "apps.accounts.users",
     "apps.accounts.profiles",
     "apps.accounts.questionnaire",
     "apps.accounts.telegram_bot",

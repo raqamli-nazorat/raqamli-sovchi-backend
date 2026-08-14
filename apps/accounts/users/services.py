@@ -8,10 +8,25 @@ DEVICE_CACHE_TIMEOUT = 30 * 24 * 3600
 
 
 def get_device_cache_key(user_id, device_id):
+    """
+    Foydalanuvchi qurilmasining Redis kech kalitini shakllantiradi.
+
+    :param user_id: Foydalanuvchi ID si (UUID yoki int).
+    :param device_id: Qurilma identifikatori (string).
+    :return: Redis kech kaliti (string).
+    """
     return f"user:{user_id}:device:{device_id}:active"
 
 
 def set_device_active_in_redis(user_id, device_id, is_active=True):
+    """
+    Qurilmaning faollik holatini Redis keshiga yozadi.
+
+    :param user_id: Foydalanuvchi ID si.
+    :param device_id: Qurilma identifikatori.
+    :param is_active: Qurilma faollik holati (bool, default=True).
+    :return: None
+    """
     key = get_device_cache_key(user_id, device_id)
     try:
         cache.set(key, is_active, timeout=DEVICE_CACHE_TIMEOUT)
@@ -20,6 +35,13 @@ def set_device_active_in_redis(user_id, device_id, is_active=True):
 
 
 def is_device_active_in_redis(user_id, device_id):
+    """
+    Qurilmaning faolligini avval Redis kechidan, topilmasa ma'lumotlar bazasidan tekshiradi.
+
+    :param user_id: Foydalanuvchi ID si.
+    :param device_id: Qurilma identifikatori.
+    :return: Qurilma faol bo'lsa True, aks holda False (bool).
+    """
     if not user_id or not device_id:
         return True
 
@@ -40,10 +62,24 @@ def is_device_active_in_redis(user_id, device_id):
 
 
 def revoke_device_in_redis(user_id, device_id):
+    """
+    Qurilmaning faollik holatini Redis kechida bekor qiladi (False qilib yozadi).
+
+    :param user_id: Foydalanuvchi ID si.
+    :param device_id: Qurilma identifikatori.
+    :return: None
+    """
     set_device_active_in_redis(user_id, device_id, is_active=False)
 
 
 def revoke_all_other_devices(user, current_device_id):
+    """
+    Foydalanuvchining joriy qurilmasidan tashqari barcha boshqa faol qurilmalarini bekor qiladi (deaktivatsiyalaydi).
+
+    :param user: Foydalanuvchi obyekti (User).
+    :param current_device_id: Saqlanib qoladigan joriy qurilma ID si.
+    :return: Bekor qilingan qurilmalar soni (int).
+    """
     qs = UserDevice.objects.filter(user=user, is_active=True)
     if current_device_id:
         qs = qs.exclude(device_id=current_device_id)
@@ -58,6 +94,14 @@ def revoke_all_other_devices(user, current_device_id):
 
 
 def register_or_update_user_device(user, request):
+    """
+    HTTP so'rov sarlavhalaridan (X-Device-Id, X-Device-Name, X-Device-OS) foydalanib
+    foydalanuvchi qurilmasini ro'yxatdan o'tkazadi yoki yangilaydi.
+
+    :param user: Foydalanuvchi obyekti (User).
+    :param request: HTTP Request obyekti.
+    :return: Yaratilgan yoki yangilangan UserDevice obyekti yoki None.
+    """
     if not request or not user or not user.is_authenticated:
         return None
 
@@ -103,6 +147,13 @@ def register_or_update_user_device(user, request):
 
 
 def _reactivate_user_if_needed(user, new_auth_provider=None):
+    """
+    Nofaol (deaktivatsiyalangan) foydalanuvchini qayta faollashtiradi va uning eski ma'lumotlarini tozalaydi.
+
+    :param user: Foydalanuvchi obyekti (User).
+    :param new_auth_provider: Yangi autentifikatsiya provayderi (masalan, 'google', 'phone', 'email').
+    :return: None
+    """
     if not user or user.is_active:
         return
 
@@ -126,6 +177,14 @@ def _reactivate_user_if_needed(user, new_auth_provider=None):
 
 
 def authenticate_google_user(id_token_str, request):
+    """
+    Google OAuth ID Token orqali foydalanuvchini autentifikatsiya qiladi yoki yangi hisob yaratadi.
+
+    :param id_token_str: Google yuborgan ID token matni.
+    :param request: HTTP Request obyekti.
+    :return: (user, tokens, is_blocked) uchtaligi.
+    :raises ValidationError: Token yaroqsiz bo'lganda.
+    """
     import requests as http_requests
     from allauth.socialaccount.models import SocialAccount
     from rest_framework.exceptions import ValidationError
@@ -194,6 +253,13 @@ def authenticate_google_user(id_token_str, request):
 
 
 def authenticate_phone_user(phone_number, request):
+    """
+    Telefon raqami orqali foydalanuvchini autentifikatsiya qiladi yoki yangi hisob yaratadi va JWT belgilarni (tokens) qaytaradi.
+
+    :param phone_number: Foydalanuvchi telefon raqami (masalan "+998901234567").
+    :param request: HTTP Request obyekti.
+    :return: (user, tokens, is_blocked) uchtaligi.
+    """
     from apps.accounts.users.models import User, AuthProvider
     from apps.accounts.users.utils import get_tokens_for_user
 
@@ -224,6 +290,13 @@ def authenticate_phone_user(phone_number, request):
 
 
 def authenticate_email_user(email, request):
+    """
+    Email manzili orqali foydalanuvchini autentifikatsiya qiladi yoki yangi hisob yaratadi va JWT belgilarni (tokens) qaytaradi.
+
+    :param email: Foydalanuvchi email manzili.
+    :param request: HTTP Request obyekti.
+    :return: (user, tokens, is_blocked) uchtaligi.
+    """
     from apps.accounts.users.models import User, AuthProvider
     from apps.accounts.users.utils import get_tokens_for_user
 
@@ -252,3 +325,4 @@ def authenticate_email_user(email, request):
     tokens = get_tokens_for_user(user, device_id=device_id)
 
     return user, tokens, False
+

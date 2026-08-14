@@ -144,3 +144,252 @@ class ProfileNearbyTestCase(TestCase):
         self.client.force_authenticate(user=user_no_loc)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class ProfileGenderFilterTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.role = Role.objects.create(name="User Test Role", is_default=True)
+        self.url = "/api/v1/accounts/profiles/"
+
+        # Groom profile
+        self.user_groom = User.objects.create(
+            phone_number="+998901000001",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile_groom = Profile.objects.create(
+            user=self.user_groom,
+            first_name="Kuyov",
+            last_name="Test",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_year=1995,
+            height=175,
+        )
+
+        # Bride profile
+        self.user_bride = User.objects.create(
+            phone_number="+998901000002",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile_bride = Profile.objects.create(
+            user=self.user_bride,
+            first_name="Kelin",
+            last_name="Test",
+            gender=GenderType.FEMALE,
+            candidate_type=CandidateRole.BRIDE,
+            birth_year=1998,
+            height=165,
+        )
+
+        # Representative profile
+        self.user_rep = User.objects.create(
+            phone_number="+998901000003",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile_rep = Profile.objects.create(
+            user=self.user_rep,
+            first_name="Vakil",
+            last_name="Test",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.REPRESENTATIVE,
+            birth_year=1970,
+            height=170,
+        )
+
+    def _get_profile_ids(self, response):
+        data = response.data
+        results = data.get("results", data) if isinstance(data, dict) else data
+        if isinstance(results, dict) and "data" in results:
+            results = results["data"]
+        return [str(item["id"]) for item in results]
+
+    def test_groom_user_sees_only_brides(self):
+        self.client.force_authenticate(user=self.user_groom)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = self._get_profile_ids(response)
+
+        self.assertIn(str(self.profile_bride.id), ids)
+        self.assertNotIn(str(self.profile_groom.id), ids)
+        self.assertNotIn(str(self.profile_rep.id), ids)
+
+    def test_bride_user_sees_only_grooms(self):
+        self.client.force_authenticate(user=self.user_bride)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = self._get_profile_ids(response)
+
+        self.assertIn(str(self.profile_groom.id), ids)
+        self.assertNotIn(str(self.profile_bride.id), ids)
+        self.assertNotIn(str(self.profile_rep.id), ids)
+
+    def test_representative_user_for_bride_sees_only_grooms(self):
+        from apps.accounts.profiles.models import RepresentativeInfo
+        RepresentativeInfo.objects.create(
+            profile=self.profile_rep,
+            candidate_role=CandidateRole.BRIDE,
+        )
+
+        self.client.force_authenticate(user=self.user_rep)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = self._get_profile_ids(response)
+
+        self.assertIn(str(self.profile_groom.id), ids)
+        self.assertNotIn(str(self.profile_bride.id), ids)
+        self.assertNotIn(str(self.profile_rep.id), ids)
+
+    def test_representative_user_for_groom_sees_only_brides(self):
+        from apps.accounts.profiles.models import RepresentativeInfo
+        RepresentativeInfo.objects.create(
+            profile=self.profile_rep,
+            candidate_role=CandidateRole.GROOM,
+        )
+
+        self.client.force_authenticate(user=self.user_rep)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = self._get_profile_ids(response)
+
+        self.assertIn(str(self.profile_bride.id), ids)
+        self.assertNotIn(str(self.profile_groom.id), ids)
+        self.assertNotIn(str(self.profile_rep.id), ids)
+
+    def test_representative_user_for_both_sees_all_candidates(self):
+        from apps.accounts.profiles.models import RepresentativeInfo
+        # Representative representing both a groom and a bride
+        RepresentativeInfo.objects.create(
+            profile=self.profile_rep,
+            candidate_role=CandidateRole.GROOM,
+        )
+        RepresentativeInfo.objects.create(
+            profile=self.profile_rep,
+            candidate_role=CandidateRole.BRIDE,
+        )
+
+        self.client.force_authenticate(user=self.user_rep)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = self._get_profile_ids(response)
+
+        self.assertIn(str(self.profile_groom.id), ids)
+        self.assertIn(str(self.profile_bride.id), ids)
+        self.assertNotIn(str(self.profile_rep.id), ids)
+
+
+class SavedProfileTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.role = Role.objects.create(name="User Saved Role", is_default=True)
+
+        self.user1 = User.objects.create(
+            phone_number="+998909990001",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile1 = Profile.objects.create(
+            user=self.user1,
+            first_name="User1",
+            last_name="Test",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_year=1995,
+            height=175,
+        )
+
+        self.user2 = User.objects.create(
+            phone_number="+998909990002",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile2 = Profile.objects.create(
+            user=self.user2,
+            first_name="User2",
+            last_name="Test",
+            gender=GenderType.FEMALE,
+            candidate_type=CandidateRole.BRIDE,
+            birth_year=1998,
+            height=165,
+        )
+
+    def test_save_and_unsave_profile(self):
+        self.client.force_authenticate(user=self.user1)
+
+        # 1. Save profile2
+        save_url = f"/api/v1/accounts/profiles/{self.profile2.id}/save/"
+        res_save = self.client.post(save_url)
+        self.assertEqual(res_save.status_code, status.HTTP_200_OK)
+        self.assertTrue(res_save.data.get("is_saved"))
+
+        # 2. Check saved list
+        saved_list_url = "/api/v1/accounts/profiles/saved/"
+        res_list = self.client.get(saved_list_url)
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        data = res_list.data.get("results", res_list.data)
+        ids = [item["id"] for item in data]
+        self.assertIn(str(self.profile2.id), ids)
+
+        # 3. Unsave profile2
+        unsave_url = f"/api/v1/accounts/profiles/{self.profile2.id}/unsave/"
+        res_unsave = self.client.post(unsave_url)
+        self.assertEqual(res_unsave.status_code, status.HTTP_200_OK)
+        self.assertFalse(res_unsave.data.get("is_saved"))
+
+        # 4. Check saved list again
+        res_list_after = self.client.get(saved_list_url)
+        data_after = res_list_after.data.get("results", res_list_after.data)
+        ids_after = [item["id"] for item in data_after]
+        self.assertNotIn(str(self.profile2.id), ids_after)
+
+    def test_cannot_save_own_profile(self):
+        self.client.force_authenticate(user=self.user1)
+        save_url = f"/api/v1/accounts/profiles/{self.profile1.id}/save/"
+        res = self.client.post(save_url)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_saved_profiles_max_limit(self):
+        self.client.force_authenticate(user=self.user1)
+
+        # Create 10 female profiles and save them
+        for i in range(10):
+            u = User.objects.create(
+                phone_number=f"+9989080000{i:02d}",
+                auth_provider=AuthProvider.PHONE,
+                role=self.role,
+            )
+            p = Profile.objects.create(
+                user=u,
+                first_name=f"Bride_{i}",
+                last_name="Test",
+                gender=GenderType.FEMALE,
+                candidate_type=CandidateRole.BRIDE,
+                birth_year=1998,
+                height=165,
+            )
+            res = self.client.post(f"/api/v1/accounts/profiles/{p.id}/save/")
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Attempt to save 11th profile
+        u11 = User.objects.create(
+            phone_number="+998908000099",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        p11 = Profile.objects.create(
+            user=u11,
+            first_name="Bride_11",
+            last_name="Test",
+            gender=GenderType.FEMALE,
+            candidate_type=CandidateRole.BRIDE,
+            birth_year=1998,
+            height=165,
+        )
+        res11 = self.client.post(f"/api/v1/accounts/profiles/{p11.id}/save/")
+        self.assertEqual(res11.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("10", str(res11.data))
+
+

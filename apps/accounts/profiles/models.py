@@ -249,3 +249,28 @@ class RepresentativeInfo(BaseModel):
         return (
             f"Vakil: {self.profile.first_name} -> {self.candidate_contact or 'Nomzod'}"
         )
+
+
+class SavedProfile(BaseModel):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="saved_profiles",
+        verbose_name="Foydalanuvchi",
+    )
+    saved_profile = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="saved_by_users",
+        verbose_name="Saqlangan profil",
+    )
+
+    class Meta:
+        verbose_name = "Saqlangan profil"
+        verbose_name_plural = "Saqlangan profillar"
+        db_table = "saved_profiles"
+        unique_together = ("user", "saved_profile")
+
+    def __str__(self):
+        return f"{self.user} -> {self.saved_profile}"
+

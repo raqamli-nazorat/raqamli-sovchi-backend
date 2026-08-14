@@ -12,21 +12,27 @@ from apps.core.base.mixins import AutoSchemaMixin
 from apps.core.base.views import BaseManageViewSet
 
 from .filters import ProfileFilter
-from .models import Profile, ProfilePhoto, RepresentativeInfo
+from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
 from .permissions import ProfileMePermission, IsProfileOwnerOrStaff
 from .serializers import (
     FaceVerificationSerializer,
     ProfilePhotoSerializer,
     ProfileSerializer,
     RepresentativeInfoSerializer,
+    SavedProfileSerializer,
 )
 from .services import (
     approve_representative_consent,
     create_profile,
     create_profile_photo,
+    filter_profiles_for_user,
     get_nearby_profiles,
+    get_saved_profile_objects_for_user,
+    get_saved_profiles_for_user,
     reject_representative_consent,
+    save_profile_for_user,
     send_representative_consent_request,
+    unsave_profile_for_user,
     update_profile,
     verify_user_face,
 )
@@ -65,26 +71,7 @@ class ProfileViewSet(BaseManageViewSet):
             .prefetch_related("photos")
             .active()
         )
-        user = self.request.user
-
-        if user and user.is_authenticated and not (user.is_staff or user.is_superuser or bool(user.role and not user.role.is_default)):
-            from apps.accounts.users.models import BlockedUser
-
-            blocked_user_ids = set(
-                BlockedUser.objects.filter(blocker=user).values_list(
-                    "blocked_id", flat=True
-                )
-            )
-            blocked_by_user_ids = set(
-                BlockedUser.objects.filter(blocked=user).values_list(
-                    "blocker_id", flat=True
-                )
-            )
-            all_blocked = blocked_user_ids | blocked_by_user_ids
-            if all_blocked:
-                qs = qs.exclude(user_id__in=all_blocked)
-
-        return qs
+        return filter_profiles_for_user(qs, self.request.user)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -164,6 +151,74 @@ class ProfileViewSet(BaseManageViewSet):
 
         context = self.get_serializer_context()
         context["batch_compatibility_scores"] = batch_scores
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True, context=context)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(qs, many=True, context=context)
+        return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="save",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def save_profile(self, request, pk=None):
+        saved_obj = save_profile_for_user(request.user, pk)
+        return Response(
+            {
+                "message": "Anketa saqlanganlarga qo'shildi.",
+                "is_saved": True,
+                "saved_id": str(saved_obj.id),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path="unsave",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def unsave_profile(self, request, pk=None):
+        unsave_profile_for_user(request.user, pk)
+        return Response(
+            {
+                "message": "Anketa saqlanganlardan olib tashlandi.",
+                "is_saved": False,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="saved",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def saved(self, request):
+        qs, saved_profile_ids = get_saved_profiles_for_user(request.user)
+
+        qs = self.filter_queryset(qs)
+        page = self.paginate_queryset(qs)
+        profiles_list = list(page) if page is not None else list(qs)
+
+        user_profile = getattr(request.user, "profile", None)
+        batch_scores = None
+        if user_profile and profiles_list:
+            from apps.accounts.questionnaire.services import (
+                batch_calculate_compatibility_scores,
+            )
+
+            batch_scores = batch_calculate_compatibility_scores(
+                user_profile, profiles_list
+            )
+
+        context = self.get_serializer_context()
+        context["batch_compatibility_scores"] = batch_scores
+        context["user_saved_profile_ids"] = saved_profile_ids
 
         if page is not None:
             serializer = self.get_serializer(page, many=True, context=context)
@@ -258,3 +313,21 @@ class FaceVerificationView(AutoSchemaMixin, APIView):
 
         status_code, result = verify_user_face(request.user, uploaded_file)
         return Response(result, status=status_code)
+
+
+class SavedProfileViewSet(BaseManageViewSet):
+    serializer_class = SavedProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return get_saved_profile_objects_for_user(self.request.user)
+
+    def perform_create(self, serializer):
+        saved_profile = serializer.validated_data.get("saved_profile")
+        if saved_profile:
+            saved_obj = save_profile_for_user(self.request.user, saved_profile.id)
+            serializer.instance = saved_obj
+        else:
+            serializer.save(user=self.request.user)
+
+

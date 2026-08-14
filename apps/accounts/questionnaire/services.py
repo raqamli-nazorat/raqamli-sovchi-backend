@@ -2,6 +2,12 @@ from apps.accounts.questionnaire.models import UserAnswer
 
 
 def get_effective_candidate_role(profile):
+    """
+    Profilning amaldagi nomzodlik rolini (kuyov / kelin) aniqlaydi.
+
+    :param profile: Profil obyekti (Profile).
+    :return: "groom", "bride" yoki None (string | None).
+    """
     if not profile:
         return None
 
@@ -20,6 +26,14 @@ def get_effective_candidate_role(profile):
 
 
 def calculate_compatibility_score(source_profile, target_profile):
+    """
+    Ikkita profil (foydalanuvchi anketalari) o'rtasidagi so'rovnoma javoblariga asoslangan
+    moslik foizini (compatibility score) va bo'limlar bo'yicha ballarni hisoblaydi.
+
+    :param source_profile: Asosiy (izlayotgan) profil.
+    :param target_profile: Nishon (solishtirilayotgan) profil.
+    :return: {"overall_score": float, "sections": list} yoki None.
+    """
     if not source_profile or not target_profile:
         return None
 
@@ -114,6 +128,13 @@ def calculate_compatibility_score(source_profile, target_profile):
 
 
 def batch_calculate_compatibility_scores(source_profile, target_profiles):
+    """
+    Bir nechta nomzod anketalari (target_profiles) uchun moslik ballarini ommaviy (batch) tartibda optimizeshgan holda hisoblaydi.
+
+    :param source_profile: Asosiy (izlayotgan) profil.
+    :param target_profiles: Solishtirilishi kerak bo'lgan profillar ro'yxati yoki QuerySet.
+    :return: {profile_id: {"overall_score": float, "sections": list} | None} lug'ati.
+    """
     if not source_profile or not target_profiles:
         return {}
 
@@ -211,6 +232,13 @@ def batch_calculate_compatibility_scores(source_profile, target_profiles):
 
 
 def bulk_save_question_options(question_id, options_data):
+    """
+    Savol variantsiyalarini (QuestionOption) ommaviy tarzda yaratadi yoki yangilaydi.
+
+    :param question_id: Tegishli savol ID si.
+    :param options_data: Variantlar ma'lumotlari ro'yxati (list of dicts).
+    :return: (yaratilganlar_soni, yangilanganlar_soni) juftligi (tuple).
+    """
     from django.db import transaction
     from apps.accounts.questionnaire.models import QuestionOption
 
@@ -267,6 +295,13 @@ def bulk_save_question_options(question_id, options_data):
 
 
 def bulk_save_user_answers(profile_id, answers_data):
+    """
+    Foydalanuvchining so'rovnomadagi javoblarini ommaviy yaratadi yoki yangilaydi.
+
+    :param profile_id: Foydalanuvchi profili ID si.
+    :param answers_data: Savol va tanlangan variantlar ma'lumotlari ro'yxati.
+    :return: Saqlangan javoblar soni (int).
+    """
     created_answers = []
     for item in answers_data:
         ans, _ = UserAnswer.objects.update_or_create(
@@ -276,3 +311,4 @@ def bulk_save_user_answers(profile_id, answers_data):
         )
         created_answers.append(ans)
     return len(created_answers)
+

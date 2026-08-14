@@ -6,6 +6,7 @@ from .views import (
     RepresentativeInfoViewSet,
     FaceVerificationView,
     ProfileMeView,
+    SavedProfileViewSet,
 )
 
 router = DefaultRouter()
@@ -13,6 +14,9 @@ router.register(r"profiles", ProfileViewSet, basename="profile")
 router.register(r"photos", ProfilePhotoViewSet, basename="profile-photo")
 router.register(
     r"representatives", RepresentativeInfoViewSet, basename="representative-info"
+)
+router.register(
+    r"saved-profiles", SavedProfileViewSet, basename="saved-profile"
 )
 
 urlpatterns = [

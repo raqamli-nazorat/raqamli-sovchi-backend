@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from apps.core.base.admin import BaseModelAdmin
-from .models import Profile, ProfilePhoto, RepresentativeInfo
+from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
 from .utils import is_female_candidate
 
 
@@ -99,3 +99,10 @@ class ProfilePhotoAdmin(BaseModelAdmin):
 class RepresentativeInfoAdmin(BaseModelAdmin):
     list_display = ("id", "profile", "kinship", "candidate_role", "created_at")
     list_filter = ("kinship", "candidate_role")
+
+
+@admin.register(SavedProfile)
+class SavedProfileAdmin(BaseModelAdmin):
+    list_display = ("id", "user", "saved_profile", "created_at")
+    search_fields = ("user__phone_number", "saved_profile__first_name", "saved_profile__last_name")
+

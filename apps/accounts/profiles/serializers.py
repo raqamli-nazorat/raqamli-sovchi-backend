@@ -1,67 +1,32 @@
-import os
-import mutagen
 from rest_framework import serializers
 from apps.core.base.serializers import BaseModelSerializer
-from apps.core.utils.face import verify_face_image
 
-from .models import Profile, ProfilePhoto, RepresentativeInfo
+from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
 from .utils import can_view_profile_photos
-
-ALLOWED_AUDIO_EXTENSIONS = {"mp3", "ogg", "m4a", "aac", "wav", "opus"}
-ALLOWED_AUDIO_CONTENT_TYPES = {
-    "audio/mpeg",
-    "audio/mp3",
-    "audio/ogg",
-    "audio/mp4",
-    "audio/m4a",
-    "audio/aac",
-    "audio/x-aac",
-    "audio/wav",
-    "audio/x-wav",
-    "audio/wave",
-    "audio/opus",
-    "audio/webm",
-}
-MAX_VOICE_DURATION_SECONDS = 60
+from .validators import (
+    validate_voice_intro,
+    validate_photo_limit,
+    validate_photo_face,
+    validate_location,
+)
 
 
-def _validate_voice_intro(value):
-    if not value:
-        return value
-
-    filename = getattr(value, "name", "") or ""
-    ext = os.path.splitext(filename)[-1].lstrip(".").lower()
-    content_type = getattr(value, "content_type", "") or ""
-
-    if (
-        ext not in ALLOWED_AUDIO_EXTENSIONS
-        and content_type not in ALLOWED_AUDIO_CONTENT_TYPES
-    ):
-        raise serializers.ValidationError(
-            f"Noto'g'ri fayl formati. Ruxsat etilgan formatlar: "
-            f"{', '.join(sorted(ALLOWED_AUDIO_EXTENSIONS))}."
-        )
-
-    try:
-        value.seek(0)
-        audio = mutagen.File(value)
-        value.seek(0)
-        if audio is not None and audio.info is not None:
-            duration = audio.info.length
-            if duration > MAX_VOICE_DURATION_SECONDS:
-                raise serializers.ValidationError(
-                    f"Ovozli xabar davomiyligi 1 daqiqadan (60 soniya) oshmasligi kerak. "
-                    f"Yuklangan fayl davomiyligi: {int(duration)} soniya."
-                )
-    except serializers.ValidationError:
-        raise
-    except Exception:
-        pass
-
-    return value
-
-
-MAX_PHOTOS_PER_PROFILE = 5
+class SavedProfileSerializer(BaseModelSerializer):
+    class Meta:
+        model = SavedProfile
+        fields = "__all__"
+        related_fields = {
+            "saved_profile": [
+                "id",
+                "first_name",
+                "last_name",
+                "gender",
+                "birth_year",
+                "height",
+                "weight",
+                "photos",
+            ]
+        }
 
 
 class ProfilePhotoSerializer(BaseModelSerializer):
@@ -77,25 +42,11 @@ class ProfilePhotoSerializer(BaseModelSerializer):
             if profile is None and request and request.user.is_authenticated:
                 profile = getattr(request.user, "profile", None)
 
-            if profile is not None:
-                current_count = ProfilePhoto.objects.filter(
-                    profile=profile, is_active=True
-                ).count()
-                if current_count >= MAX_PHOTOS_PER_PROFILE:
-                    raise serializers.ValidationError(
-                        {
-                            "image": (
-                                f"Profilga maksimal {MAX_PHOTOS_PER_PROFILE} ta rasm yuklash mumkin. "
-                                "Yangi rasm qo'shish uchun avval bitta rasmni o'chiring."
-                            )
-                        }
-                    )
+            validate_photo_limit(profile)
 
         image = attrs.get("image")
         if image:
-            is_valid, msg, embedding = verify_face_image(image)
-            if not is_valid:
-                raise serializers.ValidationError({"image": msg})
+            embedding = validate_photo_face(image)
             if embedding:
                 attrs["embedding"] = embedding
 
@@ -123,6 +74,7 @@ class RepresentativeInfoSerializer(BaseModelSerializer):
 
 class ProfileSerializer(BaseModelSerializer):
     compatibility_score = serializers.SerializerMethodField(read_only=True)
+    is_saved = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Profile
@@ -166,20 +118,25 @@ class ProfileSerializer(BaseModelSerializer):
 
         return calculate_compatibility_score(user_profile, obj)
 
+    def get_is_saved(self, obj):
+        saved_ids = self.context.get("user_saved_profile_ids")
+        if saved_ids is not None:
+            return obj.id in saved_ids
+
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+
+        from .models import SavedProfile
+        return SavedProfile.objects.filter(
+            user=request.user, saved_profile=obj, is_active=True
+        ).exists()
+
     def validate_voice_intro(self, value):
-        return _validate_voice_intro(value)
+        return validate_voice_intro(value)
 
     def validate_location(self, value):
-        if not value or value == "string":
-            return None
-        if isinstance(value, str):
-            try:
-                from django.contrib.gis.geos import GEOSGeometry
-
-                return GEOSGeometry(value)
-            except Exception:
-                return None
-        return value
+        return validate_location(value)
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
