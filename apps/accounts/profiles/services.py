@@ -131,6 +131,8 @@ def verify_user_face(user, uploaded_file):
     is_verified, msg = hash_compare(profile, uploaded_file)
 
     if is_verified:
+        user.is_verified = True
+        user.save(update_fields=["is_verified"])
         return status.HTTP_200_OK, {"message": msg, "verified": True}
 
     return status.HTTP_400_BAD_REQUEST, {"detail": msg, "verified": False}
