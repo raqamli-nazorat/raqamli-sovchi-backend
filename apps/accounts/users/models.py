@@ -134,6 +134,13 @@ class UserPledge(BaseModel):
         identifier = self.user.phone_number or self.user.email or str(self.user.id)
         return f"{identifier} - Badge: {self.has_serious_badge}"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if (self.accepted_terms or self.has_serious_badge) and not self.user.is_verified:
+            self.user.is_verified = True
+            self.user.save(update_fields=["is_verified"])
+
+
 
 class BlockedFace(BaseModel):
     user = models.ForeignKey(

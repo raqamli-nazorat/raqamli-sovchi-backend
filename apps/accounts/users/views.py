@@ -176,6 +176,10 @@ class UserPledgeViewSet(BaseManageViewSet):
     filterset_class = UserPledgeFilter
     ordering_fields = ["created_at"]
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
 
 class UserDeviceViewSet(BaseManageViewSet):
     permission_classes = [permissions.IsAuthenticated]
