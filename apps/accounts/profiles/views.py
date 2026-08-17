@@ -74,9 +74,6 @@ class ProfileViewSet(BaseManageViewSet):
         )
         return filter_profiles_for_user(qs, self.request.user)
 
-    def list(self, request, *args, **kwargs):
-        return get_paginated_profiles_response(self, request, self.get_queryset())
-
     def perform_create(self, serializer):
         target_user = create_profile(self.request.user, serializer.validated_data)
         serializer.save(user=target_user)
@@ -106,7 +103,24 @@ class ProfileViewSet(BaseManageViewSet):
                 return Response(err.detail, status=status.HTTP_400_BAD_REQUEST)
             return Response({"detail": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return get_paginated_profiles_response(self, request, qs)
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="matches",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def matches(self, request):
+        return get_paginated_profiles_response(
+            self, request, self.get_queryset(), only_matched=True
+        )
 
     @action(
         detail=True,

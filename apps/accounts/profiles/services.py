@@ -562,18 +562,22 @@ def get_saved_profile_objects_for_user(user):
     if not user or not user.is_authenticated:
         return SavedProfile.objects.none()
 
+    return SavedProfile.objects.filter(user=user).active()
+
 
 def get_paginated_profiles_response(
-    view_instance, request, queryset, extra_context=None
+    view_instance, request, queryset, extra_context=None, only_matched=False
 ):
     """
     Profillar queryset-ini filtrlaydi, paginatsiya qiladi, moslik ballarini (batch scores)
     va saqlangan profillar ma'lumotlarini serializer kontekstiga qo'shib, Response obyektini qaytaradi.
+    Agar only_matched=True bo'lsa, faqat moslik bali aniqlangan nomzodlarni chiqaradi.
 
     :param view_instance: DRF ViewSet instansiyasi (self).
     :param request: HTTP Request obyekti.
     :param queryset: Profillar QuerySet-i.
     :param extra_context: Serializer kontekstiga qo'shimcha kiritiladigan lug'at (dict).
+    :param only_matched: True bo'lsa, faqat moslik bali aniqlangan nomzodlarni va moslik foizi bo'yicha kamayish tartibida qaytaradi.
     :return: DRF Response (Response).
     """
     from rest_framework.response import Response
@@ -581,16 +585,57 @@ def get_paginated_profiles_response(
         batch_calculate_compatibility_scores,
     )
 
-    qs = view_instance.filter_queryset(queryset)
-    page = view_instance.paginate_queryset(qs)
-
-    profiles_list = list(page) if page is not None else list(qs)
-
     user_profile = (
         getattr(request.user, "profile", None)
         if request.user and request.user.is_authenticated
         else None
     )
+
+    qs = view_instance.filter_queryset(queryset)
+
+    if only_matched:
+        if not user_profile:
+            page = view_instance.paginate_queryset([])
+            if page is not None:
+                return view_instance.get_paginated_response([])
+            return Response([])
+
+        all_candidates = list(qs)
+        batch_scores = (
+            batch_calculate_compatibility_scores(user_profile, all_candidates)
+            if all_candidates
+            else {}
+        )
+
+        matched_candidates = [
+            p for p in all_candidates if batch_scores.get(p.id) is not None
+        ]
+
+        matched_candidates.sort(
+            key=lambda p: (batch_scores.get(p.id) or {}).get("overall_score", 0),
+            reverse=True,
+        )
+
+        page = view_instance.paginate_queryset(matched_candidates)
+        items = list(page) if page is not None else matched_candidates
+
+        context = view_instance.get_serializer_context()
+        context["batch_compatibility_scores"] = batch_scores
+
+        if extra_context:
+            context.update(extra_context)
+
+        if page is not None:
+            serializer = view_instance.get_serializer(items, many=True, context=context)
+            return view_instance.get_paginated_response(serializer.data)
+
+        serializer = view_instance.get_serializer(
+            matched_candidates, many=True, context=context
+        )
+        return Response(serializer.data)
+
+    page = view_instance.paginate_queryset(qs)
+    profiles_list = list(page) if page is not None else list(qs)
 
     batch_scores = None
     if user_profile and profiles_list:
