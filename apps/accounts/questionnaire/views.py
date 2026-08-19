@@ -1,4 +1,4 @@
-from rest_framework import status, views
+from rest_framework import permissions, status, views
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,6 +17,7 @@ from .serializers import (
     QuestionOptionBulkItemSerializer,
 )
 from .filters import QuestionFilter, UserAnswerFilter
+from .permissions import IsUserAnswerOwnerOrStaff
 
 
 class SectionTypeViewSet(BaseManageViewSet):
@@ -92,21 +93,65 @@ class QuestionOptionViewSet(BaseManageViewSet):
 
 
 class UserAnswerViewSet(BaseManageViewSet):
-    queryset = UserAnswer.objects.select_related(
-        "profile", "question", "selected_option"
-    ).active()
     serializer_class = UserAnswerSerializer
+    permission_classes = [IsUserAnswerOwnerOrStaff]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = UserAnswerFilter
 
+    def get_queryset(self):
+        qs = (
+            UserAnswer.objects.select_related("profile", "question", "selected_option")
+            .active()
+        )
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return qs.none()
+
+        if (
+            user.is_staff
+            or user.is_superuser
+            or bool(getattr(user, "role", None) and not user.role.is_default)
+        ):
+            return qs
+
+        user_profile = getattr(user, "profile", None)
+        if not user_profile:
+            return qs.none()
+
+        return qs.filter(profile=user_profile)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not (user.is_staff or user.is_superuser):
+            user_profile = getattr(user, "profile", None)
+            if not user_profile:
+                from rest_framework.exceptions import ValidationError
+
+                raise ValidationError({"detail": "Foydalanuvchi profili topilmadi."})
+            serializer.save(profile=user_profile)
+        else:
+            serializer.save()
+
 
 class BulkUserAnswerSubmitView(AutoSchemaMixin, views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request, *args, **kwargs):
         serializer = BulkUserAnswerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         profile_id = serializer.validated_data["profile_id"]
         answers_data = serializer.validated_data["answers"]
+
+        user = request.user
+        if not (user.is_staff or user.is_superuser):
+            user_profile = getattr(user, "profile", None)
+            if not user_profile or str(user_profile.id) != str(profile_id):
+                from rest_framework.exceptions import PermissionDenied
+
+                raise PermissionDenied(
+                    "Faqat o'zingizning profilingiz uchun javoblarni saqlashingiz mumkin."
+                )
 
         from .services import bulk_save_user_answers
 

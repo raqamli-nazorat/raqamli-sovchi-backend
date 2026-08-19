@@ -50,7 +50,8 @@ def calculate_compatibility_score(source_profile, target_profile):
     source_answers = {}
     for ans in source_answers_qs:
         sec = ans.question.section
-        source_answers[ans.question_id] = {
+        q_key = (sec.id, ans.question.order) if sec else ans.question.order
+        source_answers[q_key] = {
             "weight": ans.selected_option.weight,
             "section_id": sec.id if sec else None,
             "section_name": sec.name if sec else "Umumiy",
@@ -66,7 +67,8 @@ def calculate_compatibility_score(source_profile, target_profile):
     target_answers = {}
     for ans in target_answers_qs:
         sec = ans.question.section
-        target_answers[ans.question_id] = {
+        q_key = (sec.id, ans.question.order) if sec else ans.question.order
+        target_answers[q_key] = {
             "weight": ans.selected_option.weight,
             "section_id": sec.id if sec else None,
             "section_name": sec.name if sec else "Umumiy",
@@ -145,7 +147,8 @@ def batch_calculate_compatibility_scores(source_profile, target_profiles):
     source_answers = {}
     for ans in source_answers_qs:
         sec = ans.question.section
-        source_answers[ans.question_id] = {
+        q_key = (sec.id, ans.question.order) if sec else ans.question.order
+        source_answers[q_key] = {
             "weight": ans.selected_option.weight,
             "section_id": sec.id if sec else None,
             "section_name": sec.name if sec else "Umumiy",
@@ -165,7 +168,8 @@ def batch_calculate_compatibility_scores(source_profile, target_profiles):
         if ans.profile_id not in target_answers_map:
             target_answers_map[ans.profile_id] = {}
         sec = ans.question.section
-        target_answers_map[ans.profile_id][ans.question_id] = {
+        q_key = (sec.id, ans.question.order) if sec else ans.question.order
+        target_answers_map[ans.profile_id][q_key] = {
             "weight": ans.selected_option.weight,
             "section_id": sec.id if sec else None,
             "section_name": sec.name if sec else "Umumiy",
