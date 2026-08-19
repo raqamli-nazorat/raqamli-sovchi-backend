@@ -75,6 +75,8 @@ class RepresentativeInfoSerializer(BaseModelSerializer):
 class ProfileSerializer(BaseModelSerializer):
     compatibility_score = serializers.SerializerMethodField(read_only=True)
     is_saved = serializers.SerializerMethodField(read_only=True)
+    has_answered_test = serializers.SerializerMethodField(read_only=True)
+    answered_questions_count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Profile
@@ -132,6 +134,16 @@ class ProfileSerializer(BaseModelSerializer):
         return SavedProfile.objects.filter(
             user=request.user, saved_profile=obj, is_active=True
         ).exists()
+
+    def get_has_answered_test(self, obj):
+        from apps.accounts.questionnaire.models import UserAnswer
+
+        return UserAnswer.objects.filter(profile=obj, is_active=True).exists()
+
+    def get_answered_questions_count(self, obj):
+        from apps.accounts.questionnaire.models import UserAnswer
+
+        return UserAnswer.objects.filter(profile=obj, is_active=True).count()
 
     def validate_voice_intro(self, value):
         return validate_voice_intro(value)
