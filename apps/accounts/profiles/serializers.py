@@ -107,6 +107,19 @@ class ProfileSerializer(BaseModelSerializer):
         batch_scores = self.context.get("batch_compatibility_scores")
         if batch_scores is not None:
             return batch_scores.get(obj.id)
+
+        view = self.context.get("view")
+        if view and getattr(view, "action", None) == "retrieve":
+            request = self.context.get("request")
+            if request and request.user and request.user.is_authenticated:
+                user_profile = getattr(request.user, "profile", None)
+                if user_profile and user_profile.id != obj.id:
+                    from apps.accounts.questionnaire.services import (
+                        calculate_compatibility_score,
+                    )
+
+                    return calculate_compatibility_score(user_profile, obj)
+
         return None
 
     def get_is_saved(self, obj):
