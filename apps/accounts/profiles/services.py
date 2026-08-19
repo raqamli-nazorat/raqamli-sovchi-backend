@@ -635,14 +635,8 @@ def get_paginated_profiles_response(
         return Response(serializer.data)
 
     page = view_instance.paginate_queryset(qs)
-    profiles_list = list(page) if page is not None else list(qs)
-
-    batch_scores = None
-    if user_profile and profiles_list:
-        batch_scores = batch_calculate_compatibility_scores(user_profile, profiles_list)
 
     context = view_instance.get_serializer_context()
-    context["batch_compatibility_scores"] = batch_scores
 
     if extra_context:
         context.update(extra_context)
