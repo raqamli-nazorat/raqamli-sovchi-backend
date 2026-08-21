@@ -131,3 +131,28 @@ class UserDeviceRegisterView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+@extend_schema(tags=["Qurilmani ro'yxatdan o'tkazish"])
+class UserDeviceUnregisterView(APIView):
+    """Remove only the authenticated user's installation record.
+
+    The endpoint is deliberately idempotent: a logout must be safe even when
+    FCM has already invalidated or rotated the registration token.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        device_id = request.data.get("device_id")
+        if not isinstance(device_id, str) or not device_id.strip():
+            return Response(
+                {"detail": "device_id majburiy."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        UserDevice.objects.filter(
+            user=request.user,
+            device_id=device_id.strip(),
+        ).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

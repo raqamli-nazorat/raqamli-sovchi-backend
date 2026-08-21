@@ -17,13 +17,18 @@ FCM_BATCH_SIZE = 500
 
 @dataclass(frozen=True, slots=True)
 class NotificationPayload:
+    notification_id: str
     user_id: str
     title: str
     message: str
     extra_data: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        missing = [f for f in ("user_id", "title", "message") if not getattr(self, f)]
+        missing = [
+            field_name
+            for field_name in ("notification_id", "user_id", "title", "message")
+            if not getattr(self, field_name)
+        ]
         if missing:
             raise ValueError(f"Majburiy maydonlar yo'q: {missing}")
 
@@ -33,6 +38,7 @@ class NotificationPayload:
     @classmethod
     def from_dict(cls, data):
         return cls(
+            notification_id=str(data["id"]),
             user_id=str(data["user_id"]),
             title=data.get("title") or "Xabarnoma",
             message=data.get("message") or "",
@@ -103,9 +109,16 @@ def send_websocket_notification(self, data):
     if not channel_layer:
         raise RuntimeError("Channel layer mavjud emas.")
 
+    message = {
+        "id": data["id"],
+        "title": data["title"],
+        "message": data["message"],
+        "extra_data": data.get("extra_data") or {},
+        "created_at": data.get("created_at"),
+    }
     async_to_sync(channel_layer.group_send)(
         f"user_{data['user_id']}_notifications",
-        {"type": "send_notification", "message": data},
+        {"type": "send_notification", "message": message},
     )
 
 
@@ -134,9 +147,10 @@ def send_push_notification_task(
         return f"User {user_id} uchun tokenlar yo'q."
 
     fcm_data = {
+        "notification_id": str(p.notification_id),
+        "notification_type": str((p.extra_data or {}).get("type") or "generic"),
         "payload": json.dumps(extra_data or {}),
-        "title": title or "",
-        "message": message or "",
+        "schema_version": "1",
     }
 
     success = failure = 0
@@ -170,5 +184,5 @@ def send_push_notification_task(
         UserDevice.objects.filter(fcm_token__in=invalid_tokens).delete()
         logger.warning("FCM: eskirgan token o'chirildi | user=%s", user_id)
 
-    logger.info("FCM: user=%s | ok=%d | fail=%d", user_id, success, failure)
+    logger.info("FCM delivery completed | ok=%d | fail=%d", success, failure)
     return f"FCM: {success} muvaffaqiyatli, {failure} muvaffaqiyatsiz"

@@ -10,6 +10,7 @@ from .models import Notification
 def post_save_handler(sender, instance, created, **kwargs):
     if created:
         message_data = {
+            "id": str(instance.id),
             "user_id": str(instance.user.id),
             "id": str(instance.id),
             "title": instance.title,
