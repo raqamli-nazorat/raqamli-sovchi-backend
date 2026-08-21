@@ -7,6 +7,7 @@ from .views import (
     MarkNotificationReadView,
     MarkAllNotificationsAsReadView,
     UserDeviceRegisterView,
+    UserDeviceUnregisterView,
 )
 
 urlpatterns = [
@@ -22,4 +23,7 @@ urlpatterns = [
     ),
     path("tickets/", WebSocketTicketView.as_view(), name="websocket_tickets"),
     path("devices/register/", UserDeviceRegisterView.as_view(), name="device-register"),
+    path(
+        "devices/current/", UserDeviceUnregisterView.as_view(), name="device-unregister"
+    ),
 ]

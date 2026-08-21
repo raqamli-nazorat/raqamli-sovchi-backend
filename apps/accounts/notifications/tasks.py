@@ -18,9 +18,12 @@ FCM_BATCH_SIZE = 500
 @dataclass(frozen=True, slots=True)
 class NotificationPayload:
     user_id: str
+    notification_id: str
     title: str
     message: str
     extra_data: dict[str, Any] = field(default_factory=dict)
+    schema_version: str = "1"
+    created_at: str = ""
 
     def __post_init__(self):
         missing = [f for f in ("user_id", "title", "message") if not getattr(self, f)]
@@ -34,9 +37,12 @@ class NotificationPayload:
     def from_dict(cls, data):
         return cls(
             user_id=str(data["user_id"]),
+            notification_id=str(data.get("notification_id") or data.get("id") or ""),
             title=data.get("title") or "Xabarnoma",
             message=data.get("message") or "",
             extra_data=data.get("extra_data") or {},
+            schema_version=str(data.get("schema_version") or "1"),
+            created_at=str(data.get("created_at") or ""),
         )
 
 
@@ -54,7 +60,7 @@ def mass_notification_sender(raw_list):
                 )
             )
         except Exception as e:
-            logger.warning("Noto'g'ri payload o'tkazib yuborildi: %s | %s", raw, e)
+            logger.warning("Noto'g'ri payload o'tkazib yuborildi: %s", type(e).__name__)
             skipped += 1
 
     if not valid:
@@ -80,15 +86,17 @@ def send_single_notification_task(self, raw):
         raise self.retry(exc=e, max_retries=0)
 
     group(
-        send_websocket_notification.s(raw),
+        send_websocket_notification.s(p.to_dict()),
         send_push_notification_task.s(
-            p.user_id,
-            p.title,
-            p.message,
-            p.extra_data,
+            user_id=p.user_id,
+            notification_id=p.notification_id,
+            title=p.title,
+            message=p.message,
+            extra_data=p.extra_data,
+            schema_version=p.schema_version,
         ),
     ).apply_async()
-    return f"User {p.user_id} uchun WebSocket va Push tasklari yuborildi."
+    return "WebSocket va Push tasklari guruhlanib yuborildi."
 
 
 @shared_task(
@@ -119,24 +127,29 @@ def send_websocket_notification(self, data):
 def send_push_notification_task(
     self,
     user_id,
-    title,
-    message,
+    notification_id="",
+    title="",
+    message="",
     extra_data=None,
+    schema_version="1",
 ):
     tokens = list(
-        UserDevice.objects.filter(user_id=user_id)
+        UserDevice.objects.active()
+        .filter(user_id=user_id)
         .exclude(fcm_token__isnull=True)
         .exclude(fcm_token="")
         .values_list("fcm_token", flat=True)
     )
 
     if not tokens:
-        return f"User {user_id} uchun tokenlar yo'q."
+        return "Foydalanuvchi uchun faol tokenlar topilmadi."
 
     fcm_data = {
-        "payload": json.dumps(extra_data or {}),
+        "notification_id": str(notification_id or ""),
         "title": title or "",
         "message": message or "",
+        "payload": json.dumps(extra_data or {}),
+        "schema_version": str(schema_version or "1"),
     }
 
     success = failure = 0
@@ -168,7 +181,7 @@ def send_push_notification_task(
 
     if invalid_tokens:
         UserDevice.objects.filter(fcm_token__in=invalid_tokens).delete()
-        logger.warning("FCM: eskirgan token o'chirildi | user=%s", user_id)
+        logger.warning("FCM: %d ta eskirgan token tozalandi.", len(invalid_tokens))
 
-    logger.info("FCM: user=%s | ok=%d | fail=%d", user_id, success, failure)
+    logger.info("FCM jo'natish yakunlandi: ok=%d | fail=%d", success, failure)
     return f"FCM: {success} muvaffaqiyatli, {failure} muvaffaqiyatsiz"

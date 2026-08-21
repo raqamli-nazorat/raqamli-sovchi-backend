@@ -11,11 +11,14 @@ def post_save_handler(sender, instance, created, **kwargs):
     if created:
         message_data = {
             "user_id": str(instance.user.id),
-            "id": str(instance.id),
+            "notification_id": str(instance.id),
             "title": instance.title,
             "message": instance.message,
             "extra_data": instance.extra_data or {},
-            "created_at": instance.created_at.isoformat(),
+            "schema_version": "1",
+            "created_at": instance.created_at.isoformat()
+            if instance.created_at
+            else "",
         }
 
         transaction.on_commit(lambda: mass_notification_sender.delay([message_data]))

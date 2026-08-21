@@ -9,11 +9,18 @@ from rest_framework import generics, status, permissions
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 
-from .serializers import NotificationSerializer, UserDeviceSerializer
+from .serializers import (
+    NotificationSerializer,
+    UserDeviceSerializer,
+    UserDeviceRegisterSerializer,
+    UserDeviceUnregisterSerializer,
+    WebSocketTicketResponseSerializer,
+    NotificationCountSerializer,
+)
 from .models import Notification, UserDevice
 
 
-@extend_schema(tags=["Bildirishnomalar"])
+@extend_schema(tags=["Bildirishnomalar"], responses={200: WebSocketTicketResponseSerializer})
 class WebSocketTicketView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -36,7 +43,7 @@ class NotificationListView(generics.ListAPIView):
         return super().get_queryset().filter(user=self.request.user)
 
 
-@extend_schema(tags=["Bildirishnomalar"])
+@extend_schema(tags=["Bildirishnomalar"], responses={200: NotificationCountSerializer})
 class NotificationCountView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -94,13 +101,13 @@ class MarkAllNotificationsAsReadView(APIView):
         )
 
 
-@extend_schema(tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceSerializer)
+@extend_schema(tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceRegisterSerializer)
 class UserDeviceRegisterView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = UserDeviceSerializer
+    serializer_class = UserDeviceRegisterSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = UserDeviceSerializer(data=request.data)
+        serializer = UserDeviceRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         token = serializer.validated_data["fcm_token"]
@@ -119,6 +126,7 @@ class UserDeviceRegisterView(APIView):
                         "user": request.user,
                         "fcm_token": token,
                         "device_type": device_type,
+                        "is_active": True,
                     },
                 )
         except IntegrityError:
@@ -129,5 +137,23 @@ class UserDeviceRegisterView(APIView):
                 "message": "Qurilma muvaffaqiyatli ro'yxatdan o'tdi",
                 "status": "created" if created else "updated",
             },
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceUnregisterSerializer)
+class UserDeviceUnregisterView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserDeviceUnregisterSerializer
+
+    def delete(self, request, *args, **kwargs):
+        device_id = request.data.get("device_id") or request.query_params.get("device_id")
+        if device_id:
+            UserDevice.objects.filter(user=request.user, device_id=device_id).delete()
+        else:
+            UserDevice.objects.filter(user=request.user).delete()
+
+        return Response(
+            {"message": "Qurilma muvaffaqiyatli ro'yxatdan chiqarildi."},
             status=status.HTTP_200_OK,
         )
