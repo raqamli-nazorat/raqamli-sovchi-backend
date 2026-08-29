@@ -33,13 +33,17 @@ class ProfilePhotoSerializer(BaseModelSerializer):
     class Meta:
         model = ProfilePhoto
         fields = "__all__"
+        # profile so'rov yuboruvchining anketasidan olinadi (view: perform_create).
+        # Mijoz uni yubora olsa, begona anketaga rasm biriktirib, 5 ta rasm
+        # cheklovini ham chetlab o'tish mumkin edi.
+        read_only_fields = ["profile"]
 
     def validate(self, attrs):
         request = self.context.get("request")
 
         if self.instance is None:
-            profile = attrs.get("profile")
-            if profile is None and request and request.user.is_authenticated:
+            profile = None
+            if request and request.user.is_authenticated:
                 profile = getattr(request.user, "profile", None)
 
             validate_photo_limit(profile)

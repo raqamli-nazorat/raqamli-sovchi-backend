@@ -54,6 +54,10 @@ THIRD_PARTY_APPS = [
     "auditlog",
     "dj_rest_auth",
     "allauth",
+    # allauth.account majburiy: uning middleware'i, auth backend'i va
+    # allauth.socialaccount unga tayanadi. Bo'lmasa EmailAddress modeli
+    # migratsiyasiz "allauth" app'iga yopishib, test bazasi yaratilmaydi.
+    "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
 ]
@@ -208,6 +212,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "60/minute",
         "user": "60/minute",
+        # Moslik so'rovi yuborish — spamning oldini olish uchun alohida cheklov
+        "match_request": "20/h",
         "login": "5/15m",
     },
 }
@@ -254,6 +260,17 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+CELERY_BROKER_URL = env.str("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = env.str(
+    "CELERY_RESULT_BACKEND", default="redis://127.0.0.1:6379/1"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 USE_S3 = env.bool("USE_S3", False)
 

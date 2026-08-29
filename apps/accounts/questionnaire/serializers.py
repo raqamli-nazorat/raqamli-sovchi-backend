@@ -46,10 +46,33 @@ class QuestionSerializer(BaseModelSerializer):
         }
 
 
+class CurrentProfileDefault:
+    """
+    So'rov yuborayotgan foydalanuvchining anketasini standart qiymat sifatida beradi.
+
+    UserAnswer da (profile, question) juftligi unique. DRF ning
+    UniqueTogetherValidator-i tekshiruv uchun ikkala maydonning ham qiymatini
+    talab qiladi, shuning uchun profile ni shu yerda avtomatik to'ldiramiz —
+    aks holda mijoz uni qo'lda yuborishga majbur bo'lardi.
+    """
+
+    requires_context = True
+
+    def __call__(self, serializer_field):
+        request = serializer_field.context.get("request")
+        return getattr(getattr(request, "user", None), "profile", None)
+
+
 class UserAnswerSerializer(BaseModelSerializer):
     class Meta:
         model = UserAnswer
         fields = "__all__"
+        # profile so'rov yuboruvchidan avtomatik olinadi. Oddiy foydalanuvchi
+        # yuborgan qiymat view ichida (perform_create) baribir almashtiriladi —
+        # faqat xodim boshqa profil uchun javob kirita oladi.
+        extra_kwargs = {
+            "profile": {"required": False, "default": CurrentProfileDefault()}
+        }
         related_fields = {
             "profile": ["id", "first_name", "last_name"],
             "question": ["id", "order", "text", "section"],

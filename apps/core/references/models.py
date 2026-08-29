@@ -34,6 +34,9 @@ class Profession(BaseModel):
         verbose_name_plural = "Kasblar"
         db_table = "professions"
 
+    def __str__(self):
+        return self.name
+
 
 class MaritalStatus(BaseModel):
     name = models.CharField(max_length=255, unique=True, verbose_name="Nomi")

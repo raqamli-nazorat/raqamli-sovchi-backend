@@ -11,7 +11,10 @@ from apps.accounts.users.models import User, AuthProvider, Role
 class ChatsTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.role = Role.objects.create(name="User", is_default=True)
+        # post_migrate signali yaratgan haqiqiy boshlang'ich rol ishlatiladi —
+        # unda oddiy foydalanuvchining real huquqlari bor. Yangi bo'sh rol
+        # yaratilsa, u haqiqiysini almashtirib yuboradi va hamma so'rov 403 bo'ladi.
+        self.role = Role.objects.filter(is_default=True).first()
 
         self.user1 = User.objects.create(
             phone_number="+998901111111",

@@ -5,6 +5,7 @@ from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status, views
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -177,6 +178,12 @@ class UserPledgeViewSet(BaseManageViewSet):
     ordering_fields = ["created_at"]
 
     def perform_create(self, serializer):
+        # user read-only bo'lgani uchun DRF ning takrorlanish validatori ishlamaydi,
+        # shuning uchun bitta foydalanuvchiga bitta rozilik shartini shu yerda
+        # tekshiramiz — aks holda baza cheklovi 500 xato beradi.
+        if UserPledge.objects.filter(user=self.request.user).exists():
+            raise ValidationError("Siz allaqachon halollik roziligini bergansiz.")
+
         serializer.save(user=self.request.user)
 
 
@@ -254,6 +261,7 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
 
 class PhoneAuthView(AutoSchemaMixin, views.APIView):
     permission_classes = []
+    serializer_class = PhoneAuthSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = PhoneAuthSerializer(data=request.data)

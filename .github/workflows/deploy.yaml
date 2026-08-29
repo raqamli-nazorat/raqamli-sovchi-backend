@@ -40,6 +40,7 @@ jobs:
             python manage.py migrate --noinput
             python manage.py load_locations
             python manage.py load_questions
+            python manage.py load_references
             python manage.py collectstatic --noinput
             
             

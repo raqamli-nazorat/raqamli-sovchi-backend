@@ -4,23 +4,37 @@ from django_filters.rest_framework import DjangoFilterBackend
 from apps.core.base.views import BaseManageViewSet
 from .models import ChatRoom, Message
 from .serializers import ChatRoomSerializer, MessageSerializer
+from .services import filter_chat_rooms_for_user, filter_messages_for_user
 
 
 class ChatRoomViewSet(BaseManageViewSet):
-    queryset = ChatRoom.objects.select_related("match_request").active()
     serializer_class = ChatRoomSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["match_request"]
     ordering_fields = ["created_at"]
 
+    def get_queryset(self):
+        qs = ChatRoom.objects.select_related(
+            "match_request__from_profile__user",
+            "match_request__to_profile__user",
+        ).active()
+        return filter_chat_rooms_for_user(qs, self.request.user)
+
 
 class MessageViewSet(BaseManageViewSet):
-    queryset = Message.objects.select_related("chat_room", "sender").active()
     serializer_class = MessageSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["chat_room", "sender", "is_read"]
     search_fields = ["content"]
     ordering_fields = ["created_at"]
+
+    def get_queryset(self):
+        qs = Message.objects.select_related(
+            "sender",
+            "chat_room__match_request__from_profile__user",
+            "chat_room__match_request__to_profile__user",
+        ).active()
+        return filter_messages_for_user(qs, self.request.user)
 
     def perform_create(self, serializer):
         msg = serializer.save(sender=self.request.user)

@@ -3,7 +3,7 @@ import logging
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -68,7 +68,20 @@ class ProfileViewSet(BaseManageViewSet):
 
     def get_queryset(self):
         qs = (
-            Profile.objects.select_related("user", "user__role", "region", "district")
+            Profile.objects.select_related(
+                "user",
+                "user__role",
+                "region",
+                "district",
+                # Serializer bu ma'lumotnomalarni ham ochadi (related_fields),
+                # shuning uchun ular ham select_related ga kiritiladi — aks holda
+                # har bir profil uchun alohida so'rov ketadi (N+1).
+                "education_level",
+                "nationality",
+                "profession",
+                "health_status",
+                "marital_status",
+            )
             .prefetch_related("photos")
             .active()
         )
@@ -190,10 +203,11 @@ class ProfilePhotoViewSet(BaseManageViewSet):
 
     def perform_create(self, serializer):
         profile = create_profile_photo(self.request.user, serializer.validated_data)
-        if profile:
-            serializer.save(profile=profile)
-        else:
-            serializer.save()
+        if not profile:
+            raise ValidationError(
+                "Rasm yuklash uchun avval o'z anketangizni to'ldirishingiz kerak."
+            )
+        serializer.save(profile=profile)
 
 
 class RepresentativeInfoViewSet(BaseManageViewSet):

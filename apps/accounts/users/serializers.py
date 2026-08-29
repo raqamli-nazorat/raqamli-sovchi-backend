@@ -158,6 +158,9 @@ class UserPledgeSerializer(BaseModelSerializer):
     class Meta:
         model = UserPledge
         fields = "__all__"
+        # user view ichida so'rov yuboruvchidan qo'yiladi (perform_create),
+        # shuning uchun mijozdan talab qilinmaydi.
+        read_only_fields = ["user"]
         related_fields = {"user": ["id", "phone_number"]}
 
 

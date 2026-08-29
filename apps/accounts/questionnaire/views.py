@@ -135,6 +135,7 @@ class UserAnswerViewSet(BaseManageViewSet):
 
 class BulkUserAnswerSubmitView(AutoSchemaMixin, views.APIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = BulkUserAnswerSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = BulkUserAnswerSerializer(data=request.data)
