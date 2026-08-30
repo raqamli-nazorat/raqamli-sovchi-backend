@@ -4,7 +4,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.core.base.serializers import BaseModelSerializer
 from apps.core.utils.validators import phone_validator
-from .models import Role, User, UserPledge, UserDevice, BlockedUser
+
+from .models import BlockedUser, Role, User, UserDevice, UserPledge
 
 
 class PermissionSerializer(serializers.ModelSerializer):

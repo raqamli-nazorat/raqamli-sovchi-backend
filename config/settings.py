@@ -22,6 +22,9 @@ CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 GDAL_LIBRARY_PATH = env("GDAL_LIBRARY_PATH", default=None)
 
 DJANGO_APPS = [
+    # daphne eng yuqorida turishi shart: u runserver buyrug'ini ASGI rejimiga
+    # o'tkazadi, aks holda WebSocket (ws/notifications/) dev muhitda ishlamaydi.
+    "daphne",
     "unfold",
     "unfold.contrib.filters",
     "unfold.contrib.forms",
@@ -236,10 +239,17 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
 }
 
+# Redis manzillari .env orqali boshqariladi. Har bir vazifa uchun alohida
+# DB raqami ajratilgan: 0 — Celery broker, 1 — Celery natijalari,
+# 2 — Channels (WebSocket), 3 — kesh. Ilgari kesh va Channels bitta DB ni
+# bo'lishardi, bu kesh tozalanganda WebSocket guruhlarini ham o'chirardi.
+REDIS_CACHE_URL = env.str("REDIS_CACHE_URL", default="redis://127.0.0.1:6379/3")
+REDIS_CHANNELS_URL = env.str("REDIS_CHANNELS_URL", default="redis://127.0.0.1:6379/2")
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/3",
+        "LOCATION": REDIS_CACHE_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECT_TIMEOUT": 5,
@@ -256,7 +266,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": ["redis://127.0.0.1:6379/3"],
+            "hosts": [REDIS_CHANNELS_URL],
         },
     },
 }

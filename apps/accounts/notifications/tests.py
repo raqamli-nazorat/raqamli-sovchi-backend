@@ -1,16 +1,16 @@
-from unittest.mock import patch, MagicMock
-from django.test import TestCase
-from django.core.cache import cache
-from rest_framework.test import APIClient
-from rest_framework import status
+from unittest.mock import MagicMock, patch
 
-from apps.accounts.users.models import User, AuthProvider, Role
-from apps.accounts.notifications.models import Notification, UserDevice
+from django.core.cache import cache
+from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from apps.accounts.notifications.models import UserDevice
 from apps.accounts.notifications.tasks import (
-    send_push_notification_task,
-    send_single_notification_task,
     NotificationPayload,
+    send_push_notification_task,
 )
+from apps.accounts.users.models import AuthProvider, Role, User
 
 
 class NotificationsApiTestCase(TestCase):
@@ -73,7 +73,9 @@ class NotificationsApiTestCase(TestCase):
             is_active=True,
         )
         url = "/api/v1/accounts/notifications/devices/current/"
-        res = self.client.delete(url, data={"device_id": "device_to_unregister"}, format="json")
+        res = self.client.delete(
+            url, data={"device_id": "device_to_unregister"}, format="json"
+        )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
         device.refresh_from_db()
@@ -128,6 +130,7 @@ class PushNotificationTaskTestCase(TestCase):
     def test_invalid_token_cleanup_deactivates_device(self, mock_send):
         mock_resp_item = MagicMock(success=False)
         from firebase_admin import messaging
+
         mock_resp_item.exception = messaging.UnregisteredError("Unregistered")
 
         mock_response = MagicMock()

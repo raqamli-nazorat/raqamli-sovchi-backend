@@ -2,14 +2,14 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.profiles.models import GenderType, Profile
 from apps.accounts.questionnaire.models import (
-    SectionType,
     Question,
     QuestionOption,
+    SectionType,
     UserAnswer,
 )
-from apps.accounts.profiles.models import Profile, GenderType
-from apps.accounts.users.models import User, AuthProvider, Role
+from apps.accounts.users.models import AuthProvider, Role, User
 
 
 class QuestionnaireTestCase(TestCase):

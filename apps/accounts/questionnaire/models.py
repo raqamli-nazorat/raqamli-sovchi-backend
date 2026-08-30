@@ -1,6 +1,7 @@
 from django.db import models
-from apps.core.base.models import BaseModel
+
 from apps.accounts.profiles.models import Profile
+from apps.core.base.models import BaseModel
 
 
 class SectionType(BaseModel):

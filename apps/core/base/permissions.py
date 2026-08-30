@@ -2,7 +2,6 @@ from rest_framework import permissions
 
 
 class FullDjangoModelPermissions(permissions.DjangoModelPermissions):
-
     perms_map = {
         "GET": ["%(app_label)s.view_%(model_name)s"],
         "OPTIONS": [],
@@ -15,7 +14,6 @@ class FullDjangoModelPermissions(permissions.DjangoModelPermissions):
 
 
 class IsOwnerOrStaff(permissions.BasePermission):
-
     def has_object_permission(self, request, view, obj):
         if request.user.is_staff or request.user.is_superuser:
             return True

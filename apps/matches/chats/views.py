@@ -1,7 +1,8 @@
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
 
 from apps.core.base.views import BaseManageViewSet
+
 from .models import ChatRoom, Message
 from .serializers import ChatRoomSerializer, MessageSerializer
 from .services import filter_chat_rooms_for_user, filter_messages_for_user

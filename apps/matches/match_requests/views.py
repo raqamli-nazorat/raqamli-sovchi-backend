@@ -1,12 +1,13 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.core.base.views import BaseManageViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
+
 from .models import MatchRequest, MatchRequestStatus, VisibilityScope
 from .serializers import MatchRequestSerializer
 from .services import (

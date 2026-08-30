@@ -81,6 +81,7 @@ def verify_user_face(user, uploaded_file):
     :return: (status_code, response_dict) juftligi.
     """
     from rest_framework import status
+
     from apps.core.utils.face import (
         _save_as_rgb_jpeg,
         _temp_jpeg_files,
@@ -192,8 +193,9 @@ def send_representative_consent_request(
             {"detail": "Avval vakil profili yaratilgan bo'lishi kerak."}
         )
 
-    from apps.accounts.users.models import User
     from apps.accounts.notifications.models import Notification
+    from apps.accounts.users.models import User
+
     from .models import RepresentativeInfo
 
     target_user = User.objects.filter(
@@ -202,15 +204,14 @@ def send_representative_consent_request(
 
     rep_info, _ = RepresentativeInfo.objects.get_or_create(
         profile=user_profile,
+        candidate_contact=candidate_contact,
         defaults={
             "kinship_id": kinship_id,
             "candidate_role": candidate_role,
-            "candidate_contact": candidate_contact,
             "target_candidate": target_user,
             "is_approved": False,
         },
     )
-    rep_info.candidate_contact = candidate_contact
     rep_info.target_candidate = target_user
     rep_info.is_approved = False
     if kinship_id:
@@ -252,6 +253,7 @@ def approve_representative_consent(user, rep_info_id=None):
     :raises ValidationError: Vakillik so'rovi topilmasa.
     """
     from apps.accounts.notifications.models import Notification
+
     from .models import RepresentativeInfo
 
     rep_info = RepresentativeInfo.objects.filter(
@@ -299,6 +301,7 @@ def reject_representative_consent(user, rep_info_id=None):
     :raises ValidationError: Vakillik so'rovi topilmasa.
     """
     from apps.accounts.notifications.models import Notification
+
     from .models import RepresentativeInfo
 
     rep_info = RepresentativeInfo.objects.filter(
@@ -352,6 +355,7 @@ def filter_profiles_for_user(qs, user):
         return qs
 
     from apps.accounts.users.models import BlockedUser
+
     from .models import CandidateRole, GenderType, RepresentativeInfo
 
     blocked_user_ids = set(
@@ -581,6 +585,7 @@ def get_paginated_profiles_response(
     :return: DRF Response (Response).
     """
     from rest_framework.response import Response
+
     from apps.accounts.questionnaire.services import (
         batch_calculate_compatibility_scores,
     )

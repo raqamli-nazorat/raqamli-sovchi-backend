@@ -12,8 +12,8 @@ from apps.core.base.mixins import AutoSchemaMixin
 from apps.core.base.views import BaseManageViewSet
 
 from .filters import ProfileFilter
-from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
-from .permissions import ProfileMePermission, IsProfileOwnerOrStaff
+from .models import Profile, ProfilePhoto, RepresentativeInfo
+from .permissions import IsProfileOwnerOrStaff, ProfileMePermission
 from .serializers import (
     FaceVerificationSerializer,
     ProfilePhotoSerializer,

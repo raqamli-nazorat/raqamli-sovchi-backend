@@ -1,13 +1,14 @@
 from rest_framework import serializers
+
 from apps.core.base.serializers import BaseModelSerializer
 
 from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
 from .utils import can_view_profile_photos
 from .validators import (
-    validate_voice_intro,
-    validate_photo_limit,
-    validate_photo_face,
     validate_location,
+    validate_photo_face,
+    validate_photo_limit,
+    validate_voice_intro,
 )
 
 

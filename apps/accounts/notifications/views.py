@@ -1,26 +1,27 @@
 import uuid
 
 from django.core.cache import cache
-from django.db.models import Count, Q
 from django.db import IntegrityError, transaction
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import generics, status, permissions
+from django.db.models import Count, Q
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .models import Notification, UserDevice
 from .serializers import (
+    NotificationCountSerializer,
     NotificationSerializer,
-    UserDeviceSerializer,
     UserDeviceRegisterSerializer,
     UserDeviceUnregisterSerializer,
     WebSocketTicketResponseSerializer,
-    NotificationCountSerializer,
 )
-from .models import Notification, UserDevice
 
 
-@extend_schema(tags=["Bildirishnomalar"], responses={200: WebSocketTicketResponseSerializer})
+@extend_schema(
+    tags=["Bildirishnomalar"], responses={200: WebSocketTicketResponseSerializer}
+)
 class WebSocketTicketView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -101,7 +102,9 @@ class MarkAllNotificationsAsReadView(APIView):
         )
 
 
-@extend_schema(tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceRegisterSerializer)
+@extend_schema(
+    tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceRegisterSerializer
+)
 class UserDeviceRegisterView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserDeviceRegisterSerializer
@@ -141,13 +144,17 @@ class UserDeviceRegisterView(APIView):
         )
 
 
-@extend_schema(tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceUnregisterSerializer)
+@extend_schema(
+    tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceUnregisterSerializer
+)
 class UserDeviceUnregisterView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserDeviceUnregisterSerializer
 
     def delete(self, request, *args, **kwargs):
-        device_id = request.data.get("device_id") or request.query_params.get("device_id")
+        device_id = request.data.get("device_id") or request.query_params.get(
+            "device_id"
+        )
         if device_id:
             UserDevice.objects.filter(user=request.user, device_id=device_id).delete()
         else:

@@ -1,8 +1,8 @@
-from django.contrib import admin
-from unfold.admin import ModelAdmin
-from auditlog.models import LogEntry
 from auditlog.admin import LogEntryAdmin
+from auditlog.models import LogEntry
+from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
+from unfold.admin import ModelAdmin
 
 try:
     admin.site.unregister(LogEntry)

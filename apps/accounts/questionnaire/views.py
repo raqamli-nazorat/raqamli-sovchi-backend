@@ -1,23 +1,24 @@
-from rest_framework import permissions, status, views
-from rest_framework.response import Response
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import permissions, status, views
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.response import Response
 
-from apps.core.base.views import BaseManageViewSet
 from apps.core.base.mixins import AutoSchemaMixin
-from .models import SectionType, Question, QuestionOption, UserAnswer
+from apps.core.base.views import BaseManageViewSet
+
+from .filters import QuestionFilter, UserAnswerFilter
+from .models import Question, QuestionOption, SectionType, UserAnswer
+from .permissions import IsUserAnswerOwnerOrStaff
 from .serializers import (
-    SectionTypeSerializer,
-    QuestionSerializer,
-    QuestionOptionSerializer,
-    QuestionOptionBulkSerializer,
-    UserAnswerSerializer,
     BulkUserAnswerSerializer,
     QuestionOptionBulkItemSerializer,
+    QuestionOptionBulkSerializer,
+    QuestionOptionSerializer,
+    QuestionSerializer,
+    SectionTypeSerializer,
+    UserAnswerSerializer,
 )
-from .filters import QuestionFilter, UserAnswerFilter
-from .permissions import IsUserAnswerOwnerOrStaff
 
 
 class SectionTypeViewSet(BaseManageViewSet):
@@ -46,7 +47,6 @@ class QuestionOptionViewSet(BaseManageViewSet):
     @action(detail=False, methods=["post", "put", "patch"], url_path="bulk")
     def bulk_options(self, request, *args, **kwargs):
         if isinstance(request.data, list):
-
             serializer = QuestionOptionBulkItemSerializer(data=request.data, many=True)
             serializer.is_valid(raise_exception=True)
             options_data = serializer.validated_data
@@ -99,10 +99,9 @@ class UserAnswerViewSet(BaseManageViewSet):
     filterset_class = UserAnswerFilter
 
     def get_queryset(self):
-        qs = (
-            UserAnswer.objects.select_related("profile", "question", "selected_option")
-            .active()
-        )
+        qs = UserAnswer.objects.select_related(
+            "profile", "question", "selected_option"
+        ).active()
         user = self.request.user
         if not user or not user.is_authenticated:
             return qs.none()

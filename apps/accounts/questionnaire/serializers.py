@@ -1,6 +1,8 @@
 from rest_framework import serializers
+
 from apps.core.base.serializers import BaseModelSerializer
-from .models import SectionType, Question, QuestionOption, UserAnswer
+
+from .models import Question, QuestionOption, SectionType, UserAnswer
 
 
 class SectionTypeSerializer(BaseModelSerializer):

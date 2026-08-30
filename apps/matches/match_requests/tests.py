@@ -2,9 +2,9 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.profiles.models import CandidateRole, GenderType, Profile
+from apps.accounts.users.models import AuthProvider, Role, User
 from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
-from apps.accounts.profiles.models import Profile, GenderType, CandidateRole
-from apps.accounts.users.models import User, AuthProvider, Role
 
 
 class MatchRequestsTestCase(TestCase):

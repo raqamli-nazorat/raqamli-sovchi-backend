@@ -112,5 +112,7 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(
-            self.style.SUCCESS(f"Tayyor! Jami {total_created} ta yangi yozuv qo'shildi.")
+            self.style.SUCCESS(
+                f"Tayyor! Jami {total_created} ta yangi yozuv qo'shildi."
+            )
         )

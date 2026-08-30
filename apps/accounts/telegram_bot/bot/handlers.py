@@ -1,26 +1,28 @@
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from django.utils import timezone
-from aiogram import Router, F
-from aiogram.filters import CommandStart, CommandObject
+from aiogram import F, Router
+from aiogram.filters import CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
+    KeyboardButton,
     Message,
     ReplyKeyboardMarkup,
-    KeyboardButton,
     ReplyKeyboardRemove,
 )
+from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.accounts.users.models import User, AuthProvider
 from apps.accounts.telegram_bot.models import (
-    TelegramAuthSession,
     SessionStatus,
+    TelegramAuthSession,
 )
+from apps.accounts.users.models import AuthProvider, User
+
 from .states import AuthStates
 
 router = Router()

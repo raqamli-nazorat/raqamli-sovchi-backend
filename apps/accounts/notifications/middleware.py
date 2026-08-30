@@ -1,8 +1,9 @@
-from django.contrib.auth.models import AnonymousUser
-from django.contrib.auth import get_user_model
-from channels.db import database_sync_to_async
-from django.core.cache import cache
 from urllib.parse import parse_qs
+
+from channels.db import database_sync_to_async
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -14,7 +15,9 @@ def get_user_and_cache_key(ticket):
 
     if user_id:
         try:
-            user = User.objects.only("id", "full_name").get(pk=user_id)
+            # full_name User modelida yo'q (u serializerda hisoblanadi) —
+            # only() ga berilsa FieldError chiqadi va ulanish 500 bilan uziladi.
+            user = User.objects.only("id", "is_active", "is_blocked").get(pk=user_id)
             return user, cache_key
         except User.DoesNotExist:
             return AnonymousUser(), None

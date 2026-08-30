@@ -1,5 +1,7 @@
 import django_filters
+
 from apps.core.base.filters import UUIDInFilter
+
 from .models import Profile
 
 

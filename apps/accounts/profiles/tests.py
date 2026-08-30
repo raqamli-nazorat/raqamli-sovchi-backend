@@ -3,8 +3,8 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.accounts.profiles.models import Profile, GenderType, CandidateRole
-from apps.accounts.users.models import User, AuthProvider, Role
+from apps.accounts.profiles.models import CandidateRole, GenderType, Profile
+from apps.accounts.users.models import AuthProvider, Role, User
 
 
 class ProfileNearbyTestCase(TestCase):

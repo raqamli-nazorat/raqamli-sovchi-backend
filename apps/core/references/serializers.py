@@ -1,11 +1,12 @@
 from apps.core.base.serializers import BaseModelSerializer
+
 from .models import (
     EducationLevel,
-    Nationality,
-    Profession,
-    MaritalStatus,
     HealthStatus,
     Kinship,
+    MaritalStatus,
+    Nationality,
+    Profession,
 )
 
 

@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
+
 from apps.accounts.questionnaire.models import (
     Question,
     QuestionOption,

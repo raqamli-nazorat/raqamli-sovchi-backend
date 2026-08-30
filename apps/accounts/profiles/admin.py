@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
+
 from apps.core.base.admin import BaseModelAdmin
+
 from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
 from .utils import is_female_candidate
 

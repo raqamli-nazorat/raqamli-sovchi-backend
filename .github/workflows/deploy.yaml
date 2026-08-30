@@ -24,30 +24,82 @@ jobs:
           envs: GITHUB_TOKEN
           script: |
             set -e
-            cd /var/www/backend/raqamli-sovchi-backend
-            
+            WORK_DIR=/var/www/backend/raqamli-sovchi-backend
+            VENV=$WORK_DIR/venv/bin
+            DEPLOY_USER=$(whoami)
+
             echo "1. Kodni yangilash (Production)"
+            cd $WORK_DIR
             git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/raqamli-nazorat/raqamli-sovchi-backend.git
             git fetch origin production
             git reset --hard origin/production
-            
+
             echo "2. Kutubxonalarni yangilash"
-            source venv/bin/activate
+            source $VENV/activate
             pip install --upgrade pip
             pip install -r requirements.txt
-            
+
             echo "3. Migratsiya va Statika"
             python manage.py migrate --noinput
             python manage.py load_locations
             python manage.py load_questions
             python manage.py load_references
             python manage.py collectstatic --noinput
-            
-            
-            echo "4. Servislarni qayta yoqish"
+
+            echo "4. Celery servislarini tekshirish va yaratish (birinchi deployda avtomatik)"
+            if [ ! -f /etc/systemd/system/raqamli-sovchi-backend-celery.service ]; then
+              printf '%s\n' \
+                '[Unit]' \
+                'Description=Raqamli Sovchi Celery Worker' \
+                'After=network.target redis.service postgresql.service' \
+                '' \
+                '[Service]' \
+                'Type=simple' \
+                "User=$DEPLOY_USER" \
+                "WorkingDirectory=$WORK_DIR" \
+                "EnvironmentFile=$WORK_DIR/.env" \
+                "ExecStart=$VENV/celery -A config worker --loglevel=info --concurrency=2" \
+                'Restart=always' \
+                'RestartSec=10' \
+                'StandardOutput=journal' \
+                'StandardError=journal' \
+                '' \
+                '[Install]' \
+                'WantedBy=multi-user.target' \
+                | sudo tee /etc/systemd/system/raqamli-sovchi-backend-celery.service > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable raqamli-sovchi-backend-celery
+            fi
+
+            if [ ! -f /etc/systemd/system/raqamli-sovchi-backend-celery-beat.service ]; then
+              printf '%s\n' \
+                '[Unit]' \
+                'Description=Raqamli Sovchi Celery Beat' \
+                'After=network.target redis.service postgresql.service' \
+                '' \
+                '[Service]' \
+                'Type=simple' \
+                "User=$DEPLOY_USER" \
+                "WorkingDirectory=$WORK_DIR" \
+                "EnvironmentFile=$WORK_DIR/.env" \
+                "ExecStart=$VENV/celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler" \
+                'Restart=always' \
+                'RestartSec=10' \
+                'StandardOutput=journal' \
+                'StandardError=journal' \
+                '' \
+                '[Install]' \
+                'WantedBy=multi-user.target' \
+                | sudo tee /etc/systemd/system/raqamli-sovchi-backend-celery-beat.service > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable raqamli-sovchi-backend-celery-beat
+            fi
+
+            echo "5. Barcha servislarni qayta yoqish"
             sudo systemctl restart raqamli-sovchi-backend-web
             sudo systemctl restart raqamli-sovchi-backend-bot
-
+            sudo systemctl restart raqamli-sovchi-backend-celery
+            sudo systemctl restart raqamli-sovchi-backend-celery-beat
             sudo systemctl reload nginx
-            
+
             echo "Muvaffaqiyatli yakunlandi!"
