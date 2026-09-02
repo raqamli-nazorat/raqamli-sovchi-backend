@@ -136,10 +136,11 @@ class UserPledge(BaseModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if (self.accepted_terms or self.has_serious_badge) and not self.user.is_verified:
+        if (
+            self.accepted_terms or self.has_serious_badge
+        ) and not self.user.is_verified:
             self.user.is_verified = True
             self.user.save(update_fields=["is_verified"])
-
 
 
 class BlockedFace(BaseModel):

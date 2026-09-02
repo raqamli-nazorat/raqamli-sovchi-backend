@@ -99,10 +99,9 @@ class UserAnswerViewSet(BaseManageViewSet):
     filterset_class = UserAnswerFilter
 
     def get_queryset(self):
-        qs = (
-            UserAnswer.objects.select_related("profile", "question", "selected_option")
-            .active()
-        )
+        qs = UserAnswer.objects.select_related(
+            "profile", "question", "selected_option"
+        ).active()
         user = self.request.user
         if not user or not user.is_authenticated:
             return qs.none()
