@@ -4,25 +4,21 @@ from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.base.mixins import AutoSchemaMixin
+
 from .models import Notification, UserDevice
 from .serializers import (
-    NotificationCountSerializer,
     NotificationSerializer,
     UserDeviceRegisterSerializer,
     UserDeviceUnregisterSerializer,
-    WebSocketTicketResponseSerializer,
 )
 
 
-@extend_schema(
-    tags=["Bildirishnomalar"], responses={200: WebSocketTicketResponseSerializer}
-)
-class WebSocketTicketView(APIView):
+class WebSocketTicketView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -32,8 +28,7 @@ class WebSocketTicketView(APIView):
         return Response({"ticket": ticket, "expires_in": 60})
 
 
-@extend_schema(tags=["Bildirishnomalar"])
-class NotificationListView(generics.ListAPIView):
+class NotificationListView(AutoSchemaMixin, generics.ListAPIView):
     queryset = Notification.objects.active()
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -44,8 +39,7 @@ class NotificationListView(generics.ListAPIView):
         return super().get_queryset().filter(user=self.request.user)
 
 
-@extend_schema(tags=["Bildirishnomalar"], responses={200: NotificationCountSerializer})
-class NotificationCountView(APIView):
+class NotificationCountView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -66,8 +60,7 @@ class NotificationCountView(APIView):
         )
 
 
-@extend_schema(tags=["Bildirishnomalar"])
-class MarkNotificationReadView(APIView):
+class MarkNotificationReadView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request, pk):
@@ -86,8 +79,7 @@ class MarkNotificationReadView(APIView):
         )
 
 
-@extend_schema(tags=["Bildirishnomalar"])
-class MarkAllNotificationsAsReadView(APIView):
+class MarkAllNotificationsAsReadView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -102,10 +94,7 @@ class MarkAllNotificationsAsReadView(APIView):
         )
 
 
-@extend_schema(
-    tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceRegisterSerializer
-)
-class UserDeviceRegisterView(APIView):
+class UserDeviceRegisterView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserDeviceRegisterSerializer
 
@@ -144,10 +133,7 @@ class UserDeviceRegisterView(APIView):
         )
 
 
-@extend_schema(
-    tags=["Qurilmani ro'yxatdan o'tkazish"], request=UserDeviceUnregisterSerializer
-)
-class UserDeviceUnregisterView(APIView):
+class UserDeviceUnregisterView(AutoSchemaMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserDeviceUnregisterSerializer
 
