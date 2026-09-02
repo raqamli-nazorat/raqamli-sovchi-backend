@@ -68,7 +68,7 @@ class PhoneAuthTestCase(TestCase):
             user=user,
             first_name="Eski",
             last_name="Profil",
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
             gender="male",
         )

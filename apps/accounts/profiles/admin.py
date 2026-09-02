@@ -44,7 +44,7 @@ class ProfileAdmin(BaseModelAdmin):
         "user",
         "candidate_type",
         "gender",
-        "birth_year",
+        "birth_date",
         "region",
         "district",
         "education_level",

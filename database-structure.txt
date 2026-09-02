@@ -40,7 +40,7 @@ PROFILES & CANDIDATES
         middle_name: string [null]
         gender: enum (MALE, FEMALE)
         candidate_type: enum (GROOM, BRIDE, REPRESENTATIVE) [null]
-        birth_year: integer
+        birth_date: date [null]
         height: integer
         weight: integer
         region: FK Region

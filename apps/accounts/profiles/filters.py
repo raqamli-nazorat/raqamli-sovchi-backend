@@ -24,10 +24,10 @@ class ProfileFilter(django_filters.FilterSet):
     weight_max = django_filters.NumberFilter(field_name="weight", lookup_expr="lte")
 
     birth_year_min = django_filters.NumberFilter(
-        field_name="birth_year", lookup_expr="gte"
+        field_name="birth_date__year", lookup_expr="gte"
     )
     birth_year_max = django_filters.NumberFilter(
-        field_name="birth_year", lookup_expr="lte"
+        field_name="birth_date__year", lookup_expr="lte"
     )
 
     class Meta:
