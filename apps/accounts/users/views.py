@@ -82,10 +82,20 @@ class PermissionViewSet(BaseReadOnlyViewSet):
             group_key = perm["model_name"]
 
             if group_key not in grouped_data:
-                grouped_data[group_key] = []
+                grouped_data[group_key] = {
+                    "model_name": perm["model_name"],
+                    "group_label": perm["group_label"],
+                    "permissions": [],
+                }
 
-            grouped_data[group_key].append(
-                {"id": perm["id"], "name": perm["name"], "codename": perm["codename"]}
+            grouped_data[group_key]["permissions"].append(
+                {
+                    "id": perm["id"],
+                    "name": perm["name"],
+                    "codename": perm["codename"],
+                    "model_name": perm["model_name"],
+                    "group_label": perm["group_label"],
+                }
             )
 
         return Response(grouped_data)

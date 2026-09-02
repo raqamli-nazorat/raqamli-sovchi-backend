@@ -8,13 +8,14 @@ from apps.core.utils.validators import phone_validator
 from .models import BlockedUser, Role, User, UserDevice, UserPledge
 
 
-class PermissionSerializer(serializers.ModelSerializer):
+class PermissionSerializer(BaseModelSerializer):
     model_name = serializers.CharField(source="content_type.model", read_only=True)
+    group_label = serializers.CharField(source="content_type.name", read_only=True)
     name = serializers.SerializerMethodField()
 
     class Meta:
         model = Permission
-        fields = ["id", "name", "codename", "model_name"]
+        fields = ["id", "name", "codename", "model_name", "group_label"]
 
     def get_name(self, obj):
         action = obj.codename.split("_")[0]
@@ -29,10 +30,34 @@ class PermissionSerializer(serializers.ModelSerializer):
         return mapping.get(action, obj.name)
 
 
+class RolePermissionSerializer(BaseModelSerializer):
+    model_name = serializers.CharField(source="content_type.model", read_only=True)
+    group_label = serializers.CharField(source="content_type.name", read_only=True)
+
+    class Meta:
+        model = Permission
+        fields = ["id", "name", "codename", "model_name", "group_label"]
+
+
 class RoleSerializer(BaseModelSerializer):
+    permissions = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Permission.objects.all(), required=False
+    )
+    permissions_info = RolePermissionSerializer(
+        source="permissions", many=True, read_only=True
+    )
+
     class Meta:
         model = Role
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "is_default",
+            "permissions",
+            "permissions_info",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class UserSerializer(BaseModelSerializer):
