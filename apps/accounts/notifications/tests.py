@@ -1,16 +1,16 @@
-from unittest.mock import patch, MagicMock
-from django.test import TestCase
-from django.core.cache import cache
-from rest_framework.test import APIClient
-from rest_framework import status
+from unittest.mock import MagicMock, patch
 
-from apps.accounts.users.models import User, AuthProvider, Role
-from apps.accounts.notifications.models import Notification, UserDevice
+from django.core.cache import cache
+from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from apps.accounts.notifications.models import UserDevice
 from apps.accounts.notifications.tasks import (
-    send_push_notification_task,
-    send_single_notification_task,
     NotificationPayload,
+    send_push_notification_task,
 )
+from apps.accounts.users.models import AuthProvider, Role, User
 
 
 class NotificationsApiTestCase(TestCase):

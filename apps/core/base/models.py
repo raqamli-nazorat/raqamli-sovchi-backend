@@ -5,7 +5,6 @@ from django.db.models.base import ModelBase
 
 
 class BaseQuerySet(models.QuerySet):
-
     def active(self):
         return self.filter(is_active=True)
 
@@ -29,7 +28,6 @@ class BaseModelMeta(ModelBase):
 
 
 class BaseModel(models.Model, metaclass=BaseModelMeta):
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     is_active = models.BooleanField(
         default=True, db_index=True, verbose_name="Is Active"

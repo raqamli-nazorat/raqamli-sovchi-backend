@@ -1,6 +1,8 @@
 import django_filters
-from apps.core.base.filters import UUIDInFilter, NumberInFilter
-from .models import User, UserPledge, Role
+
+from apps.core.base.filters import NumberInFilter, UUIDInFilter
+
+from .models import Role, User, UserPledge
 
 
 class RoleFilter(django_filters.FilterSet):

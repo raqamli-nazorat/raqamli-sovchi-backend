@@ -1,6 +1,6 @@
 import json
+
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.core.cache import cache
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):

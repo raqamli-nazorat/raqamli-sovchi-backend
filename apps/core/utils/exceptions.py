@@ -3,7 +3,6 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import JsonResponse
-
 from rest_framework import status
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response

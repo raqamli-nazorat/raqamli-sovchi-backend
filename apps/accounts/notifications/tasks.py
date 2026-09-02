@@ -1,12 +1,12 @@
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from celery import shared_task, group
-from firebase_admin import messaging
-from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from celery import group, shared_task
+from channels.layers import get_channel_layer
+from firebase_admin import messaging
 
 from .models import UserDevice
 

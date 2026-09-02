@@ -1,10 +1,10 @@
-from django.apps import AppConfig
-from django.apps import apps
+from django.apps import AppConfig, apps
 from django.db.models.signals import class_prepared
 
 
 def register_auditlog(sender, **kwargs):
     from auditlog.registry import auditlog
+
     from apps.core.base.models import BaseModel
 
     if issubclass(sender, BaseModel) and not sender._meta.abstract:
@@ -24,6 +24,7 @@ class BaseConfig(AppConfig):
 
         try:
             from auditlog.registry import auditlog
+
             from apps.core.base.models import BaseModel
 
             for model in apps.get_models():

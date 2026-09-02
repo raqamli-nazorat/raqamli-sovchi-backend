@@ -1,11 +1,12 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from .views import (
-    SectionTypeViewSet,
-    QuestionViewSet,
-    QuestionOptionViewSet,
-    UserAnswerViewSet,
     BulkUserAnswerSubmitView,
+    QuestionOptionViewSet,
+    QuestionViewSet,
+    SectionTypeViewSet,
+    UserAnswerViewSet,
 )
 
 router = DefaultRouter()

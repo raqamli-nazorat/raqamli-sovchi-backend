@@ -1,4 +1,5 @@
 from django.db import models
+
 from apps.core.base.models import BaseModel
 
 
@@ -33,6 +34,9 @@ class Profession(BaseModel):
         verbose_name = "Kasb"
         verbose_name_plural = "Kasblar"
         db_table = "professions"
+
+    def __str__(self):
+        return self.name
 
 
 class MaritalStatus(BaseModel):

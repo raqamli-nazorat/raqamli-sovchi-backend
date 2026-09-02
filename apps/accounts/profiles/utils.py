@@ -8,9 +8,8 @@ def is_female_candidate(profile):
     if profile.gender == "female" or profile.candidate_type == "bride":
         return True
 
-    if hasattr(profile, "representative_info") and profile.representative_info:
-        if profile.representative_info.candidate_role == "bride":
-            return True
+    if profile.representative_infos.filter(candidate_role="bride").exists():
+        return True
 
     return False
 
@@ -42,10 +41,8 @@ def can_view_profile_photos(request_user, target_profile):
         has_accepted_match = (
             MatchRequest.objects.filter(status=MatchRequestStatus.ACCEPTED)
             .filter(
-                (
-                    Q(from_profile=user_profile, to_profile=target_profile)
-                    | Q(from_profile=target_profile, to_profile=user_profile)
-                )
+                Q(from_profile=user_profile, to_profile=target_profile)
+                | Q(from_profile=target_profile, to_profile=user_profile)
             )
             .exists()
         )

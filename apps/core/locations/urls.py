@@ -1,7 +1,8 @@
 from rest_framework.routers import SimpleRouter
+
 from .views import (
-    RegionViewSet,
     DistrictViewSet,
+    RegionViewSet,
 )
 
 router = SimpleRouter()

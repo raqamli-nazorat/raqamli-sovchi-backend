@@ -1,12 +1,11 @@
 import asyncio
 
-from django.conf import settings
-from django.core.management.base import BaseCommand
-
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 from apps.accounts.telegram_bot.bot.handlers import router
 

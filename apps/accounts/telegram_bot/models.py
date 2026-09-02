@@ -1,8 +1,10 @@
 import uuid
-from django.utils import timezone
+
 from django.db import models
-from apps.core.base.models import BaseModel
+from django.utils import timezone
+
 from apps.accounts.users.models import User
+from apps.core.base.models import BaseModel
 
 
 def default_expires_at():

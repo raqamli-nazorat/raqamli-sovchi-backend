@@ -3,7 +3,7 @@ import logging
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,8 +12,8 @@ from apps.core.base.mixins import AutoSchemaMixin
 from apps.core.base.views import BaseManageViewSet
 
 from .filters import ProfileFilter
-from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
-from .permissions import ProfileMePermission, IsProfileOwnerOrStaff
+from .models import Profile, ProfilePhoto, RepresentativeInfo
+from .permissions import IsProfileOwnerOrStaff, ProfileMePermission
 from .serializers import (
     FaceVerificationSerializer,
     ProfilePhotoSerializer,
@@ -68,7 +68,20 @@ class ProfileViewSet(BaseManageViewSet):
 
     def get_queryset(self):
         qs = (
-            Profile.objects.select_related("user", "user__role", "region", "district")
+            Profile.objects.select_related(
+                "user",
+                "user__role",
+                "region",
+                "district",
+                # Serializer bu ma'lumotnomalarni ham ochadi (related_fields),
+                # shuning uchun ular ham select_related ga kiritiladi — aks holda
+                # har bir profil uchun alohida so'rov ketadi (N+1).
+                "education_level",
+                "nationality",
+                "profession",
+                "health_status",
+                "marital_status",
+            )
             .prefetch_related("photos")
             .active()
         )
@@ -190,10 +203,11 @@ class ProfilePhotoViewSet(BaseManageViewSet):
 
     def perform_create(self, serializer):
         profile = create_profile_photo(self.request.user, serializer.validated_data)
-        if profile:
-            serializer.save(profile=profile)
-        else:
-            serializer.save()
+        if not profile:
+            raise ValidationError(
+                "Rasm yuklash uchun avval o'z anketangizni to'ldirishingiz kerak."
+            )
+        serializer.save(profile=profile)
 
 
 class RepresentativeInfoViewSet(BaseManageViewSet):
@@ -205,12 +219,17 @@ class RepresentativeInfoViewSet(BaseManageViewSet):
 
     @action(detail=False, methods=["post"], url_path="send-consent-request")
     def send_consent_request(self, request):
-        candidate_contact = request.data.get("candidate_contact")
-        kinship_id = request.data.get("kinship_id")
-        candidate_role = request.data.get("candidate_role", "groom")
+        from .serializers import RepresentativeConsentRequestSerializer
+
+        serializer = RepresentativeConsentRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
 
         rep_info, target_user = send_representative_consent_request(
-            request.user, candidate_contact, kinship_id, candidate_role
+            request.user,
+            data["candidate_contact"],
+            data.get("kinship_id"),
+            data["candidate_role"],
         )
 
         return Response(

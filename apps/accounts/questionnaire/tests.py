@@ -2,20 +2,23 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.profiles.models import GenderType, Profile
 from apps.accounts.questionnaire.models import (
-    SectionType,
     Question,
     QuestionOption,
+    SectionType,
     UserAnswer,
 )
-from apps.accounts.profiles.models import Profile, GenderType
-from apps.accounts.users.models import User, AuthProvider, Role
+from apps.accounts.users.models import AuthProvider, Role, User
 
 
 class QuestionnaireTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.role = Role.objects.create(name="User", is_default=True)
+        # post_migrate signali yaratgan haqiqiy boshlang'ich rol ishlatiladi —
+        # unda oddiy foydalanuvchining real huquqlari bor. Yangi bo'sh rol
+        # yaratilsa, u haqiqiysini almashtirib yuboradi va hamma so'rov 403 bo'ladi.
+        self.role = Role.objects.filter(is_default=True).first()
         self.user = User.objects.create(
             phone_number="+998901234567",
             auth_provider=AuthProvider.PHONE,
@@ -51,18 +54,20 @@ class QuestionnaireTestCase(TestCase):
         )
 
     def test_get_sections_list(self):
-        url = "/api/v1/accounts/questionnaire/sections/"
+        self.client.force_authenticate(user=self.user)
+        url = "/api/v1/accounts/section-types/"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_get_questions_list(self):
-        url = "/api/v1/accounts/questionnaire/questions/"
+        self.client.force_authenticate(user=self.user)
+        url = "/api/v1/accounts/questions/"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_submit_answer(self):
         self.client.force_authenticate(user=self.user)
-        url = "/api/v1/accounts/questionnaire/answers/"
+        url = "/api/v1/accounts/answers/"
         data = {
             "question": str(self.question.id),
             "selected_option": str(self.option_a.id),

@@ -1,7 +1,8 @@
 from django.contrib import admin
-from .models import Notification, UserDevice
 
 from apps.core.base.admin import BaseModelAdmin as ModelAdmin
+
+from .models import Notification, UserDevice
 
 
 @admin.register(Notification)

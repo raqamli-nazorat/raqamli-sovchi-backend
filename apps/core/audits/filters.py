@@ -1,6 +1,7 @@
 import django_filters
 from auditlog.models import LogEntry
-from apps.core.base.filters import UUIDInFilter, NumberInFilter
+
+from apps.core.base.filters import NumberInFilter, UUIDInFilter
 
 
 class LogEntryFilter(django_filters.FilterSet):

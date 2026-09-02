@@ -1,7 +1,9 @@
 from django.contrib import admin
+
 from apps.core.base.admin import BaseModelAdmin
-from .models import User, UserPledge, Role, BlockedFace, UserDevice
 from apps.core.utils.face import register_user_faces_as_blocked
+
+from .models import BlockedFace, Role, User, UserDevice, UserPledge
 
 
 @admin.register(Role)

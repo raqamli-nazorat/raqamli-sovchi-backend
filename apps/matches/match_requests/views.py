@@ -1,29 +1,56 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.exceptions import ValidationError
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.core.base.views import BaseManageViewSet
+from apps.core.utils.throttles import CustomScopedRateThrottle
+
 from .models import MatchRequest, MatchRequestStatus, VisibilityScope
 from .serializers import MatchRequestSerializer
+from .services import (
+    can_decide_match_request,
+    filter_match_requests_for_user,
+    get_representative_user,
+)
 
 
 class MatchRequestViewSet(BaseManageViewSet):
-    queryset = MatchRequest.objects.select_related(
-        "from_profile", "to_profile", "question"
-    ).active()
     serializer_class = MatchRequestSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["status", "from_profile", "to_profile"]
+    search_fields = ["note"]
     ordering_fields = ["created_at"]
+
+    def get_throttles(self):
+        """
+        So'rov yuborish (create) uchun alohida, qattiqroq cheklov qo'llaydi.
+
+        Qolgan amallar umumiy cheklov ostida qoladi.
+
+        :return: Throttle obyektlari ro'yxati.
+        """
+        if self.action == "create":
+            self.throttle_scope = "match_request"
+            return [CustomScopedRateThrottle()]
+        return super().get_throttles()
+
+    def get_queryset(self):
+        qs = MatchRequest.objects.select_related(
+            "from_profile", "to_profile", "question"
+        ).active()
+        return filter_match_requests_for_user(qs, self.request.user)
 
     def perform_create(self, serializer):
         user_profile = getattr(self.request.user, "profile", None)
-        if user_profile and not serializer.validated_data.get("from_profile"):
-            instance = serializer.save(from_profile=user_profile)
-        else:
-            instance = serializer.save()
+        if not user_profile:
+            raise ValidationError(
+                "So'rov yuborish uchun avval o'z anketangizni to'ldirishingiz kerak."
+            )
+
+        instance = serializer.save(from_profile=user_profile)
 
         if instance.to_profile and instance.to_profile.user:
             from apps.accounts.notifications.models import Notification
@@ -41,30 +68,58 @@ class MatchRequestViewSet(BaseManageViewSet):
                 },
             )
 
+    @staticmethod
+    def _ensure_undecided(match_req):
+        """
+        So'rov allaqachon hal qilinganini tekshiradi.
+
+        Qabul qilingan yoki rad etilgan so'rovni qayta hal qilishga yo'l qo'ymaydi:
+        aks holda holat orqaga qaytariladi va har safar yangi xabarnoma yuboriladi.
+
+        :param match_req: Moslik so'rovi (MatchRequest).
+        :return: None
+        :raises ValidationError: So'rov allaqachon hal qilingan bo'lsa.
+        """
+        decided = (MatchRequestStatus.ACCEPTED, MatchRequestStatus.REJECTED)
+        if match_req.status in decided:
+            raise ValidationError(
+                f"Bu so'rov allaqachon hal qilingan ({match_req.get_status_display()})."
+            )
+
     @action(detail=True, methods=["post"], url_path="accept")
     def accept_request(self, request, pk=None):
         match_req = self.get_object()
-        user_profile = getattr(request.user, "profile", None)
 
-        if not request.user.is_staff and user_profile != match_req.to_profile:
+        if not can_decide_match_request(request.user, match_req):
             return Response(
                 {"detail": "Sizda ushbu so'rovni qabul qilish huquqi yo'q."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        visibility_scope = request.data.get("visibility_scope", "only_this_user")
+        self._ensure_undecided(match_req)
+
+        visibility_scope = request.data.get(
+            "visibility_scope", VisibilityScope.ONLY_THIS_USER
+        )
+        if visibility_scope not in VisibilityScope.values:
+            raise ValidationError(
+                {
+                    "visibility_scope": "Noto'g'ri qiymat. Ruxsat etilganlari: "
+                    f"{', '.join(VisibilityScope.values)}."
+                }
+            )
 
         from apps.accounts.notifications.models import Notification
 
-        if visibility_scope == "forward_to_representative":
+        if visibility_scope == VisibilityScope.FORWARD_TO_REPRESENTATIVE:
             match_req.status = MatchRequestStatus.FORWARDED_TO_REPRESENTATIVE
             match_req.visibility_scope = VisibilityScope.FORWARD_TO_REPRESENTATIVE
             match_req.save(update_fields=["status", "visibility_scope", "updated_at"])
 
-            rep_info = getattr(match_req.to_profile, "representative_info", None)
-            if rep_info and rep_info.profile and rep_info.profile.user:
+            representative_user = get_representative_user(match_req.to_profile)
+            if representative_user:
                 Notification.objects.create(
-                    user=rep_info.profile.user,
+                    user=representative_user,
                     title="Vakilga yo'naltirilgan rasm so'rovi",
                     message=f"{match_req.to_profile.first_name} rasm so'rovini sizga hal qilish uchun yo'naltirdi.",
                     extra_data={
@@ -120,13 +175,14 @@ class MatchRequestViewSet(BaseManageViewSet):
     @action(detail=True, methods=["post"], url_path="reject")
     def reject_request(self, request, pk=None):
         match_req = self.get_object()
-        user_profile = getattr(request.user, "profile", None)
 
-        if not request.user.is_staff and user_profile != match_req.to_profile:
+        if not can_decide_match_request(request.user, match_req):
             return Response(
                 {"detail": "Sizda ushbu so'rovni rad etish huquqi yo'q."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+        self._ensure_undecided(match_req)
 
         match_req.status = MatchRequestStatus.REJECTED
         match_req.save(update_fields=["status", "updated_at"])

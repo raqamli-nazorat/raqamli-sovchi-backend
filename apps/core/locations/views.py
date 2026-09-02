@@ -1,10 +1,11 @@
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
+
 from apps.core.base.views import BaseManageViewSet
 
-from .serializers import RegionSerializer, DistrictSerializer
-from .models import Region, District
-from .filters import RegionFilter, DistrictFilter
+from .filters import DistrictFilter, RegionFilter
+from .models import District, Region
+from .serializers import DistrictSerializer, RegionSerializer
 
 
 class RegionViewSet(BaseManageViewSet):
