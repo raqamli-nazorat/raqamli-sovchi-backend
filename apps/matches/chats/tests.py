@@ -27,7 +27,7 @@ class ChatsTestCase(TestCase):
             last_name="Test",
             gender=GenderType.MALE,
             candidate_type=CandidateRole.GROOM,
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
         )
 
@@ -42,7 +42,7 @@ class ChatsTestCase(TestCase):
             last_name="Test",
             gender=GenderType.FEMALE,
             candidate_type=CandidateRole.BRIDE,
-            birth_year=1997,
+            birth_date="1997-01-01",
             height=165,
         )
 

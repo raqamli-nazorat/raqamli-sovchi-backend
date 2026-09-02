@@ -2,31 +2,25 @@ from rest_framework import serializers
 
 from apps.core.base.serializers import BaseModelSerializer
 
-from .models import MatchRequest, MatchRequestStatus
+from .models import PhotoRequest, PhotoRequestStatus
 
 
-class MatchRequestSerializer(BaseModelSerializer):
+class PhotoRequestSerializer(BaseModelSerializer):
     class Meta:
-        model = MatchRequest
+        model = PhotoRequest
         fields = "__all__"
-        # from_profile doim so'rov yuborayotgan foydalanuvchidan olinadi —
-        # mijoz uni yuborib, boshqa odam nomidan so'rov qila olmasligi kerak.
-        # Holat esa faqat accept/ va reject/ amallari orqali o'zgaradi:
-        # u yerda egalik tekshiruvi bor.
         read_only_fields = ["from_profile", "status"]
         related_fields = {
             "from_profile": ["id", "first_name", "last_name"],
             "to_profile": ["id", "first_name", "last_name"],
-            "question": ["id", "order", "text"],
         }
 
     def validate_to_profile(self, value):
         """
         Ushbu nomzodga so'rov yuborish mumkinligini tekshiradi.
 
-        Uchta holat taqiqlanadi: o'ziga so'rov yuborish; ko'rish huquqi yo'q
-        anketaga (jinsi mos kelmagan yoki o'zaro bloklangan) so'rov yuborish;
-        hali ko'rib chiqilmagan so'rovni takrorlash.
+        O'ziga so'rov yuborish, ko'rish huquqi yo'q anketaga so'rov yuborish
+        va takroriy kutilayotgan so'rov yuborish taqiqlanadi.
 
         :param value: Nishon anketa (Profile).
         :return: Tekshiruvdan o'tgan anketa (Profile).
@@ -42,7 +36,7 @@ class MatchRequestSerializer(BaseModelSerializer):
 
         if value.id == profile.id:
             raise serializers.ValidationError(
-                "O'zingizga moslik so'rovini yubora olmaysiz."
+                "O'zingizga rasm so'rovini yubora olmaysiz."
             )
 
         from apps.accounts.profiles.models import Profile
@@ -54,10 +48,13 @@ class MatchRequestSerializer(BaseModelSerializer):
                 "Ushbu nomzodga so'rov yuborish mumkin emas."
             )
 
-        undecided = (MatchRequestStatus.PENDING,)
         if (
-            MatchRequest.objects.active()
-            .filter(from_profile=profile, to_profile=value, status__in=undecided)
+            PhotoRequest.objects.active()
+            .filter(
+                from_profile=profile,
+                to_profile=value,
+                status=PhotoRequestStatus.PENDING,
+            )
             .exists()
         ):
             raise serializers.ValidationError(

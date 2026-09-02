@@ -8,19 +8,15 @@ from rest_framework.response import Response
 from apps.core.base.views import BaseManageViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
-from .models import MatchRequest, MatchRequestStatus
-from .serializers import MatchRequestSerializer
-from .services import (
-    can_decide_match_request,
-    filter_match_requests_for_user,
-)
+from .models import PhotoRequest, PhotoRequestStatus
+from .serializers import PhotoRequestSerializer
+from .services import can_decide_photo_request, filter_photo_requests_for_user
 
 
-class MatchRequestViewSet(BaseManageViewSet):
-    serializer_class = MatchRequestSerializer
+class PhotoRequestViewSet(BaseManageViewSet):
+    serializer_class = PhotoRequestSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["status", "from_profile", "to_profile"]
-    search_fields = []
     ordering_fields = ["created_at"]
 
     def get_throttles(self):
@@ -32,15 +28,13 @@ class MatchRequestViewSet(BaseManageViewSet):
         :return: Throttle obyektlari ro'yxati.
         """
         if self.action == "create":
-            self.throttle_scope = "match_request"
+            self.throttle_scope = "photo_request"
             return [CustomScopedRateThrottle()]
         return super().get_throttles()
 
     def get_queryset(self):
-        qs = MatchRequest.objects.select_related(
-            "from_profile", "to_profile", "question"
-        ).active()
-        return filter_match_requests_for_user(qs, self.request.user)
+        qs = PhotoRequest.objects.select_related("from_profile", "to_profile").active()
+        return filter_photo_requests_for_user(qs, self.request.user)
 
     def perform_create(self, serializer):
         user_profile = getattr(self.request.user, "profile", None)
@@ -55,119 +49,114 @@ class MatchRequestViewSet(BaseManageViewSet):
             from apps.accounts.notifications.models import Notification
 
             sender_name = user_profile.first_name if user_profile else "Foydalanuvchi"
+            note_str = f" Izoh: «{instance.note}»" if instance.note else ""
             Notification.objects.create(
                 user=instance.to_profile.user,
                 title="Yangi rasm ko'rish so'rovi",
-                message=f"{sender_name} sizga rasm ko'rish so'rovini yubordi.",
+                message=f"{sender_name} sizga rasm ko'rish so'rovini yubordi.{note_str}",
                 extra_data={
-                    "type": "match_request_created",
+                    "type": "photo_request_created",
                     "request_id": str(instance.id),
                     "from_profile_id": str(instance.from_profile_id),
                 },
             )
 
     @staticmethod
-    def _ensure_undecided(match_req):
+    def _ensure_undecided(photo_req):
         """
         So'rov allaqachon hal qilinganini tekshiradi.
 
-        Qabul qilingan yoki rad etilgan so'rovni qayta hal qilishga yo'l qo'ymaydi:
-        aks holda holat orqaga qaytariladi va har safar yangi xabarnoma yuboriladi.
+        Qabul qilingan yoki rad etilgan so'rovni qayta hal qilishga yo'l qo'ymaydi.
 
-        :param match_req: Moslik so'rovi (MatchRequest).
-        :return: None
+        :param photo_req: Rasm ko'rish so'rovi (PhotoRequest).
         :raises ValidationError: So'rov allaqachon hal qilingan bo'lsa.
         """
-        decided = (MatchRequestStatus.ACCEPTED, MatchRequestStatus.REJECTED)
-        if match_req.status in decided:
+        decided = (PhotoRequestStatus.ACCEPTED, PhotoRequestStatus.REJECTED)
+        if photo_req.status in decided:
             raise ValidationError(
-                f"Bu so'rov allaqachon hal qilingan ({match_req.get_status_display()})."
+                f"Bu so'rov allaqachon hal qilingan ({photo_req.get_status_display()})."
             )
 
     @action(detail=True, methods=["post"], url_path="accept")
     def accept_request(self, request, pk=None):
-        match_req = self.get_object()
+        """Rasm ko'rish so'rovini qabul qiladi."""
+        photo_req = self.get_object()
 
-        if not can_decide_match_request(request.user, match_req):
+        if not can_decide_photo_request(request.user, photo_req):
             return Response(
                 {"detail": "Sizda ushbu so'rovni qabul qilish huquqi yo'q."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        self._ensure_undecided(match_req)
+        self._ensure_undecided(photo_req)
 
-        from apps.accounts.notifications.models import Notification
+        photo_req.status = PhotoRequestStatus.ACCEPTED
+        photo_req.save(update_fields=["status", "updated_at"])
 
-        match_req.status = MatchRequestStatus.ACCEPTED
-        match_req.save(update_fields=["status", "updated_at"])
+        if photo_req.from_profile and photo_req.from_profile.user:
+            from apps.accounts.notifications.models import Notification
 
-        from apps.matches.chats.models import ChatRoom
-
-        chat_room, _ = ChatRoom.objects.get_or_create(match_request=match_req)
-
-        if match_req.from_profile and match_req.from_profile.user:
             receiver_name = (
-                match_req.to_profile.first_name
-                if match_req.to_profile
+                photo_req.to_profile.first_name
+                if photo_req.to_profile
                 else "Foydalanuvchi"
             )
             Notification.objects.create(
-                user=match_req.from_profile.user,
+                user=photo_req.from_profile.user,
                 title="Rasm ko'rish so'rovi qabul qilindi!",
                 message=f"{receiver_name} rasm ko'rish so'rovingizni qabul qildi.",
                 extra_data={
-                    "type": "match_request_accepted",
-                    "request_id": str(match_req.id),
-                    "chat_room_id": str(chat_room.id),
+                    "type": "photo_request_accepted",
+                    "request_id": str(photo_req.id),
                 },
             )
 
         return Response(
             {
-                "message": "Moslik so'rovi qabul qilindi. Rasm ushbu nomzod uchun ochildi va chat xonasi yaratildi.",
-                "chat_room_id": str(chat_room.id),
-                "status": match_req.status,
+                "message": "Rasm ko'rish so'rovi qabul qilindi.",
+                "status": photo_req.status,
             },
             status=status.HTTP_200_OK,
         )
 
     @action(detail=True, methods=["post"], url_path="reject")
     def reject_request(self, request, pk=None):
-        match_req = self.get_object()
+        """Rasm ko'rish so'rovini rad etadi."""
+        photo_req = self.get_object()
 
-        if not can_decide_match_request(request.user, match_req):
+        if not can_decide_photo_request(request.user, photo_req):
             return Response(
                 {"detail": "Sizda ushbu so'rovni rad etish huquqi yo'q."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        self._ensure_undecided(match_req)
+        self._ensure_undecided(photo_req)
 
-        match_req.status = MatchRequestStatus.REJECTED
-        match_req.save(update_fields=["status", "updated_at"])
+        photo_req.status = PhotoRequestStatus.REJECTED
+        photo_req.save(update_fields=["status", "updated_at"])
 
-        if match_req.from_profile and match_req.from_profile.user:
+        if photo_req.from_profile and photo_req.from_profile.user:
             from apps.accounts.notifications.models import Notification
 
             receiver_name = (
-                match_req.to_profile.first_name
-                if match_req.to_profile
+                photo_req.to_profile.first_name
+                if photo_req.to_profile
                 else "Foydalanuvchi"
             )
             Notification.objects.create(
-                user=match_req.from_profile.user,
+                user=photo_req.from_profile.user,
                 title="Rasm ko'rish so'rovi rad etildi",
                 message=f"{receiver_name} rasm ko'rish so'rovingizni rad etdi.",
                 extra_data={
-                    "type": "match_request_rejected",
-                    "request_id": str(match_req.id),
+                    "type": "photo_request_rejected",
+                    "request_id": str(photo_req.id),
                 },
             )
 
         return Response(
             {
-                "message": "Moslik so'rovi rad etildi.",
-                "status": match_req.status,
+                "message": "Rasm ko'rish so'rovi rad etildi.",
+                "status": photo_req.status,
             },
             status=status.HTTP_200_OK,
         )

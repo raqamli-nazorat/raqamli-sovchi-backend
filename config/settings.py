@@ -77,6 +77,7 @@ LOCAL_APPS = [
     "apps.accounts.notifications",
     "apps.matches.match_requests",
     "apps.matches.chats",
+    "apps.matches.photo_requests",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -215,8 +216,9 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "60/minute",
         "user": "60/minute",
-        # Moslik so'rovi yuborish — spamning oldini olish uchun alohida cheklov
+        # Moslik va rasm so'rovlari — spamning oldini olish uchun alohida cheklov
         "match_request": "20/h",
+        "photo_request": "20/h",
         "login": "5/15m",
     },
 }
