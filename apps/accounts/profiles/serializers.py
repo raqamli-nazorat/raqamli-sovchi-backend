@@ -22,7 +22,7 @@ class SavedProfileSerializer(BaseModelSerializer):
                 "first_name",
                 "last_name",
                 "gender",
-                "birth_year",
+                "birth_date",
                 "height",
                 "weight",
                 "photos",

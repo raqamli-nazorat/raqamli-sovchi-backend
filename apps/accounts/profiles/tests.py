@@ -27,7 +27,7 @@ class ProfileNearbyTestCase(TestCase):
             last_name="Bosh",
             gender=GenderType.MALE,
             candidate_type=CandidateRole.GROOM,
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
             latitude=41.299500,
             longitude=69.240100,
@@ -46,7 +46,7 @@ class ProfileNearbyTestCase(TestCase):
             last_name="Nomzod",
             gender=GenderType.FEMALE,
             candidate_type=CandidateRole.BRIDE,
-            birth_year=1998,
+            birth_date="1998-01-01",
             height=165,
             latitude=41.327500,
             longitude=69.234500,
@@ -65,7 +65,7 @@ class ProfileNearbyTestCase(TestCase):
             last_name="Nomzod",
             gender=GenderType.FEMALE,
             candidate_type=CandidateRole.BRIDE,
-            birth_year=1999,
+            birth_date="1999-01-01",
             height=168,
             latitude=39.654200,
             longitude=66.959700,
@@ -140,7 +140,7 @@ class ProfileNearbyTestCase(TestCase):
             first_name="Bez",
             last_name="Location",
             gender=GenderType.MALE,
-            birth_year=1990,
+            birth_date="1990-01-01",
             height=180,
         )
 
@@ -167,7 +167,7 @@ class ProfileGenderFilterTestCase(TestCase):
             last_name="Test",
             gender=GenderType.MALE,
             candidate_type=CandidateRole.GROOM,
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
         )
 
@@ -183,7 +183,7 @@ class ProfileGenderFilterTestCase(TestCase):
             last_name="Test",
             gender=GenderType.FEMALE,
             candidate_type=CandidateRole.BRIDE,
-            birth_year=1998,
+            birth_date="1998-01-01",
             height=165,
         )
 
@@ -199,7 +199,7 @@ class ProfileGenderFilterTestCase(TestCase):
             last_name="Test",
             gender=GenderType.MALE,
             candidate_type=CandidateRole.REPRESENTATIVE,
-            birth_year=1970,
+            birth_date="1970-01-01",
             height=170,
         )
 
@@ -282,7 +282,7 @@ class ProfileGenderFilterTestCase(TestCase):
             last_name="Test",
             gender=GenderType.MALE,
             candidate_type=CandidateRole.GROOM,
-            birth_year=1994,
+            birth_date="1994-01-01",
             height=178,
         )
         RepresentativeInfo.objects.create(
@@ -317,7 +317,7 @@ class SavedProfileTestCase(TestCase):
             last_name="Test",
             gender=GenderType.MALE,
             candidate_type=CandidateRole.GROOM,
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
         )
 
@@ -332,7 +332,7 @@ class SavedProfileTestCase(TestCase):
             last_name="Test",
             gender=GenderType.FEMALE,
             candidate_type=CandidateRole.BRIDE,
-            birth_year=1998,
+            birth_date="1998-01-01",
             height=165,
         )
 
@@ -388,7 +388,7 @@ class SavedProfileTestCase(TestCase):
                 last_name="Test",
                 gender=GenderType.FEMALE,
                 candidate_type=CandidateRole.BRIDE,
-                birth_year=1998,
+                birth_date="1998-01-01",
                 height=165,
             )
             res = self.client.post(f"/api/v1/accounts/profiles/{p.id}/save/")
@@ -406,7 +406,7 @@ class SavedProfileTestCase(TestCase):
             last_name="Test",
             gender=GenderType.FEMALE,
             candidate_type=CandidateRole.BRIDE,
-            birth_year=1998,
+            birth_date="1998-01-01",
             height=165,
         )
         res11 = self.client.post(f"/api/v1/accounts/profiles/{p11.id}/save/")

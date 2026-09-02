@@ -29,7 +29,7 @@ class QuestionnaireTestCase(TestCase):
             first_name="Test",
             last_name="User",
             gender=GenderType.MALE,
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
         )
 

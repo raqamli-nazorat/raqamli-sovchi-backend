@@ -49,7 +49,9 @@ class Profile(BaseModel):
         null=True,
         verbose_name="Nomzod turi (Kuyov/Kelin/Vakil)",
     )
-    birth_year = models.PositiveIntegerField(verbose_name="Tug'ilgan yili")
+    birth_date = models.DateField(
+        verbose_name="Tug'ilgan sanasi", null=True, blank=True
+    )
     height = models.PositiveIntegerField(verbose_name="Bo'yi (sm)")
     weight = models.PositiveIntegerField(
         null=True, blank=True, verbose_name="Vazni (kg)"
