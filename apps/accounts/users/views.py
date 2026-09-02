@@ -180,7 +180,6 @@ class UserPledgeViewSet(BaseManageViewSet):
         serializer.save(user=self.request.user)
 
 
-
 class UserDeviceViewSet(BaseManageViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserDeviceSerializer

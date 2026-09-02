@@ -73,7 +73,9 @@ class NotificationsApiTestCase(TestCase):
             is_active=True,
         )
         url = "/api/v1/accounts/notifications/devices/current/"
-        res = self.client.delete(url, data={"device_id": "device_to_unregister"}, format="json")
+        res = self.client.delete(
+            url, data={"device_id": "device_to_unregister"}, format="json"
+        )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
         device.refresh_from_db()
@@ -128,6 +130,7 @@ class PushNotificationTaskTestCase(TestCase):
     def test_invalid_token_cleanup_deactivates_device(self, mock_send):
         mock_resp_item = MagicMock(success=False)
         from firebase_admin import messaging
+
         mock_resp_item.exception = messaging.UnregisteredError("Unregistered")
 
         mock_response = MagicMock()

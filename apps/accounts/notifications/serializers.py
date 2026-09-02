@@ -46,16 +46,3 @@ class UserDeviceUnregisterSerializer(serializers.Serializer):
     device_id = serializers.CharField(
         required=True, help_text="O'chirilayotgan qurilmaning unikal identifikatori"
     )
-
-
-class WebSocketTicketResponseSerializer(serializers.Serializer):
-    ticket = serializers.UUIDField(help_text="WebSocket ulanish chiptasi")
-    expires_in = serializers.IntegerField(
-        default=60, help_text="Chiptaning amal qilish muddati (soniya)"
-    )
-
-
-class NotificationCountSerializer(serializers.Serializer):
-    unread = serializers.IntegerField(help_text="O'qilmagan bildirishnomalar soni")
-    read = serializers.IntegerField(help_text="O'qilgan bildirishnomalar soni")
-    total = serializers.IntegerField(help_text="Jami bildirishnomalar soni")
