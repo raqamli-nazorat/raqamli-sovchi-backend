@@ -1,12 +1,13 @@
-from drf_spectacular.utils import extend_schema
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, views
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from apps.core.base.mixins import AutoSchemaMixin
 from apps.accounts.users.serializers import UserSerializer
-from .models import TelegramAuthSession, SessionStatus
+from apps.core.base.mixins import AutoSchemaMixin
+
+from .models import SessionStatus, TelegramAuthSession
 from .serializers import TelegramAuthSessionSerializer
 
 

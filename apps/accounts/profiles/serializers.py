@@ -1,13 +1,14 @@
 from rest_framework import serializers
+
 from apps.core.base.serializers import BaseModelSerializer
 
 from .models import Profile, ProfilePhoto, RepresentativeInfo, SavedProfile
 from .utils import can_view_profile_photos
 from .validators import (
-    validate_voice_intro,
-    validate_photo_limit,
-    validate_photo_face,
     validate_location,
+    validate_photo_face,
+    validate_photo_limit,
+    validate_voice_intro,
 )
 
 
@@ -33,13 +34,17 @@ class ProfilePhotoSerializer(BaseModelSerializer):
     class Meta:
         model = ProfilePhoto
         fields = "__all__"
+        # profile so'rov yuboruvchining anketasidan olinadi (view: perform_create).
+        # Mijoz uni yubora olsa, begona anketaga rasm biriktirib, 5 ta rasm
+        # cheklovini ham chetlab o'tish mumkin edi.
+        read_only_fields = ["profile"]
 
     def validate(self, attrs):
         request = self.context.get("request")
 
         if self.instance is None:
-            profile = attrs.get("profile")
-            if profile is None and request and request.user.is_authenticated:
+            profile = None
+            if request and request.user.is_authenticated:
                 profile = getattr(request.user, "profile", None)
 
             validate_photo_limit(profile)
@@ -167,3 +172,36 @@ class ProfileSerializer(BaseModelSerializer):
 
 class FaceVerificationSerializer(serializers.Serializer):
     image = serializers.ImageField(required=True, label="Selfie rasm")
+
+
+class RepresentativeConsentRequestSerializer(serializers.Serializer):
+    """Vakil tomonidan nomzodga yuborilayotgan rozilik so'rovi uchun serialazer."""
+
+    candidate_contact = serializers.CharField(
+        help_text="Nomzodning telefon raqami (+998XXXXXXXXX) yoki email manzili"
+    )
+    # PrimaryKeyRelatedField o'rniga UUIDField — Kinship moduli import qilinmaydi,
+    # service qatlami kinship_id ni o'zi DB dan topadi.
+    kinship_id = serializers.UUIDField(required=False, allow_null=True)
+    candidate_role = serializers.ChoiceField(
+        choices=["groom", "bride"],
+        default="groom",
+    )
+
+    def validate_candidate_contact(self, value):
+        """Telefon raqam yoki email formatini tekshiradi."""
+        import re
+
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from django.core.validators import validate_email
+
+        if re.match(r"^\+998\d{9}$", value):
+            return value
+        try:
+            validate_email(value)
+            return value
+        except DjangoValidationError:
+            raise serializers.ValidationError(
+                "Noto'g'ri format. Telefon raqami (+998XXXXXXXXX) "
+                "yoki to'g'ri email manzili kiritilishi kerak."
+            )

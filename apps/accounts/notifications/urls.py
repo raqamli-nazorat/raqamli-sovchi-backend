@@ -1,13 +1,13 @@
 from django.urls import path
 
 from .views import (
-    WebSocketTicketView,
-    NotificationListView,
-    NotificationCountView,
-    MarkNotificationReadView,
     MarkAllNotificationsAsReadView,
+    MarkNotificationReadView,
+    NotificationCountView,
+    NotificationListView,
     UserDeviceRegisterView,
     UserDeviceUnregisterView,
+    WebSocketTicketView,
 )
 
 urlpatterns = [

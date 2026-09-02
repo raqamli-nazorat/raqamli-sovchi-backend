@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.core.base.serializers import BaseModelSerializer
+
 from .models import TelegramAuthSession
 from .utils import get_bot_username
 

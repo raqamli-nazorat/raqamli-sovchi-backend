@@ -22,6 +22,8 @@ DEFAULT_PERMISSIONS_CODENAMES = [
     "view_profession",
     "view_maritalstatus",
     "view_healthstatus",
+    # Vakil ro'yxatdan o'tishda qarindoshlik turini tanlaydi (RepresentativeInfo.kinship)
+    "view_kinship",
     # Questionnaire
     "view_sectiontype",
     "view_question",
@@ -47,25 +49,33 @@ DEFAULT_PERMISSIONS_CODENAMES = [
 
 @receiver(post_migrate)
 def create_default_role_after_migration(sender, **kwargs):
-    if sender.name == "apps.accounts.users":
-        try:
-            role = Role.objects.filter(is_default=True).first()
-            if not role:
-                role = Role.objects.first()
-                if role:
-                    role.is_default = True
-                    role.save(update_fields=["is_default"])
-                else:
-                    role = Role.objects.create(name="Foydalanuvchi", is_default=True)
+    """
+    Boshlang'ich rolni yaratadi va unga oddiy foydalanuvchi huquqlarini beradi.
 
+    Ataylab har bir app'ning post_migrate signalida ishlaydi: Django huquqlarni
+    (Permission) har app uchun alohida yaratadi, shuning uchun faqat "users"
+    app'ida ishlatilsa, keyingi app'larning huquqlari hali mavjud bo'lmaydi va
+    rolga tushmay qoladi. Amal takroriy bajarilishga xavfsiz (idempotent) —
+    oxirgi chaqiruvda huquqlar to'liq bo'ladi.
+    """
+    try:
+        role = Role.objects.filter(is_default=True).first()
+        if not role:
+            role = Role.objects.first()
             if role:
-                perms = Permission.objects.filter(
-                    codename__in=DEFAULT_PERMISSIONS_CODENAMES
-                )
-                if perms.exists():
-                    role.permissions.set(perms)
-        except (ProgrammingError, OperationalError):
-            pass
+                role.is_default = True
+                role.save(update_fields=["is_default"])
+            else:
+                role = Role.objects.create(name="Foydalanuvchi", is_default=True)
+
+        if role:
+            perms = Permission.objects.filter(
+                codename__in=DEFAULT_PERMISSIONS_CODENAMES
+            )
+            if perms.exists():
+                role.permissions.set(perms)
+    except (ProgrammingError, OperationalError):
+        pass
 
 
 @receiver(post_save, sender=User)

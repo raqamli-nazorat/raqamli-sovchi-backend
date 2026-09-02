@@ -1,9 +1,9 @@
 import logging
+import math
 import os
 import tempfile
 import uuid
 from contextlib import contextmanager
-import math
 
 from PIL import Image, ImageOps
 
@@ -173,7 +173,7 @@ def verify_face_image(uploaded_file):
                 "Yuz aniqlanmadi. Iltimos, kameraga to'g'ri qarab qayta urinib ko'ring.",
                 None,
             )
-        except Exception as e:
+        except Exception:
             logger.exception("verify_face_image kutilmagan xatolik")
             return (
                 False,
@@ -296,7 +296,7 @@ def hash_compare(profile_or_user, uploaded_file):
                 "Yuz mos kelmadi. Yuklangan rasm profildagi rasmlaringizdan birortasiga ham to'g'ri kelmadi.",
             )
 
-        except Exception as e:
+        except Exception:
             logger.exception(
                 "hash_compare kutilmagan xatolik: ProfileID=%s | UserID=%s",
                 profile_id,

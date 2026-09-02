@@ -177,3 +177,6 @@ firebase-credentials.json
 
 # PyPI configuration file
 .pypirc
+
+chornavik.txt
+CLAUDE.md

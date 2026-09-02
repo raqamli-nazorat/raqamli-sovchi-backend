@@ -3,8 +3,10 @@ import hashlib
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, permissions, status, views
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -14,20 +16,48 @@ from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
-from .models import Role, User, UserPledge, UserDevice, BlockedUser
+from .models import BlockedUser, Role, User, UserDevice, UserPledge
 from .serializers import (
+    BlockedUserSerializer,
+    ChangePasswordSerializer,
     CustomTokenObtainPairSerializer,
+    EmailAuthSerializer,
     GoogleLoginSerializer,
     PermissionSerializer,
     PhoneAuthSerializer,
-    EmailAuthSerializer,
     RoleSerializer,
+    UserDeviceSerializer,
     UserPledgeSerializer,
     UserSerializer,
-    UserDeviceSerializer,
-    ChangePasswordSerializer,
-    BlockedUserSerializer,
 )
+
+# Qurilma sarlavhalari. Kirish paytida yuborilsa, qurilma ro'yxatga olinadi va
+# uning identifikatori JWT ichiga yoziladi — keyinchalik seansni masofadan
+# bekor qilish shu orqali ishlaydi. Sxemada e'lon qilinmasa, Swagger'dan
+# yuborib bo'lmaydi.
+DEVICE_HEADER_PARAMETERS = [
+    OpenApiParameter(
+        name="X-Device-Id",
+        type=str,
+        location=OpenApiParameter.HEADER,
+        required=False,
+        description="Qurilmaning noyob identifikatori",
+    ),
+    OpenApiParameter(
+        name="X-Device-Name",
+        type=str,
+        location=OpenApiParameter.HEADER,
+        required=False,
+        description="Qurilma nomi (masalan: Samsung S23)",
+    ),
+    OpenApiParameter(
+        name="X-Device-OS",
+        type=str,
+        location=OpenApiParameter.HEADER,
+        required=False,
+        description="Qurilma operatsion tizimi (masalan: Android 14)",
+    ),
+]
 
 
 class PermissionViewSet(BaseReadOnlyViewSet):
@@ -177,8 +207,13 @@ class UserPledgeViewSet(BaseManageViewSet):
     ordering_fields = ["created_at"]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # user read-only bo'lgani uchun DRF ning takrorlanish validatori ishlamaydi,
+        # shuning uchun bitta foydalanuvchiga bitta rozilik shartini shu yerda
+        # tekshiramiz — aks holda baza cheklovi 500 xato beradi.
+        if UserPledge.objects.filter(user=self.request.user).exists():
+            raise ValidationError("Siz allaqachon halollik roziligini bergansiz.")
 
+        serializer.save(user=self.request.user)
 
 class UserDeviceViewSet(BaseManageViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -224,6 +259,7 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
     permission_classes = []
     serializer_class = GoogleLoginSerializer
 
+    @extend_schema(parameters=DEVICE_HEADER_PARAMETERS)
     def post(self, request, *args, **kwargs):
         serializer = GoogleLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -253,7 +289,9 @@ class GoogleLoginView(AutoSchemaMixin, views.APIView):
 
 class PhoneAuthView(AutoSchemaMixin, views.APIView):
     permission_classes = []
+    serializer_class = PhoneAuthSerializer
 
+    @extend_schema(parameters=DEVICE_HEADER_PARAMETERS)
     def post(self, request, *args, **kwargs):
         serializer = PhoneAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -285,6 +323,7 @@ class EmailAuthView(AutoSchemaMixin, views.APIView):
     permission_classes = []
     serializer_class = EmailAuthSerializer
 
+    @extend_schema(parameters=DEVICE_HEADER_PARAMETERS)
     def post(self, request, *args, **kwargs):
         serializer = EmailAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -1,11 +1,12 @@
 from rest_framework.routers import DefaultRouter
+
 from .views import (
     EducationLevelViewSet,
-    NationalityViewSet,
-    ProfessionViewSet,
-    MaritalStatusViewSet,
     HealthStatusViewSet,
     KinshipViewSet,
+    MaritalStatusViewSet,
+    NationalityViewSet,
+    ProfessionViewSet,
 )
 
 router = DefaultRouter()

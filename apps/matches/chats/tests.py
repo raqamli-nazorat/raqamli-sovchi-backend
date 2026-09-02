@@ -2,16 +2,19 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.profiles.models import CandidateRole, GenderType, Profile
+from apps.accounts.users.models import AuthProvider, Role, User
 from apps.matches.chats.models import ChatRoom, Message
 from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
-from apps.accounts.profiles.models import Profile, GenderType, CandidateRole
-from apps.accounts.users.models import User, AuthProvider, Role
 
 
 class ChatsTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.role = Role.objects.create(name="User", is_default=True)
+        # post_migrate signali yaratgan haqiqiy boshlang'ich rol ishlatiladi —
+        # unda oddiy foydalanuvchining real huquqlari bor. Yangi bo'sh rol
+        # yaratilsa, u haqiqiysini almashtirib yuboradi va hamma so'rov 403 bo'ladi.
+        self.role = Role.objects.filter(is_default=True).first()
 
         self.user1 = User.objects.create(
             phone_number="+998901111111",

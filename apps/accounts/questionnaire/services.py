@@ -19,8 +19,9 @@ def get_effective_candidate_role(profile):
     elif profile.gender == "female":
         return "bride"
 
-    if hasattr(profile, "representative_info") and profile.representative_info:
-        return profile.representative_info.candidate_role
+    rep_info = profile.representative_infos.first()
+    if rep_info:
+        return rep_info.candidate_role
 
     return None
 
@@ -244,6 +245,7 @@ def bulk_save_question_options(question_id, options_data):
     :return: (yaratilganlar_soni, yangilanganlar_soni) juftligi (tuple).
     """
     from django.db import transaction
+
     from apps.accounts.questionnaire.models import QuestionOption
 
     existing_options = {

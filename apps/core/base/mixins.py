@@ -1,4 +1,5 @@
 from drf_spectacular.utils import extend_schema
+
 from apps.core.base.permissions import FullDjangoModelPermissions
 
 
@@ -7,16 +8,17 @@ class DynamicPermissionMixin:
 
 
 class AutoSchemaMixin:
-
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
         tag_name = None
 
         is_viewset = False
-        if cls.__name__.endswith("ViewSet"):
-            is_viewset = True
-        elif hasattr(cls, "get_view_name") and "ViewSet" in cls.__name__:
+        if (
+            cls.__name__.endswith("ViewSet")
+            or hasattr(cls, "get_view_name")
+            and "ViewSet" in cls.__name__
+        ):
             is_viewset = True
 
         if is_viewset:

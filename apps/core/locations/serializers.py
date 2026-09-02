@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from apps.core.base.serializers import BaseModelSerializer
-from .models import Region, District
+
+from .models import District, Region
 
 
 class RegionSerializer(BaseModelSerializer):

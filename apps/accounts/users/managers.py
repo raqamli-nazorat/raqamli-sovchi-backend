@@ -1,4 +1,5 @@
 from django.contrib.auth.models import BaseUserManager
+
 from apps.core.base.models import BaseQuerySet
 
 

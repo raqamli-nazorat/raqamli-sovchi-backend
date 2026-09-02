@@ -1,6 +1,8 @@
 from django.contrib import admin
+
 from apps.core.base.admin import BaseModelAdmin
-from .models import Region, District
+
+from .models import District, Region
 
 
 @admin.register(Region)

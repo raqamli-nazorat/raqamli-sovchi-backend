@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
-from apps.core.locations.models import Region, District
+
+from apps.core.locations.models import District, Region
 
 
 class Command(BaseCommand):

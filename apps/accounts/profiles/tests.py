@@ -3,14 +3,17 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.accounts.profiles.models import Profile, GenderType, CandidateRole
-from apps.accounts.users.models import User, AuthProvider, Role
+from apps.accounts.profiles.models import CandidateRole, GenderType, Profile
+from apps.accounts.users.models import AuthProvider, Role, User
 
 
 class ProfileNearbyTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.role = Role.objects.create(name="User", is_default=True)
+        # post_migrate signali yaratgan haqiqiy boshlang'ich rol ishlatiladi —
+        # unda oddiy foydalanuvchining real huquqlari bor. Yangi bo'sh rol
+        # yaratilsa, u haqiqiysini almashtirib yuboradi va hamma so'rov 403 bo'ladi.
+        self.role = Role.objects.filter(is_default=True).first()
 
         # 1. Main User (Tashkent Center: 41.2995, 69.2401)
         self.user_main = User.objects.create(
@@ -264,14 +267,28 @@ class ProfileGenderFilterTestCase(TestCase):
     def test_representative_user_for_both_sees_all_candidates(self):
         from apps.accounts.profiles.models import RepresentativeInfo
 
-        # Representative representing both a groom and a bride
-        RepresentativeInfo.objects.create(
-            profile=self.profile_rep,
-            candidate_role=CandidateRole.GROOM,
+        # RepresentativeInfo.profile — OneToOneField, ya'ni bitta vakilga bitta
+        # yozuv. Ikkala rolni qamrash uchun yagona yozuvdan foydalaniladi:
+        # candidate_role kelinni beradi, biriktirilgan nomzod (target_candidate)
+        # esa kuyov bo'lgani uchun filtr ikkinchi rolni ham qo'shadi.
+        other_groom_user = User.objects.create(
+            phone_number="+998901000004",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        Profile.objects.create(
+            user=other_groom_user,
+            first_name="Kuyov2",
+            last_name="Test",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_year=1994,
+            height=178,
         )
         RepresentativeInfo.objects.create(
             profile=self.profile_rep,
             candidate_role=CandidateRole.BRIDE,
+            target_candidate=other_groom_user,
         )
 
         self.client.force_authenticate(user=self.user_rep)
@@ -338,7 +355,8 @@ class SavedProfileTestCase(TestCase):
 
         # 3. Unsave profile2
         unsave_url = f"/api/v1/accounts/profiles/{self.profile2.id}/unsave/"
-        res_unsave = self.client.post(unsave_url)
+        # unsave amali DELETE usuli bilan e'lon qilingan (views.py: methods=["delete"])
+        res_unsave = self.client.delete(unsave_url)
         self.assertEqual(res_unsave.status_code, status.HTTP_200_OK)
         self.assertFalse(res_unsave.data.get("is_saved"))
 

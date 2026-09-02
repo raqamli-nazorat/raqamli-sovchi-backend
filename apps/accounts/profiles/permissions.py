@@ -55,9 +55,11 @@ class IsProfileOwnerOrStaff(permissions.BasePermission):
         if getattr(obj, "user_id", None) == user.id:
             return True
 
-        if hasattr(obj, "representative_info") and obj.representative_info:
-            rep_profile = getattr(user, "profile", None)
-            if rep_profile and obj.representative_info.profile_id == rep_profile.id:
-                return True
+        rep_profile = getattr(user, "profile", None)
+        if (
+            rep_profile
+            and obj.representative_infos.filter(profile_id=rep_profile.id).exists()
+        ):
+            return True
 
         return False

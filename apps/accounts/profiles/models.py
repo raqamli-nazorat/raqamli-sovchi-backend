@@ -1,7 +1,8 @@
 from decimal import Decimal
-from django.db import models
+
 from django.contrib.gis.db import models as gis_models
 from django.contrib.gis.geos import Point
+from django.db import models
 
 from apps.accounts.users.models import User
 from apps.core.base.models import BaseModel
@@ -202,10 +203,10 @@ class ProfilePhoto(BaseModel):
 
 
 class RepresentativeInfo(BaseModel):
-    profile = models.OneToOneField(
+    profile = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
-        related_name="representative_info",
+        related_name="representative_infos",
         verbose_name="Vakil profili",
     )
     kinship = models.ForeignKey(
