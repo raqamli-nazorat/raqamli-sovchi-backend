@@ -29,6 +29,22 @@ class PhoneAuthTestCase(TestCase):
         user = User.objects.get(phone_number="+998901234567")
         self.assertFalse(user.is_blocked)
 
+    def test_invalid_phone_returns_400(self):
+        invalid_numbers = [
+            "901234567",
+            "+9989012345",
+            "+99890123456789",
+            "998901234567",
+            "+7901234567",
+            "",
+        ]
+        for number in invalid_numbers:
+            with self.subTest(phone=number):
+                res = self.client.post(
+                    self.url, {"phone_number": number}, format="json"
+                )
+                self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_blocked_phone_user_returns_403(self):
         blocked_user = User.objects.create(
             phone_number="+998909999999",

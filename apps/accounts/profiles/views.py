@@ -219,12 +219,17 @@ class RepresentativeInfoViewSet(BaseManageViewSet):
 
     @action(detail=False, methods=["post"], url_path="send-consent-request")
     def send_consent_request(self, request):
-        candidate_contact = request.data.get("candidate_contact")
-        kinship_id = request.data.get("kinship_id")
-        candidate_role = request.data.get("candidate_role", "groom")
+        from .serializers import RepresentativeConsentRequestSerializer
+
+        serializer = RepresentativeConsentRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
 
         rep_info, target_user = send_representative_consent_request(
-            request.user, candidate_contact, kinship_id, candidate_role
+            request.user,
+            data["candidate_contact"],
+            data.get("kinship_id"),
+            data["candidate_role"],
         )
 
         return Response(

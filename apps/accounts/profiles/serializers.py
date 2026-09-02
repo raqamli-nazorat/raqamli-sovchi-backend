@@ -172,3 +172,36 @@ class ProfileSerializer(BaseModelSerializer):
 
 class FaceVerificationSerializer(serializers.Serializer):
     image = serializers.ImageField(required=True, label="Selfie rasm")
+
+
+class RepresentativeConsentRequestSerializer(serializers.Serializer):
+    """Vakil tomonidan nomzodga yuborilayotgan rozilik so'rovi uchun serialazer."""
+
+    candidate_contact = serializers.CharField(
+        help_text="Nomzodning telefon raqami (+998XXXXXXXXX) yoki email manzili"
+    )
+    # PrimaryKeyRelatedField o'rniga UUIDField — Kinship moduli import qilinmaydi,
+    # service qatlami kinship_id ni o'zi DB dan topadi.
+    kinship_id = serializers.UUIDField(required=False, allow_null=True)
+    candidate_role = serializers.ChoiceField(
+        choices=["groom", "bride"],
+        default="groom",
+    )
+
+    def validate_candidate_contact(self, value):
+        """Telefon raqam yoki email formatini tekshiradi."""
+        import re
+
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from django.core.validators import validate_email
+
+        if re.match(r"^\+998\d{9}$", value):
+            return value
+        try:
+            validate_email(value)
+            return value
+        except DjangoValidationError:
+            raise serializers.ValidationError(
+                "Noto'g'ri format. Telefon raqami (+998XXXXXXXXX) "
+                "yoki to'g'ri email manzili kiritilishi kerak."
+            )
