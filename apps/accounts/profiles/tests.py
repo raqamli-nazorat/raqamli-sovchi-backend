@@ -98,35 +98,30 @@ class ProfileNearbyTestCase(TestCase):
         self.assertNotIn(str(self.profile_far.id), ids)
         self.assertNotIn(str(self.profile_main.id), ids)
 
-    def test_nearby_custom_radius(self):
+    def test_nearby_custom_radius_filters_correctly(self):
+        """Kichik radius (1 km) yaqin profil (3 km)ni chiqarib tashlashini tekshiradi."""
         self.client.force_authenticate(user=self.user_main)
+        response = self.client.get(f"{self.url}?radius=1")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data.get("results", response.data)
+        if isinstance(results, dict) and "data" in results:
+            results = results["data"]
+        ids = [item["id"] for item in results]
+        self.assertNotIn(str(self.profile_near.id), ids)
 
-        # Radius 1 km (3km near profile should be excluded)
-        response_small = self.client.get(f"{self.url}?radius=1")
-        self.assertEqual(response_small.status_code, status.HTTP_200_OK)
-        results_small = (
-            response_small.data.get("results", response_small.data)
-            if isinstance(response_small.data, dict)
-            else response_small.data
-        )
-        if isinstance(results_small, dict) and "data" in results_small:
-            results_small = results_small["data"]
-        ids_small = [item["id"] for item in results_small]
-        self.assertNotIn(str(self.profile_near.id), ids_small)
+    def test_nearby_invalid_radius_rejected(self):
+        """Ruxsat etilmagan radius qiymati 400 qaytarishini tekshiradi."""
+        self.client.force_authenticate(user=self.user_main)
+        for bad_radius in [0, 2, 7, 500, -1]:
+            with self.subTest(radius=bad_radius):
+                response = self.client.get(f"{self.url}?radius={bad_radius}")
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # Radius 500 km (Both near and far profiles should be included)
-        response_large = self.client.get(f"{self.url}?radius=500")
-        self.assertEqual(response_large.status_code, status.HTTP_200_OK)
-        results_large = (
-            response_large.data.get("results", response_large.data)
-            if isinstance(response_large.data, dict)
-            else response_large.data
-        )
-        if isinstance(results_large, dict) and "data" in results_large:
-            results_large = results_large["data"]
-        ids_large = [item["id"] for item in results_large]
-        self.assertIn(str(self.profile_near.id), ids_large)
-        self.assertIn(str(self.profile_far.id), ids_large)
+    def test_nearby_string_radius_rejected(self):
+        """Raqam bo'lmagan radius 400 qaytarishini tekshiradi."""
+        self.client.force_authenticate(user=self.user_main)
+        response = self.client.get(f"{self.url}?radius=abc")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_nearby_fails_if_profile_has_no_location(self):
         # User without location
