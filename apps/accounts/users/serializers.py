@@ -121,7 +121,7 @@ class UserSerializer(BaseModelSerializer):
             score += 10
         if profile.candidate_type:
             score += 10
-        if profile.birth_year:
+        if profile.birth_date:
             score += 10
         if profile.height and profile.weight:
             score += 10

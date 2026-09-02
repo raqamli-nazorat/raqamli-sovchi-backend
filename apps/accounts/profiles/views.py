@@ -64,7 +64,7 @@ class ProfileViewSet(BaseManageViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProfileFilter
     search_fields = ["first_name", "last_name", "bio"]
-    ordering_fields = ["created_at", "birth_year", "height", "weight"]
+    ordering_fields = ["created_at", "birth_date", "height", "weight"]
 
     def get_queryset(self):
         qs = (

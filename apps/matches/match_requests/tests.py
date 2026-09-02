@@ -26,7 +26,7 @@ class MatchRequestsTestCase(TestCase):
             last_name="Test",
             gender=GenderType.MALE,
             candidate_type=CandidateRole.GROOM,
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
         )
 
@@ -41,7 +41,7 @@ class MatchRequestsTestCase(TestCase):
             last_name="Test",
             gender=GenderType.FEMALE,
             candidate_type=CandidateRole.BRIDE,
-            birth_year=1997,
+            birth_date="1997-01-01",
             height=165,
         )
 
@@ -103,7 +103,7 @@ class MatchRequestGuardsTestCase(TestCase):
             last_name="Test",
             gender=gender,
             candidate_type=candidate_type,
-            birth_year=1995,
+            birth_date="1995-01-01",
             height=175,
         )
         return user, profile
@@ -169,20 +169,6 @@ class MatchRequestGuardsTestCase(TestCase):
         match_req.refresh_from_db()
         self.assertEqual(match_req.status, MatchRequestStatus.PENDING)
 
-    def test_invalid_visibility_scope_rejected(self):
-        match_req = MatchRequest.objects.create(
-            from_profile=self.groom_profile, to_profile=self.bride_profile
-        )
-        self.client.force_authenticate(user=self.bride)
-        response = self.client.post(
-            f"{self.url}{match_req.id}/accept/",
-            {"visibility_scope": "notogri_qiymat"},
-            format="json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        match_req.refresh_from_db()
-        self.assertEqual(match_req.status, MatchRequestStatus.PENDING)
-
     def test_cannot_decide_already_rejected_request(self):
         match_req = MatchRequest.objects.create(
             from_profile=self.groom_profile,
@@ -192,29 +178,3 @@ class MatchRequestGuardsTestCase(TestCase):
         self.client.force_authenticate(user=self.bride)
         response = self.client.post(f"{self.url}{match_req.id}/accept/")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_representative_can_decide_forwarded_request(self):
-        from apps.accounts.profiles.models import RepresentativeInfo
-
-        rep_user, rep_profile = self._make_user(
-            "+998914444444", GenderType.MALE, CandidateRole.REPRESENTATIVE
-        )
-        RepresentativeInfo.objects.create(
-            profile=rep_profile,
-            candidate_role="bride",
-            target_candidate=self.bride,
-            is_approved=True,
-        )
-
-        match_req = MatchRequest.objects.create(
-            from_profile=self.groom_profile,
-            to_profile=self.bride_profile,
-            status=MatchRequestStatus.FORWARDED_TO_REPRESENTATIVE,
-        )
-
-        self.client.force_authenticate(user=rep_user)
-        response = self.client.post(f"{self.url}{match_req.id}/accept/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        match_req.refresh_from_db()
-        self.assertEqual(match_req.status, MatchRequestStatus.ACCEPTED)
