@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import Permission
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -132,3 +133,43 @@ class RoleDeleteTestCase(TestCase):
         self.normal_role.delete()
         self.normal_role.refresh_from_db()
         self.assertFalse(self.normal_role.is_active)
+
+
+class RoleAndPermissionApiTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create(
+            phone_number="+998900000001",
+            auth_provider=AuthProvider.PHONE,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(self.admin)
+
+    def test_role_detail_returns_permissions_and_permissions_info(self):
+        permission = Permission.objects.get(codename="view_role")
+        role = Role.objects.create(name="Content Moderator")
+        role.permissions.add(permission)
+
+        response = self.client.get(f"/api/v1/accounts/roles/{role.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data.get("data", response.data)
+        self.assertEqual(data["permissions"], [permission.id])
+        self.assertEqual(len(data["permissions_info"]), 1)
+        self.assertEqual(data["permissions_info"][0]["id"], permission.id)
+        self.assertEqual(data["permissions_info"][0]["codename"], "view_role")
+        self.assertEqual(data["permissions_info"][0]["model_name"], "role")
+
+    def test_permissions_list_returns_group_metadata(self):
+        response = self.client.get("/api/v1/accounts/permissions/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data.get("data", response.data)
+        self.assertIn("role", data)
+        self.assertEqual(data["role"]["model_name"], "role")
+        self.assertIn("group_label", data["role"])
+        self.assertIn("permissions", data["role"])
+        self.assertTrue(
+            any(item["codename"] == "view_role" for item in data["role"]["permissions"])
+        )
