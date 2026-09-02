@@ -1,6 +1,8 @@
 import logging
 
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.openapi import OpenApiParameter
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
@@ -10,6 +12,8 @@ from rest_framework.views import APIView
 
 from apps.core.base.mixins import AutoSchemaMixin
 from apps.core.base.views import BaseManageViewSet
+
+ALLOWED_RADIUS_KM = {1, 3, 5, 10, 15, 25}
 
 from .filters import ProfileFilter
 from .models import Profile, ProfilePhoto, RepresentativeInfo
@@ -95,6 +99,19 @@ class ProfileViewSet(BaseManageViewSet):
         update_profile(self.request.user, serializer.validated_data)
         serializer.save()
 
+    @extend_schema(
+        summary="Atrofdagi nomzodlarni ko'rish",
+        parameters=[
+            OpenApiParameter(
+                name="radius",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="Qidiruv radiusi (km). Ruxsat etilgan qiymatlar: 1, 3, 5, 10, 15, 25.",
+                enum=[1, 3, 5, 10, 15, 25],
+                default=10,
+            )
+        ],
+    )
     @action(
         detail=False,
         methods=["get"],
@@ -102,10 +119,25 @@ class ProfileViewSet(BaseManageViewSet):
         permission_classes=[permissions.IsAuthenticated],
     )
     def nearby(self, request):
+        """Foydalanuvchi GPS nuqtasidan berilgan radius ichidagi nomzodlarni qaytaradi."""
+        radius_param = request.query_params.get("radius", 10)
         try:
-            radius_km = float(request.query_params.get("radius", 10))
+            radius_km = int(radius_param)
         except (ValueError, TypeError):
-            radius_km = 10.0
+            raise ValidationError(
+                {
+                    "detail": "Radius butun son bo'lishi kerak.",
+                    "_error_code": "invalid_radius",
+                }
+            )
+
+        if radius_km not in ALLOWED_RADIUS_KM:
+            raise ValidationError(
+                {
+                    "detail": f"Radius {sorted(ALLOWED_RADIUS_KM)} km qiymatlaridan biri bo'lishi kerak.",
+                    "_error_code": "invalid_radius",
+                }
+            )
 
         try:
             user_profile, qs = get_nearby_profiles(
