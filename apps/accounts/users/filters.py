@@ -38,10 +38,16 @@ class UserFilter(django_filters.FilterSet):
     is_active = django_filters.BooleanFilter(field_name="is_active")
     status = django_filters.CharFilter(method="filter_status", label="Status")
     start_date = django_filters.DateFilter(
-        field_name="created_at", lookup_expr="gte", label="Created at (from)"
+        field_name="created_at", lookup_expr="gte", label="Yaratilgan sana (dan)"
     )
     end_date = django_filters.DateFilter(
-        field_name="created_at", lookup_expr="lte", label="Created at (to)"
+        field_name="created_at", lookup_expr="lte", label="Yaratilgan sana (gacha)"
+    )
+    updated_start_date = django_filters.DateFilter(
+        field_name="updated_at", lookup_expr="gte", label="Yangilangan sana (dan)"
+    )
+    updated_end_date = django_filters.DateFilter(
+        field_name="updated_at", lookup_expr="lte", label="Yangilangan sana (gacha)"
     )
 
     class Meta:
@@ -58,6 +64,8 @@ class UserFilter(django_filters.FilterSet):
             "status",
             "start_date",
             "end_date",
+            "updated_start_date",
+            "updated_end_date",
         ]
 
     def filter_candidate_type(self, queryset, name, value):

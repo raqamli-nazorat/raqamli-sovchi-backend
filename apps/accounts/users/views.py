@@ -3,7 +3,7 @@ import hashlib
 from django.contrib.auth.models import Permission
 from django.db.models import Count, IntegerField, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import generics, permissions, status, views
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -153,6 +153,73 @@ class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
         instance.save(update_fields=["is_active"])
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="region",
+            type=OpenApiTypes.UUID,
+            location=OpenApiParameter.QUERY,
+            description="Viloyat UUID si bo'yicha filtrlash.",
+        ),
+        OpenApiParameter(
+            name="district",
+            type=OpenApiTypes.UUID,
+            location=OpenApiParameter.QUERY,
+            description="Tuman UUID si bo'yicha filtrlash.",
+        ),
+        OpenApiParameter(
+            name="role",
+            type=OpenApiTypes.UUID,
+            location=OpenApiParameter.QUERY,
+            description="Rol UUID si bo'yicha filtrlash.",
+        ),
+        OpenApiParameter(
+            name="candidate_type",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description="Nomzod turi bo'yicha filtrlash.",
+            enum=["groom", "bride", "representative"],
+        ),
+        OpenApiParameter(
+            name="auth_provider",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description="Ro'yxatdan o'tgan usul bo'yicha filtrlash.",
+            enum=["phone", "telegram", "google", "email"],
+        ),
+        OpenApiParameter(
+            name="status",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description="Foydalanuvchi holati bo'yicha filtrlash.",
+            enum=["tasdiqlangan", "tekshiruvda", "bloklangan", "anketa to'liq emas"],
+        ),
+        OpenApiParameter(
+            name="start_date",
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            description="Yaratilgan sana (dan). Format: YYYY-MM-DD.",
+        ),
+        OpenApiParameter(
+            name="end_date",
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            description="Yaratilgan sana (gacha). Format: YYYY-MM-DD.",
+        ),
+        OpenApiParameter(
+            name="updated_start_date",
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            description="Yangilangan sana (dan). Format: YYYY-MM-DD.",
+        ),
+        OpenApiParameter(
+            name="updated_end_date",
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            description="Yangilangan sana (gacha). Format: YYYY-MM-DD.",
+        ),
+    ]
+)
 class UserViewSet(BaseManageViewSet):
     queryset = (
         User.objects.select_related(
