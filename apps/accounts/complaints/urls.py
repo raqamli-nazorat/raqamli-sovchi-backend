@@ -6,4 +6,3 @@ router = DefaultRouter()
 router.register(r"complaints", ComplaintViewSet, basename="complaint")
 
 urlpatterns = router.urls
-
