@@ -73,6 +73,7 @@ LOCAL_APPS = [
     "apps.core.references",
     "apps.accounts.profiles",
     "apps.accounts.questionnaire",
+    "apps.accounts.complaints",
     "apps.accounts.telegram_bot",
     "apps.accounts.notifications",
     "apps.matches.match_requests",
