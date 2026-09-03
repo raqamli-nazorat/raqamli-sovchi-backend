@@ -50,7 +50,10 @@ class BaseModelSerializer(serializers.ModelSerializer):
                     is_many = (
                         getattr(field, "many_to_many", False)
                         or getattr(field, "one_to_many", False)
-                        or getattr(field, "auto_created", False)
+                        or (
+                            getattr(field, "auto_created", False)
+                            and not getattr(field, "one_to_one", False)
+                        )
                     )
                 related_model = curr_model
             except (AttributeError, Exception):
@@ -79,7 +82,11 @@ class BaseModelSerializer(serializers.ModelSerializer):
                 )
 
             self.fields[f"{field_name}_info"] = serializer_class(
-                source=source, read_only=True, many=is_many
+                source=source,
+                read_only=True,
+                many=is_many,
+                # FK/OneToOne null bo'lishi mumkin — RelatedObjectDoesNotExist ni to'g'ri handle qilish uchun
+                allow_null=not is_many,
             )
 
         view = self.context.get("view")

@@ -167,6 +167,9 @@ def _reactivate_user_if_needed(user, new_auth_provider=None):
     profile = getattr(user, "profile", None)
     if profile:
         profile.hard_delete()
+        # hard_delete() dan so'ng Django profile.pk = None qo'yadi,
+        # lekin user.profile Django _state.fields_cache da qoladi — tozalaymiz.
+        user._state.fields_cache.pop("profile", None)
 
     from allauth.socialaccount.models import SocialAccount
 

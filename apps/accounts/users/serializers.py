@@ -72,6 +72,10 @@ class UserSerializer(BaseModelSerializer):
     candidate_type = serializers.SerializerMethodField()
     completion_percentage = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    region_name = serializers.SerializerMethodField()
+    district_name = serializers.SerializerMethodField()
+    main_photo = serializers.SerializerMethodField()
+    age = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -79,10 +83,14 @@ class UserSerializer(BaseModelSerializer):
             "id",
             "display_id",
             "full_name",
+            "main_photo",
             "phone_number",
             "email",
             "telegram_id",
             "candidate_type",
+            "age",
+            "region_name",
+            "district_name",
             "completion_percentage",
             "status",
             "role",
@@ -130,6 +138,44 @@ class UserSerializer(BaseModelSerializer):
         profile = getattr(obj, "profile", None)
         if profile and profile.candidate_type:
             return profile.get_candidate_type_display()
+        return None
+
+    def get_age(self, obj):
+        """Profildan tug'ilgan sanaga asoslanib yoshni hisoblaydi."""
+        from datetime import date
+
+        profile = getattr(obj, "profile", None)
+        if not profile or not profile.birth_date:
+            return None
+        today = date.today()
+        bd = profile.birth_date
+        return today.year - bd.year - ((today.month, today.day) < (bd.month, bd.day))
+
+    def get_region_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        if profile and profile.region_id:
+            return profile.region.name
+        return None
+
+    def get_district_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        if profile and profile.district_id:
+            return profile.district.name
+        return None
+
+    def get_main_photo(self, obj):
+        profile = getattr(obj, "profile", None)
+        if not profile or not profile.pk:
+            return None
+        photos = profile.photos.all()
+        main = next((p for p in photos if p.is_main), None) or next(iter(photos), None)
+        if main and main.image:
+            request = self.context.get("request")
+            return (
+                request.build_absolute_uri(main.image.url)
+                if request
+                else main.image.url
+            )
         return None
 
     def get_completion_percentage(self, obj):
