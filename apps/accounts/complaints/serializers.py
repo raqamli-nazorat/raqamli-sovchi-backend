@@ -78,7 +78,9 @@ class ComplaintCreateSerializer(BaseModelSerializer):
         request = self.context.get("request")
         user = getattr(request, "user", None)
         if user and value.id == user.id:
-            raise serializers.ValidationError("O'zingiz haqingizda shikoyat yubora olmaysiz.")
+            raise serializers.ValidationError(
+                "O'zingiz haqingizda shikoyat yubora olmaysiz."
+            )
         return value
 
     def validate_reason(self, value):
@@ -184,9 +186,9 @@ class ComplaintDetailSerializer(BaseModelSerializer):
         if not chat_room:
             return []
 
-        messages = chat_room.messages.select_related("sender", "sender__profile").order_by(
-            "created_at"
-        )[:10]
+        messages = chat_room.messages.select_related(
+            "sender", "sender__profile"
+        ).order_by("created_at")[:10]
         return ComplaintMessageExcerptSerializer(messages, many=True).data
 
     def get_profile_snapshot(self, obj):
@@ -196,9 +198,12 @@ class ComplaintDetailSerializer(BaseModelSerializer):
         return build_ai_analysis(obj)
 
     def get_previous_complaints_count(self, obj):
-        return Complaint.objects.active().filter(to_user=obj.to_user).exclude(
-            pk=obj.pk
-        ).count()
+        return (
+            Complaint.objects.active()
+            .filter(to_user=obj.to_user)
+            .exclude(pk=obj.pk)
+            .count()
+        )
 
 
 class ComplaintUpdateSerializer(BaseModelSerializer):
@@ -246,7 +251,9 @@ class ComplaintUpdateSerializer(BaseModelSerializer):
         from_user = getattr(self.instance, "from_user", None)
         if to_user and from_user and to_user.id == from_user.id:
             raise serializers.ValidationError(
-                {"to_user": "Shikoyat yuboruvchi va qilingan foydalanuvchi bir xil bo'lishi mumkin emas."}
+                {
+                    "to_user": "Shikoyat yuboruvchi va qilingan foydalanuvchi bir xil bo'lishi mumkin emas."
+                }
             )
         return attrs
 
@@ -281,6 +288,8 @@ class ComplaintDecisionSerializer(BaseModelSerializer):
     def validate(self, attrs):
         if self.instance.status != ComplaintStatus.PENDING:
             raise serializers.ValidationError(
-                {"decision": "Hal qilingan shikoyat bo'yicha qayta qaror chiqarib bo'lmaydi."}
+                {
+                    "decision": "Hal qilingan shikoyat bo'yicha qayta qaror chiqarib bo'lmaydi."
+                }
             )
         return attrs

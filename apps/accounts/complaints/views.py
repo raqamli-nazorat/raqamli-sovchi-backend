@@ -109,7 +109,9 @@ class ComplaintViewSet(BaseManageViewSet):
     def decision(self, request, pk=None):
         if not is_staff_like(request.user):
             return Response(
-                {"detail": "Sizda ushbu shikoyat bo'yicha qaror chiqarish huquqi yo'q."},
+                {
+                    "detail": "Sizda ushbu shikoyat bo'yicha qaror chiqarish huquqi yo'q."
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
