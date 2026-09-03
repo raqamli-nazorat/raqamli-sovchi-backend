@@ -15,6 +15,16 @@ from apps.core.base.mixins import AutoSchemaMixin
 from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
+from .admin_serializers import (
+    AdminUserBlockSerializer,
+    AdminUserComplaintSerializer,
+    AdminUserDetailSerializer,
+    AdminUserHistorySerializer,
+    AdminUserListSerializer,
+    AdminUserMatchHistorySerializer,
+    AdminUserRepresentedSerializer,
+    build_user_history,
+)
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
 from .models import BlockedUser, Role, User, UserDevice, UserPledge
 from .serializers import (
@@ -239,24 +249,137 @@ class UserViewSet(BaseManageViewSet):
     ]
     ordering_fields = ["created_at", "phone_number"]
 
+    def get_serializer_class(self):
+        """Action ga qarab kerakli serializer sinfini qaytaradi."""
+        if self.action == "list":
+            return AdminUserListSerializer
+        if self.action == "retrieve":
+            return AdminUserDetailSerializer
+        if self.action == "block_user":
+            return AdminUserBlockSerializer
+        return UserSerializer
+
+    def get_queryset(self):
+        """Action ga qarab optimallashtirilgan queryset qaytaradi."""
+        if self.action == "retrieve":
+            from django.db.models import Prefetch
+
+            from apps.accounts.profiles.models import RepresentativeInfo
+            from apps.accounts.questionnaire.models import UserAnswer
+
+            return (
+                User.objects.select_related(
+                    "profile",
+                    "profile__region",
+                    "profile__district",
+                    "profile__nationality",
+                    "profile__profession",
+                    "profile__education_level",
+                    "profile__marital_status",
+                    "profile__health_status",
+                    "role",
+                )
+                .prefetch_related(
+                    "profile__photos",
+                    Prefetch(
+                        "profile__answers",
+                        queryset=UserAnswer.objects.filter(
+                            is_active=True
+                        ).select_related("question__section", "selected_option"),
+                    ),
+                    Prefetch(
+                        "represented_by_infos",
+                        queryset=RepresentativeInfo.objects.filter(is_active=True)
+                        .select_related(
+                            "profile__user",
+                            "profile__region",
+                            "profile__district",
+                            "kinship",
+                        )
+                        .prefetch_related("profile__photos"),
+                    ),
+                )
+                .active()
+            )
+
+        if self.action == "list":
+            from apps.accounts.questionnaire.models import UserAnswer
+
+            answered_subq = (
+                UserAnswer.objects.filter(profile__user=OuterRef("pk"), is_active=True)
+                .values("profile__user")
+                .annotate(c=Count("id"))
+                .values("c")
+            )
+            return (
+                User.objects.select_related(
+                    "profile", "profile__region", "profile__district", "role"
+                )
+                .prefetch_related("profile__photos")
+                .annotate(
+                    answered_count=Subquery(answered_subq, output_field=IntegerField())
+                )
+                .active()
+            )
+
+        return (
+            User.objects.select_related(
+                "profile", "profile__region", "profile__district", "role"
+            )
+            .prefetch_related("profile__photos")
+            .active()
+        )
+
+    def get_serializer_context(self):
+        """List action uchun context'ga total_questions qo'shadi."""
+        context = super().get_serializer_context()
+        if self.action == "list":
+            from apps.accounts.questionnaire.models import Question
+
+            context["total_questions"] = Question.objects.filter(is_active=True).count()
+        return context
+
+    @extend_schema(
+        summary="Foydalanuvchini bloklash",
+        request=AdminUserBlockSerializer,
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "is_blocked": {"type": "boolean"},
+                },
+            }
+        },
+    )
     @action(detail=True, methods=["post"], url_path="block")
     def block_user(self, request, pk=None):
+        serializer = AdminUserBlockSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         user = self.get_object()
+        reason_key = serializer.validated_data["reason"]
+        reason_labels = dict(AdminUserBlockSerializer.REASON_CHOICES)
+        reason_display = reason_labels.get(reason_key, reason_key)
+
         user.is_blocked = True
         user.save(update_fields=["is_blocked"])
 
         from apps.core.utils.face import register_user_faces_as_blocked
 
-        register_user_faces_as_blocked(user, reason="Admin tomonidan bloklandi")
+        register_user_faces_as_blocked(user, reason=reason_display)
+
+        # notify_user=True bo'lsa FCM orqali xabar yuborish — Celery sozlangach aktivlashtirish kerak
 
         return Response(
             {
-                "message": "Foydalanuvchi va uning yuzi muvaffaqiyatli bloklandi.",
+                "message": "Foydalanuvchi muvaffaqiyatli bloklandi.",
                 "is_blocked": True,
             },
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(summary="Foydalanuvchini blokdan chiqarish")
     @action(detail=True, methods=["post"], url_path="unblock")
     def unblock_user(self, request, pk=None):
         user = self.get_object()
@@ -269,11 +392,125 @@ class UserViewSet(BaseManageViewSet):
 
         return Response(
             {
-                "message": "Foydalanuvchi va uning yuzi blokdan chiqarildi.",
+                "message": "Foydalanuvchi blokdan chiqarildi.",
                 "is_blocked": False,
             },
             status=status.HTTP_200_OK,
         )
+
+    @extend_schema(
+        summary="Foydalanuvchiga kelib tushgan shikoyatlar",
+        responses={200: AdminUserComplaintSerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], url_path="complaints")
+    def complaints(self, request, pk=None):
+        from apps.accounts.complaints.models import Complaint
+
+        user = self.get_object()
+        qs = (
+            Complaint.objects.filter(to_user=user)
+            .select_related("from_user", "from_user__profile")
+            .active()
+        )
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = AdminUserComplaintSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        return Response(AdminUserComplaintSerializer(qs, many=True).data)
+
+    @extend_schema(
+        summary="Foydalanuvchining vakillari to'liq ma'lumotlari",
+        responses={200: AdminUserRepresentedSerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], url_path="represented-users")
+    def represented_users(self, request, pk=None):
+        from django.db.models import Prefetch
+
+        from apps.accounts.profiles.models import RepresentativeInfo
+        from apps.accounts.questionnaire.models import UserAnswer
+
+        user = self.get_object()
+        qs = (
+            RepresentativeInfo.objects.filter(target_candidate=user)
+            .select_related(
+                "profile",
+                "profile__user",
+                "kinship",
+            )
+            .prefetch_related(
+                "profile__photos",
+                "profile__representative_infos",
+                Prefetch(
+                    "profile__answers",
+                    queryset=UserAnswer.objects.filter(is_active=True).order_by(
+                        "-created_at"
+                    ),
+                ),
+            )
+            .active()
+        )
+        serializer = AdminUserRepresentedSerializer(
+            qs, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Foydalanuvchi moslik so'rovlari tarixi",
+        parameters=[
+            OpenApiParameter(
+                name="status",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                enum=["pending", "accepted", "rejected"],
+                required=False,
+                description="So'rov holati bo'yicha filtrlash",
+            )
+        ],
+        responses={200: AdminUserMatchHistorySerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], url_path="match-history")
+    def match_history(self, request, pk=None):
+        from django.db.models import Q
+
+        from apps.matches.match_requests.models import MatchRequest
+
+        user = self.get_object()
+        profile = getattr(user, "profile", None)
+        if not profile:
+            return Response([])
+
+        qs = (
+            MatchRequest.objects.filter(Q(from_profile=profile) | Q(to_profile=profile))
+            .select_related("from_profile", "to_profile")
+            .prefetch_related("from_profile__photos", "to_profile__photos")
+            .active()
+        )
+
+        status_param = request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param)
+
+        context = {**self.get_serializer_context(), "user_profile": profile}
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = AdminUserMatchHistorySerializer(
+                page, many=True, context=context
+            )
+            return self.get_paginated_response(serializer.data)
+        return Response(
+            AdminUserMatchHistorySerializer(qs, many=True, context=context).data
+        )
+
+    @extend_schema(
+        summary="Foydalanuvchi tarix voqealari",
+        responses={200: AdminUserHistorySerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], url_path="history")
+    def history(self, request, pk=None):
+        user = self.get_object()
+        events = build_user_history(user)
+        serializer = AdminUserHistorySerializer(events, many=True)
+        return Response(serializer.data)
 
 
 class UserPledgeViewSet(BaseManageViewSet):

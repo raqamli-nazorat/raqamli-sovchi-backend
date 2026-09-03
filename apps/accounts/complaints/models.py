@@ -89,8 +89,4 @@ class Complaint(BaseModel):
 
     def __str__(self):
         """Shikoyatning qisqa matn ko'rinishini qaytaradi."""
-        return (
-            f"{self.from_user_id} -> {self.to_user_id}"
-            f" ({self.get_reason_display()})"
-        )
-
+        return f"{self.from_user_id} -> {self.to_user_id} ({self.get_reason_display()})"

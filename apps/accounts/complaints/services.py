@@ -98,9 +98,11 @@ def build_profile_snapshot(user):
     :return: Lug'at ko'rinishidagi snapshot.
     """
     profile = getattr(user, "profile", None)
-    ai_signals_count = Complaint.objects.active().filter(
-        to_user=user, status=ComplaintStatus.APPROVED
-    ).count()
+    ai_signals_count = (
+        Complaint.objects.active()
+        .filter(to_user=user, status=ComplaintStatus.APPROVED)
+        .count()
+    )
     return {
         "status": get_user_status_label(user),
         "joined_at": user.created_at,
@@ -118,9 +120,12 @@ def build_ai_analysis(complaint):
     :param complaint: Shikoyat obyektı.
     :return: Tahlil natijasi lug'ati.
     """
-    previous_count = Complaint.objects.active().filter(to_user=complaint.to_user).exclude(
-        pk=complaint.pk
-    ).count()
+    previous_count = (
+        Complaint.objects.active()
+        .filter(to_user=complaint.to_user)
+        .exclude(pk=complaint.pk)
+        .count()
+    )
     recommendation = (
         "Profilni bloklash" if previous_count >= 3 else "Qo'shimcha tekshiruv"
     )
