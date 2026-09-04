@@ -503,7 +503,8 @@ def build_user_history(user):
     Foydalanuvchi tarixiy voqealar ro'yxatini qurib qaytaradi.
     Voqealar yangirogidan eskisiga tartibda keladi.
     """
-    from apps.accounts.questionnaire.models import Question, UserAnswer
+    from apps.accounts.questionnaire.models import Question, TargetGender, UserAnswer
+    from apps.accounts.questionnaire.services import get_effective_candidate_role
 
     events = []
     profile = getattr(user, "profile", None)
@@ -536,10 +537,16 @@ def build_user_history(user):
     except Exception:
         pass
 
-    # Anketa yakunlandi
+    # Anketa yakunlandi — jami savol soni foydalanuvchining jinsi/roliga mos savollar
+    # (target_gender) bo'yicha hisoblanadi, aks holda boshqa jinsga tegishli savollar
+    # ham hisobga kirib, anketa hech qachon "bajarildi" bo'lmay qoladi.
     if profile:
         answered = UserAnswer.objects.filter(profile=profile, is_active=True).count()
-        total = Question.objects.filter(is_active=True).count()
+        role = get_effective_candidate_role(profile)
+        target_genders = [TargetGender.ALL, role] if role else [TargetGender.ALL]
+        total = Question.objects.filter(
+            is_active=True, target_gender__in=target_genders
+        ).count()
         if answered > 0:
             last_answer = (
                 UserAnswer.objects.filter(profile=profile, is_active=True)
@@ -552,7 +559,7 @@ def build_user_history(user):
                     "label": f"Anketa {answered}/{total} yakunlandi",
                     "actor": "Avtomatik",
                     "date": last_answer.created_at,
-                    "is_done": answered >= total,
+                    "is_done": total > 0 and answered >= total,
                 }
             )
 
