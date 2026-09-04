@@ -4,7 +4,12 @@ from apps.accounts.users.models import User
 from apps.core.base.serializers import BaseModelSerializer
 from apps.matches.chats.models import Message
 
-from .models import Complaint, ComplaintReason, ComplaintStatus
+from .models import (
+    Complaint,
+    ComplaintEnforcementAction,
+    ComplaintReason,
+    ComplaintStatus,
+)
 from .services import build_ai_analysis, build_profile_snapshot
 
 
@@ -146,6 +151,9 @@ class ComplaintMyListSerializer(BaseModelSerializer):
 class ComplaintDetailSerializer(BaseModelSerializer):
     reason_label = serializers.CharField(source="get_reason_display", read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    enforcement_action_label = serializers.CharField(
+        source="get_enforcement_action_display", read_only=True
+    )
     conversation_excerpt = serializers.SerializerMethodField()
     profile_snapshot = serializers.SerializerMethodField()
     ai_analysis = serializers.SerializerMethodField()
@@ -165,6 +173,8 @@ class ComplaintDetailSerializer(BaseModelSerializer):
             "status",
             "status_label",
             "admin_note",
+            "enforcement_action",
+            "enforcement_action_label",
             "resolved_by",
             "resolved_at",
             "conversation_excerpt",
@@ -265,14 +275,40 @@ class ComplaintDecisionSerializer(BaseModelSerializer):
             (ComplaintStatus.REJECTED, "Bekor qilish"),
         ],
         write_only=True,
+        help_text="Qaror turi: 'approved' — tasdiqlash, 'rejected' — bekor qilish.",
+    )
+    enforcement_action = serializers.ChoiceField(
+        choices=ComplaintEnforcementAction.choices,
+        required=False,
+        allow_null=True,
+        write_only=True,
+        help_text=(
+            "decision='approved' bo'lganda majburiy. 'warn' — ogohlantirish "
+            "yuborish (profil ochiq qoladi), 'block' — profilni bloklash "
+            "(foydalanuvchi tizimga kira olmaydi)."
+        ),
+    )
+    admin_note = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text=(
+            "decision='rejected' bo'lganda majburiy (10-500 belgi) — bekor "
+            "qilish sababi. decision='approved' bo'lganda ixtiyoriy."
+        ),
     )
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    enforcement_action_label = serializers.CharField(
+        source="get_enforcement_action_display", read_only=True
+    )
 
     class Meta:
         model = Complaint
         fields = [
             "id",
             "decision",
+            "enforcement_action",
+            "enforcement_action_label",
             "status",
             "status_label",
             "admin_note",
@@ -286,10 +322,38 @@ class ComplaintDecisionSerializer(BaseModelSerializer):
         }
 
     def validate(self, attrs):
+        """
+        Qaror qabul qilish shartlarini tekshiradi: hal qilingan shikoyatga
+        qayta qaror chiqarib bo'lmaydi; tasdiqlashda chora tanlash majburiy;
+        rad etishda sabab majburiy va uzunligi 10-500 belgi oralig'ida bo'lishi kerak.
+        """
         if self.instance.status != ComplaintStatus.PENDING:
             raise serializers.ValidationError(
                 {
                     "decision": "Hal qilingan shikoyat bo'yicha qayta qaror chiqarib bo'lmaydi."
                 }
             )
+
+        decision = attrs.get("decision")
+        admin_note = (attrs.get("admin_note") or "").strip()
+
+        if decision == ComplaintStatus.REJECTED:
+            if not admin_note:
+                raise serializers.ValidationError(
+                    {"admin_note": "Bekor qilish sababi majburiy."}
+                )
+            if len(admin_note) < 10:
+                raise serializers.ValidationError(
+                    {"admin_note": "Kamida 10 ta belgi bo'lishi kerak."}
+                )
+            if len(admin_note) > 500:
+                raise serializers.ValidationError(
+                    {"admin_note": "Ko'pi bilan 500 ta belgi bo'lishi mumkin."}
+                )
+
+        if decision == ComplaintStatus.APPROVED and not attrs.get("enforcement_action"):
+            raise serializers.ValidationError(
+                {"enforcement_action": "Majburiy maydon."}
+            )
+
         return attrs
