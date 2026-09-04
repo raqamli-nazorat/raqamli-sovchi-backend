@@ -22,7 +22,6 @@ from .admin_serializers import (
     AdminUserHistorySerializer,
     AdminUserListSerializer,
     AdminUserMatchHistorySerializer,
-    AdminUserRepresentedSerializer,
     build_user_history,
 )
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
@@ -296,7 +295,16 @@ class UserViewSet(BaseManageViewSet):
                             "profile__district",
                             "kinship",
                         )
-                        .prefetch_related("profile__photos"),
+                        .prefetch_related(
+                            "profile__representative_infos",
+                            Prefetch(
+                                "profile__answers",
+                                queryset=UserAnswer.objects.filter(
+                                    is_active=True
+                                ).order_by("-created_at"),
+                            ),
+                        )
+                        .order_by("-created_at"),
                     ),
                 )
                 .active()
@@ -320,6 +328,7 @@ class UserViewSet(BaseManageViewSet):
                     answered_count=Subquery(answered_subq, output_field=IntegerField())
                 )
                 .active()
+                .order_by("-created_at")
             )
 
         return (
@@ -417,42 +426,6 @@ class UserViewSet(BaseManageViewSet):
             serializer = AdminUserComplaintSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         return Response(AdminUserComplaintSerializer(qs, many=True).data)
-
-    @extend_schema(
-        summary="Foydalanuvchining vakillari to'liq ma'lumotlari",
-        responses={200: AdminUserRepresentedSerializer(many=True)},
-    )
-    @action(detail=True, methods=["get"], url_path="represented-users")
-    def represented_users(self, request, pk=None):
-        from django.db.models import Prefetch
-
-        from apps.accounts.profiles.models import RepresentativeInfo
-        from apps.accounts.questionnaire.models import UserAnswer
-
-        user = self.get_object()
-        qs = (
-            RepresentativeInfo.objects.filter(target_candidate=user)
-            .select_related(
-                "profile",
-                "profile__user",
-                "kinship",
-            )
-            .prefetch_related(
-                "profile__photos",
-                "profile__representative_infos",
-                Prefetch(
-                    "profile__answers",
-                    queryset=UserAnswer.objects.filter(is_active=True).order_by(
-                        "-created_at"
-                    ),
-                ),
-            )
-            .active()
-        )
-        serializer = AdminUserRepresentedSerializer(
-            qs, many=True, context={"request": request}
-        )
-        return Response(serializer.data)
 
     @extend_schema(
         summary="Foydalanuvchi moslik so'rovlari tarixi",
