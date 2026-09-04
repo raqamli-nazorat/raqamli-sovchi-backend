@@ -377,12 +377,9 @@ class UserViewSet(BaseManageViewSet):
         reason_labels = dict(AdminUserBlockSerializer.REASON_CHOICES)
         reason_display = reason_labels.get(reason_key, reason_key)
 
-        user.is_blocked = True
-        user.save(update_fields=["is_blocked"])
+        from .services import block_user as block_user_service
 
-        from apps.core.utils.face import register_user_faces_as_blocked
-
-        register_user_faces_as_blocked(user, reason=reason_display)
+        block_user_service(user, reason=reason_display)
 
         # notify_user=True bo'lsa FCM orqali xabar yuborish — Celery sozlangach aktivlashtirish kerak
 

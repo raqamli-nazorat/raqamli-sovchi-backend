@@ -210,3 +210,24 @@ MATCH & CHAT
 
 MATCH & CHAT
 ===========================================>
+
+<===========================================
+COMPLAINTS
+    Complaint ==> Foydalanuvchilar o'rtasidagi shikoyat
+        id: uuid
+        from_user: FK User
+        to_user: FK User
+        chat_room: FK ChatRoom [null]
+        reason: enum (ABUSIVE_LANGUAGE, FAKE_PROFILE, FRAUD, SPAM, FALSE_INFORMATION, THREAT, NO_SERIOUS_INTENT, OTHER)
+        message: text [null]
+        evidence: json [null]
+        status: enum (PENDING, APPROVED, REJECTED)
+        admin_note: text [null]
+        enforcement_action: enum (WARN, BLOCK) [null]
+        resolved_by: FK User [null]
+        resolved_at: timestamp [null]
+        created_at: timestamp
+        updated_at: timestamp
+
+COMPLAINTS
+===========================================>

@@ -332,3 +332,33 @@ def authenticate_email_user(email, request):
     tokens = get_tokens_for_user(user, device_id=device_id)
 
     return user, tokens, False
+
+
+def block_user(user, reason, notify_user=False):
+    """
+    Foydalanuvchini platforma bo'yicha bloklaydi: `is_blocked` belgisini
+    o'rnatadi va yuz embeddinglarini qora ro'yxatga (BlockedFace) yozadi.
+
+    :param user: Bloklanadigan foydalanuvchi.
+    :param reason: Bloklash sababi (matn, BlockedFace.reason ga yoziladi).
+    :param notify_user: True bo'lsa, foydalanuvchiga bildirishnoma yuboriladi.
+    :return: Bloklangan foydalanuvchi.
+    """
+    from apps.core.utils.face import register_user_faces_as_blocked
+
+    user.is_blocked = True
+    user.save(update_fields=["is_blocked"])
+
+    register_user_faces_as_blocked(user, reason=reason)
+
+    if notify_user:
+        from apps.accounts.notifications.models import Notification
+
+        Notification.objects.create(
+            user=user,
+            title="Profilingiz bloklandi",
+            message=f"Profilingiz quyidagi sabab bo'yicha bloklandi: {reason}",
+            extra_data={"reason": reason},
+        )
+
+    return user
