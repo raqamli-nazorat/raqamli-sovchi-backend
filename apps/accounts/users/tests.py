@@ -12,6 +12,13 @@ from apps.accounts.profiles.models import (
     Profile,
     RepresentativeInfo,
 )
+from apps.accounts.questionnaire.models import (
+    Question,
+    QuestionOption,
+    SectionType,
+    TargetGender,
+    UserAnswer,
+)
 from apps.accounts.users.models import AuthProvider, Role, User
 
 
@@ -387,3 +394,130 @@ class UserListHasRepresentativeFilterTestCase(TestCase):
         self.client.force_authenticate(None)
         response = self.client.get("/api/v1/accounts/users/?has_representative=true")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AdminUserHistoryTestCase(TestCase):
+    """`GET /api/v1/accounts/users/{id}/history/` testlari."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create(
+            phone_number="+998900000030",
+            auth_provider=AuthProvider.PHONE,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(self.admin)
+
+        self.role = Role.objects.filter(is_default=True).first()
+        self.candidate = User.objects.create(
+            phone_number="+998900000031",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile = Profile.objects.create(
+            user=self.candidate,
+            first_name="Nomzod",
+            last_name="Tarix",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_date="1996-01-01",
+            height=180,
+        )
+
+        section = SectionType.objects.create(name="Umumiy")
+        # Kuyov nomzodga faqat "all" va "groom" savollar tegishli — "bride"
+        # savoli maxrajga kirmasligi kerak.
+        self.common_questions = [
+            Question.objects.create(
+                section=section,
+                text=f"Umumiy savol {i}",
+                target_gender=TargetGender.ALL,
+                order=i,
+            )
+            for i in range(1, 3)
+        ]
+        self.groom_question = Question.objects.create(
+            section=section,
+            text="Kuyov savoli",
+            target_gender=TargetGender.GROOM,
+            order=3,
+        )
+        self.bride_question = Question.objects.create(
+            section=section,
+            text="Kelin savoli",
+            target_gender=TargetGender.BRIDE,
+            order=4,
+        )
+        for question in [
+            *self.common_questions,
+            self.groom_question,
+            self.bride_question,
+        ]:
+            QuestionOption.objects.create(
+                question=question, option_letter="A", text="A varianti", weight=5
+            )
+
+    def _history(self, user):
+        """Berilgan foydalanuvchi uchun tarix voqealari ro'yxatini qaytaradi."""
+        response = self.client.get(f"/api/v1/accounts/users/{user.id}/history/")
+        return response, response.data
+
+    def _questionnaire_event(self, events):
+        return next(
+            (e for e in events if e["event_type"] == "questionnaire_done"), None
+        )
+
+    def test_history_success_counts_only_role_relevant_questions(self):
+        option = self.common_questions[0].options.first()
+        UserAnswer.objects.create(
+            profile=self.profile,
+            question=self.common_questions[0],
+            selected_option=option,
+        )
+
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event = self._questionnaire_event(events)
+        self.assertIsNotNone(event)
+        # Kuyovga tegishli savollar: 2 ta umumiy + 1 ta kuyov = 3 ta
+        # ("bride" savoli hisobga kirmaydi).
+        self.assertEqual(event["label"], "Anketa 1/3 yakunlandi")
+        self.assertFalse(event["is_done"])
+
+    def test_history_marks_done_when_all_relevant_questions_answered(self):
+        for question in [*self.common_questions, self.groom_question]:
+            UserAnswer.objects.create(
+                profile=self.profile,
+                question=question,
+                selected_option=question.options.first(),
+            )
+
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event = self._questionnaire_event(events)
+        self.assertEqual(event["label"], "Anketa 3/3 yakunlandi")
+        self.assertTrue(event["is_done"])
+
+    def test_history_omits_questionnaire_event_when_no_answers(self):
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(self._questionnaire_event(events))
+        self.assertTrue(any(e["event_type"] == "profile_created" for e in events))
+
+    def test_history_unauthenticated_returns_401(self):
+        self.client.force_authenticate(None)
+        response = self.client.get(
+            f"/api/v1/accounts/users/{self.candidate.id}/history/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_history_forbidden_for_user_without_permission(self):
+        self.client.force_authenticate(self.candidate)
+        response = self.client.get(
+            f"/api/v1/accounts/users/{self.candidate.id}/history/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

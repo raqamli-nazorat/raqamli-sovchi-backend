@@ -46,14 +46,14 @@ jobs:
             python manage.py load_references
             python manage.py collectstatic --noinput
 
-            # ================== VAQTINCHALIK — TEST MA'LUMOT ==================
-            # 100 ta test nomzod/vakil yaratadi (Farg'ona). BIR MARTALIK:
-            # bu deploy o'tgach, keyingi commitda shu blokni O'CHIRING.
-            # `|| echo` — seed xatosi deployni to'xtatmasin.
-            echo "3.1. VAQTINCHALIK: test nomzodlarini yaratish"
-            python manage.py seed_test_candidates \
-              || echo "OGOHLANTIRISH: seed_test_candidates bajarilmadi, deploy davom etadi"
-            # ================================================================
+            # ============ VAQTINCHALIK — TEST MA'LUMOT (hozircha O'CHIQ) ============
+            # Kerak bo'lganda pastdagi BITTA qatorni izohdan chiqaring (# ni oching),
+            # deploy o'tgach yana izohga qaytaring.
+            #   100 ta test nomzod/vakil yaratish (Farg'ona):
+            # python manage.py seed_test_candidates || echo "seed bajarilmadi, deploy davom etadi"
+            #   o'sha 100 ta test userni o'chirish:
+            # python manage.py unseed_test_candidates || echo "unseed bajarilmadi, deploy davom etadi"
+            # ======================================================================
 
             echo "4. Servislarni qayta yoqish"
             sudo systemctl restart raqamli-sovchi-backend-web
