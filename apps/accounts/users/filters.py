@@ -36,6 +36,10 @@ class UserFilter(django_filters.FilterSet):
     is_verified = django_filters.BooleanFilter(field_name="is_verified")
     is_blocked = django_filters.BooleanFilter(field_name="is_blocked")
     is_active = django_filters.BooleanFilter(field_name="is_active")
+    has_representative = django_filters.BooleanFilter(
+        method="filter_has_representative",
+        label="Vakili biriktirilganmi (nomzodlar uchun)",
+    )
     status = django_filters.CharFilter(method="filter_status", label="Status")
     start_date = django_filters.DateFilter(
         field_name="created_at", lookup_expr="gte", label="Yaratilgan sana (dan)"
@@ -61,6 +65,7 @@ class UserFilter(django_filters.FilterSet):
             "is_verified",
             "is_blocked",
             "is_active",
+            "has_representative",
             "status",
             "start_date",
             "end_date",
@@ -79,6 +84,17 @@ class UserFilter(django_filters.FilterSet):
         }
         target = val_map.get(value.lower(), value)
         return queryset.filter(profile__candidate_type__iexact=target)
+
+    def filter_has_representative(self, queryset, name, value):
+        """Vakil (RepresentativeInfo) biriktirilgan nomzodlarni ajratadi.
+
+        `value=True` — kamida bitta faol vakili bor nomzodlar;
+        `value=False` — vakili yo'q foydalanuvchilar.
+        """
+        lookup = {"represented_by_infos__is_active": True}
+        if value:
+            return queryset.filter(**lookup).distinct()
+        return queryset.exclude(**lookup)
 
     def filter_status(self, queryset, name, value):
         val_map = {

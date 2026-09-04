@@ -204,6 +204,12 @@ class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
             enum=["tasdiqlangan", "tekshiruvda", "bloklangan", "anketa to'liq emas"],
         ),
         OpenApiParameter(
+            name="has_representative",
+            type=bool,
+            location=OpenApiParameter.QUERY,
+            description="true — vakili biriktirilgan nomzodlar; false — vakili yo'qlar.",
+        ),
+        OpenApiParameter(
             name="start_date",
             type=OpenApiTypes.DATE,
             location=OpenApiParameter.QUERY,
