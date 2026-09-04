@@ -58,6 +58,8 @@ jobs:
             echo "4. Servislarni qayta yoqish"
             sudo systemctl restart raqamli-sovchi-backend-web
             sudo systemctl restart raqamli-sovchi-backend-bot
+            sudo systemctl restart raqamli-sovchi-backend-celery
+            sudo systemctl restart raqamli-sovchi-backend-celery-beat
             sudo systemctl reload nginx
 
             echo "Muvaffaqiyatli yakunlandi!"
