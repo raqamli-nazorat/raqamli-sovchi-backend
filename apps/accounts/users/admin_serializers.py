@@ -52,6 +52,74 @@ def _get_user_status(user):
     return "Tasdiqlangan"
 
 
+def _guardian_dates(rep_info):
+    """Vakillik jarayonidagi asosiy sanalarni (ariza, tasdiq, anketa) qaytaradi."""
+    profile = rep_info.profile
+    questionnaire_date = None
+    last_answer = (
+        profile.answers.order_by("-created_at").first()
+        if hasattr(profile, "answers")
+        else None
+    )
+    if last_answer:
+        questionnaire_date = last_answer.created_at
+
+    approved_date = None
+    if rep_info.is_approved:
+        try:
+            from auditlog.models import LogEntry
+            from django.contrib.contenttypes.models import ContentType
+
+            ct = ContentType.objects.get_for_model(RepresentativeInfo)
+            entry = (
+                LogEntry.objects.filter(
+                    content_type=ct,
+                    object_id=str(rep_info.pk),
+                    action=LogEntry.Action.UPDATE,
+                )
+                .filter(changes__contains='"is_approved"')
+                .order_by("timestamp")
+                .last()
+            )
+            if entry:
+                approved_date = entry.timestamp
+        except Exception:
+            pass
+
+    return {
+        "application_date": rep_info.created_at,
+        "sms_sent_date": None,
+        "approved_date": approved_date,
+        "questionnaire_date": questionnaire_date,
+    }
+
+
+def _serialize_guardian(rep_info):
+    """Vakil (RepresentativeInfo) obyektini admin detail uchun dict ko'rinishida qaytaradi."""
+    profile = rep_info.profile
+    rep_user = getattr(profile, "user", None)
+    return {
+        "id": str(rep_info.id),
+        "display_id": (
+            f"USR-{str(rep_user.id).replace('-', '')[:5].upper()}" if rep_user else None
+        ),
+        "name": f"{profile.first_name or ''} {profile.last_name or ''}".strip(),
+        "age": _compute_age(profile.birth_date),
+        "status": _get_user_status(rep_user) if rep_user else None,
+        "phone": rep_user.phone_number if rep_user else None,
+        "kinship": rep_info.kinship.name if rep_info.kinship else None,
+        "candidate_role": rep_info.get_candidate_role_display(),
+        "is_approved": rep_info.is_approved,
+        "candidates_count": sum(
+            1 for ri in profile.representative_infos.all() if ri.is_active
+        ),
+        "region": profile.region.name if profile.region else None,
+        "district": profile.district.name if profile.district else None,
+        "dates": _guardian_dates(rep_info),
+        "created_at": rep_info.created_at,
+    }
+
+
 class AdminUserListSerializer(BaseModelSerializer):
     """Admin panel jadval ro'yxati uchun serializer — faqat ustun maydonlari."""
 
@@ -308,24 +376,15 @@ class AdminUserDetailSerializer(BaseModelSerializer):
         return {"answered": total_answered, "sections": sections}
 
     def get_guardian(self, obj):
-        """Foydalanuvchi vakili ma'lumotlari (represented_by_infos orqali)."""
-        rep_info = obj.represented_by_infos.filter(is_active=True).first()
+        """Foydalanuvchining eng oxirgi vakili ma'lumotlari (represented_by_infos orqali)."""
+        rep_info = (
+            obj.represented_by_infos.filter(is_active=True)
+            .order_by("-created_at")
+            .first()
+        )
         if not rep_info:
             return None
-        profile = rep_info.profile
-        rep_user = getattr(profile, "user", None)
-        request = self.context.get("request")
-        return {
-            "id": str(rep_info.id),
-            "name": f"{profile.first_name} {profile.last_name}".strip(),
-            "kinship": rep_info.kinship.name if rep_info.kinship else None,
-            "candidate_role": rep_info.get_candidate_role_display(),
-            "phone_masked": _mask_phone(rep_user.phone_number if rep_user else None),
-            "main_photo": _get_main_photo_url(profile.photos.all(), request),
-            "region": profile.region.name if profile.region else None,
-            "district": profile.district.name if profile.district else None,
-            "is_approved": rep_info.is_approved,
-        }
+        return _serialize_guardian(rep_info)
 
     def get_account(self, obj):
         """Hisob ma'lumotlari bo'limi (o'ng panel uchun)."""
@@ -388,116 +447,6 @@ class AdminUserComplaintSerializer(BaseModelSerializer):
         if profile and (profile.first_name or profile.last_name):
             return f"{profile.first_name or ''} {profile.last_name or ''}".strip()
         return obj.from_user.phone_number or obj.from_user.email or ""
-
-
-class AdminUserRepresentedSerializer(BaseModelSerializer):
-    """Nomzodning vakili to'liq ma'lumotlari uchun serializer."""
-
-    display_id = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    age = serializers.SerializerMethodField()
-    photo = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
-    phone = serializers.SerializerMethodField()
-    kinship_name = serializers.CharField(
-        source="kinship.name", read_only=True, default=None
-    )
-    candidates_count = serializers.SerializerMethodField()
-    dates = serializers.SerializerMethodField()
-
-    class Meta:
-        model = RepresentativeInfo
-        fields = [
-            "id",
-            "display_id",
-            "name",
-            "age",
-            "photo",
-            "status",
-            "phone",
-            "kinship_name",
-            "candidate_role",
-            "is_approved",
-            "candidates_count",
-            "dates",
-            "created_at",
-        ]
-
-    def get_display_id(self, obj):
-        """Vakil foydalanuvchisining qisqa identifikatori."""
-        user = getattr(obj.profile, "user", None)
-        if not user:
-            return None
-        return f"USR-{str(user.id).replace('-', '')[:5].upper()}"
-
-    def get_name(self, obj):
-        """Vakilning to'liq ismi."""
-        p = obj.profile
-        return f"{p.first_name or ''} {p.last_name or ''}".strip()
-
-    def get_age(self, obj):
-        """Vakilning yoshi."""
-        return _compute_age(obj.profile.birth_date)
-
-    def get_photo(self, obj):
-        """Vakilning asosiy rasmi URL si."""
-        return _get_main_photo_url(
-            obj.profile.photos.all(), self.context.get("request")
-        )
-
-    def get_status(self, obj):
-        """Vakil foydalanuvchisining holati."""
-        user = getattr(obj.profile, "user", None)
-        return _get_user_status(user) if user else None
-
-    def get_phone(self, obj):
-        """Vakilning to'liq telefon raqami."""
-        user = getattr(obj.profile, "user", None)
-        return user.phone_number if user else None
-
-    def get_candidates_count(self, obj):
-        """Bu vakil ifodalayotgan nomzodlar soni."""
-        return sum(1 for ri in obj.profile.representative_infos.all() if ri.is_active)
-
-    def get_dates(self, obj):
-        """Vakil jarayonidagi asosiy sanalar."""
-        questionnaire_date = None
-        last_answer = (
-            obj.profile.answers.order_by("-created_at").first()
-            if hasattr(obj.profile, "answers")
-            else None
-        )
-        if last_answer:
-            questionnaire_date = last_answer.created_at
-
-        approved_date = None
-        if obj.is_approved:
-            try:
-                from auditlog.models import LogEntry
-                from django.contrib.contenttypes.models import ContentType
-
-                ct = ContentType.objects.get_for_model(RepresentativeInfo)
-                entry = (
-                    LogEntry.objects.filter(
-                        content_type=ct,
-                        object_id=str(obj.pk),
-                        action=LogEntry.Action.UPDATE,
-                    )
-                    .filter(changes__contains='"is_approved"')
-                    .order_by("timestamp")
-                    .last()
-                )
-                if entry:
-                    approved_date = entry.timestamp
-            except Exception:
-                pass
-
-        return {
-            "application_date": obj.created_at,
-            "sms_sent_date": None,
-            "approved_date": approved_date,
-            "questionnaire_date": questionnaire_date,
-        }
 
 
 class AdminUserMatchHistorySerializer(BaseModelSerializer):
