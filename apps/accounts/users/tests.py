@@ -1,9 +1,17 @@
+from datetime import timedelta
+
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.profiles.models import (
+    CandidateRole,
+    GenderType,
+    Profile,
+    RepresentativeInfo,
+)
 from apps.accounts.users.models import AuthProvider, Role, User
 
 
@@ -63,7 +71,6 @@ class PhoneAuthTestCase(TestCase):
             auth_provider=AuthProvider.PHONE,
             is_active=False,
         )
-        from apps.accounts.profiles.models import Profile
 
         profile = Profile.objects.create(
             user=user,
@@ -173,3 +180,119 @@ class RoleAndPermissionApiTestCase(TestCase):
         self.assertTrue(
             any(item["codename"] == "view_role" for item in data["role"]["permissions"])
         )
+
+
+class AdminUserDetailGuardianTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create(
+            phone_number="+998900000010",
+            auth_provider=AuthProvider.PHONE,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(self.admin)
+
+        self.role = Role.objects.filter(is_default=True).first()
+        self.candidate = User.objects.create(
+            phone_number="+998900000011",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        Profile.objects.create(
+            user=self.candidate,
+            first_name="Nomzod",
+            last_name="Test",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_date="1996-01-01",
+            height=180,
+        )
+        self.rep_user = User.objects.create(
+            phone_number="+998900000012",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.rep_profile = Profile.objects.create(
+            user=self.rep_user,
+            first_name="Vakil",
+            last_name="Otasi",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.REPRESENTATIVE,
+            birth_date="1970-01-01",
+            height=175,
+        )
+
+    def _detail(self, user):
+        """Berilgan foydalanuvchining admin detail javobini (data, response) qaytaradi."""
+        response = self.client.get(f"/api/v1/accounts/users/{user.id}/")
+        data = response.data
+        if isinstance(data, dict) and "data" in data:
+            data = data["data"]
+        return response, data
+
+    def test_detail_returns_latest_guardian_without_photo(self):
+        RepresentativeInfo.objects.create(
+            profile=self.rep_profile,
+            candidate_role=CandidateRole.GROOM,
+            target_candidate=self.candidate,
+        )
+
+        response, data = self._detail(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        guardian = data["guardian"]
+        self.assertIsNotNone(guardian)
+        self.assertEqual(guardian["name"], "Vakil Otasi")
+        self.assertEqual(guardian["phone"], "+998900000012")
+        self.assertEqual(guardian["candidates_count"], 1)
+        self.assertIn("dates", guardian)
+        self.assertNotIn("photo", guardian)
+        self.assertNotIn("main_photo", guardian)
+
+    def test_detail_returns_most_recent_when_multiple_guardians(self):
+        older_rep_user = User.objects.create(
+            phone_number="+998900000013",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        older_profile = Profile.objects.create(
+            user=older_rep_user,
+            first_name="Eski",
+            last_name="Vakil",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.REPRESENTATIVE,
+            birth_date="1965-01-01",
+            height=170,
+        )
+        old_rep = RepresentativeInfo.objects.create(
+            profile=older_profile,
+            candidate_role=CandidateRole.GROOM,
+            target_candidate=self.candidate,
+        )
+        RepresentativeInfo.objects.filter(pk=old_rep.pk).update(
+            created_at=old_rep.created_at - timedelta(days=1)
+        )
+        new_rep = RepresentativeInfo.objects.create(
+            profile=self.rep_profile,
+            candidate_role=CandidateRole.GROOM,
+            target_candidate=self.candidate,
+        )
+
+        response, data = self._detail(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data["guardian"]["id"], str(new_rep.id))
+        self.assertEqual(data["guardian"]["name"], "Vakil Otasi")
+
+    def test_detail_guardian_null_when_no_representative(self):
+        response, data = self._detail(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(data["guardian"])
+
+    def test_represented_users_endpoint_removed_returns_404(self):
+        response = self.client.get(
+            f"/api/v1/accounts/users/{self.candidate.id}/represented-users/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
