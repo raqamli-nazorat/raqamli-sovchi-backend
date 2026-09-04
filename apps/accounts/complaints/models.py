@@ -21,6 +21,11 @@ class ComplaintStatus(models.TextChoices):
     REJECTED = "rejected", "Bekor qilindi"
 
 
+class ComplaintEnforcementAction(models.TextChoices):
+    WARN = "warn", "Ogohlantirish yuborish"
+    BLOCK = "block", "Profilni bloklash"
+
+
 class Complaint(BaseModel):
     from_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -67,6 +72,13 @@ class Complaint(BaseModel):
         blank=True,
         null=True,
         verbose_name="Admin izohi",
+    )
+    enforcement_action = models.CharField(
+        max_length=20,
+        choices=ComplaintEnforcementAction.choices,
+        null=True,
+        blank=True,
+        verbose_name="Ko'rilgan chora",
     )
     resolved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -1,6 +1,7 @@
+from django.db import transaction
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
@@ -19,7 +20,7 @@ from .serializers import (
     ComplaintMyListSerializer,
     ComplaintUpdateSerializer,
 )
-from .services import is_staff_like
+from .services import apply_complaint_enforcement, is_staff_like
 
 
 class ComplaintViewSet(BaseManageViewSet):
@@ -102,8 +103,37 @@ class ComplaintViewSet(BaseManageViewSet):
 
     @extend_schema(
         summary="Shikoyat bo'yicha admin qarorini saqlash",
+        description=(
+            "decision='approved' bo'lsa enforcement_action majburiy "
+            "(warn/block). decision='rejected' bo'lsa admin_note majburiy "
+            "(10-500 belgi)."
+        ),
         request=ComplaintDecisionSerializer,
         responses={200: ComplaintDecisionSerializer},
+        examples=[
+            OpenApiExample(
+                "Tasdiqlash — ogohlantirish",
+                value={"decision": "approved", "enforcement_action": "warn"},
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Tasdiqlash — bloklash",
+                value={
+                    "decision": "approved",
+                    "enforcement_action": "block",
+                    "admin_note": "Takroriy firibgarlik aniqlandi.",
+                },
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Bekor qilish",
+                value={
+                    "decision": "rejected",
+                    "admin_note": "Dalillar yetarli emas, skrinshot boshqa foydalanuvchiga tegishli.",
+                },
+                request_only=True,
+            ),
+        ],
     )
     @action(detail=True, methods=["post"], url_path="decision")
     def decision(self, request, pk=None):
@@ -119,19 +149,32 @@ class ComplaintViewSet(BaseManageViewSet):
         serializer = self.get_serializer(complaint, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        complaint.status = serializer.validated_data["decision"]
-        complaint.admin_note = serializer.validated_data.get("admin_note")
-        complaint.resolved_by = request.user
-        complaint.resolved_at = timezone.now()
-        complaint.save(
-            update_fields=[
-                "status",
-                "admin_note",
-                "resolved_by",
-                "resolved_at",
-                "updated_at",
-            ]
+        decision = serializer.validated_data["decision"]
+        enforcement_action = (
+            serializer.validated_data.get("enforcement_action")
+            if decision == ComplaintStatus.APPROVED
+            else None
         )
+
+        with transaction.atomic():
+            complaint.status = decision
+            complaint.admin_note = serializer.validated_data.get("admin_note")
+            complaint.enforcement_action = enforcement_action
+            complaint.resolved_by = request.user
+            complaint.resolved_at = timezone.now()
+            complaint.save(
+                update_fields=[
+                    "status",
+                    "admin_note",
+                    "enforcement_action",
+                    "resolved_by",
+                    "resolved_at",
+                    "updated_at",
+                ]
+            )
+
+            if decision == ComplaintStatus.APPROVED:
+                apply_complaint_enforcement(complaint, enforcement_action)
 
         response_serializer = self.get_serializer(complaint)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
