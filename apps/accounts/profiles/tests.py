@@ -407,3 +407,64 @@ class SavedProfileTestCase(TestCase):
         res11 = self.client.post(f"/api/v1/accounts/profiles/{p11.id}/save/")
         self.assertEqual(res11.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("10", str(res11.data))
+
+
+class SeedTestCandidatesCommandTestCase(TestCase):
+    """`seed_test_candidates` va `unseed_test_candidates` buyruqlari testi."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from django.core.management import call_command
+
+        # Buyruq ma'lumotnoma, tuman va savollarga tayanadi.
+        call_command("load_locations")
+        call_command("load_references")
+        call_command("load_questions")
+
+    def test_seed_creates_full_fergana_profiles_and_unseed_removes_all(self):
+        from django.core.management import call_command
+
+        from apps.accounts.profiles.models import Profile, RepresentativeInfo
+        from apps.accounts.questionnaire.models import UserAnswer
+        from apps.accounts.users.models import User
+
+        call_command("seed_test_candidates", count=12, seed=1)
+
+        users = User.objects.filter(phone_number__startswith="+99890000")
+        self.assertEqual(users.count(), 12)
+
+        profiles = Profile.objects.filter(user__in=users)
+        self.assertEqual(profiles.count(), 12)
+        # Hammasi Farg'ona viloyatiga tegishli.
+        self.assertTrue(all("Farg'ona" in p.region.name for p in profiles))
+        self.assertTrue(all(p.district_id is not None for p in profiles))
+        self.assertTrue(all(p.location is not None for p in profiles))
+        self.assertTrue(all(p.photos.exists() for p in profiles))
+        self.assertTrue(all(p.answers.exists() for p in profiles))
+        self.assertTrue(all(hasattr(u, "pledge") and u.is_verified for u in users))
+
+        # Kamida bitta vakil va u nomzodga biriktirilgan.
+        rep_infos = RepresentativeInfo.objects.filter(profile__in=profiles)
+        self.assertTrue(rep_infos.exists())
+        self.assertTrue(rep_infos.filter(target_candidate__isnull=False).exists())
+
+        call_command("unseed_test_candidates")
+
+        self.assertEqual(
+            User.objects.filter(phone_number__startswith="+99890000").count(), 0
+        )
+        self.assertEqual(UserAnswer.objects.filter(profile__in=profiles).count(), 0)
+
+    def test_seed_is_idempotent_on_repeated_run(self):
+        from django.core.management import call_command
+
+        from apps.accounts.users.models import User
+
+        call_command("seed_test_candidates", count=10, seed=1)
+        call_command("seed_test_candidates", count=10, seed=2)
+
+        # Ikkinchi ishga tushirish avvalgilarni tozalab, aynan 10 ta qoldiradi.
+        self.assertEqual(
+            User.objects.filter(phone_number__startswith="+99890000").count(), 10
+        )
+        call_command("unseed_test_candidates")

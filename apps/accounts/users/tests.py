@@ -296,3 +296,94 @@ class AdminUserDetailGuardianTestCase(TestCase):
             f"/api/v1/accounts/users/{self.candidate.id}/represented-users/"
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class UserListHasRepresentativeFilterTestCase(TestCase):
+    """`GET /api/v1/accounts/users/?has_representative=` filtri testi."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create(
+            phone_number="+998900000020",
+            auth_provider=AuthProvider.PHONE,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(self.admin)
+        self.role = Role.objects.filter(is_default=True).first()
+
+        # Vakili bor nomzod.
+        self.with_rep = User.objects.create(
+            phone_number="+998900000021",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        Profile.objects.create(
+            user=self.with_rep,
+            first_name="Vakilli",
+            last_name="Nomzod",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_date="1996-01-01",
+            height=180,
+        )
+        rep_user = User.objects.create(
+            phone_number="+998900000022",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        rep_profile = Profile.objects.create(
+            user=rep_user,
+            first_name="Vakil",
+            last_name="Otasi",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.REPRESENTATIVE,
+            birth_date="1970-01-01",
+            height=175,
+        )
+        RepresentativeInfo.objects.create(
+            profile=rep_profile,
+            candidate_role=CandidateRole.GROOM,
+            target_candidate=self.with_rep,
+        )
+
+        # Vakili yo'q nomzod.
+        self.without_rep = User.objects.create(
+            phone_number="+998900000023",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        Profile.objects.create(
+            user=self.without_rep,
+            first_name="Yolg'iz",
+            last_name="Nomzod",
+            gender=GenderType.FEMALE,
+            candidate_type=CandidateRole.BRIDE,
+            birth_date="1998-01-01",
+            height=165,
+        )
+
+    def _ids(self, response):
+        results = response.data.get("data", response.data)
+        if isinstance(results, dict):
+            results = results.get("results", [])
+        return {str(row["id"]) for row in results}
+
+    def test_has_representative_true_returns_only_candidates_with_representative(self):
+        response = self.client.get("/api/v1/accounts/users/?has_representative=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = self._ids(response)
+        self.assertIn(str(self.with_rep.id), ids)
+        self.assertNotIn(str(self.without_rep.id), ids)
+
+    def test_has_representative_false_excludes_candidates_with_representative(self):
+        response = self.client.get("/api/v1/accounts/users/?has_representative=false")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = self._ids(response)
+        self.assertNotIn(str(self.with_rep.id), ids)
+        self.assertIn(str(self.without_rep.id), ids)
+
+    def test_list_unauthenticated_returns_401(self):
+        self.client.force_authenticate(None)
+        response = self.client.get("/api/v1/accounts/users/?has_representative=true")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
