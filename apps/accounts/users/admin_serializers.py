@@ -3,7 +3,11 @@ from datetime import date
 from django.contrib.auth.models import Permission
 from rest_framework import serializers
 
-from apps.accounts.complaints.models import Complaint
+from apps.accounts.complaints.models import (
+    Complaint,
+    ComplaintEnforcementAction,
+    ComplaintStatus,
+)
 from apps.accounts.profiles.models import RepresentativeInfo
 from apps.core.base.serializers import BaseModelSerializer
 from apps.matches.match_requests.models import MatchRequest
@@ -45,11 +49,9 @@ def _compute_age(birth_date):
 
 
 def _get_user_status(user):
-    """Foydalanuvchi holatini (Tasdiqlangan/Tekshiruvda/Bloklangan) qaytaradi."""
+    """Foydalanuvchi holatini (Tasdiqlangan/Bloklangan) qaytaradi."""
     if user.is_blocked:
         return "Bloklangan"
-    if not user.is_verified:
-        return "Tekshiruvda"
     return "Tasdiqlangan"
 
 
@@ -414,6 +416,12 @@ class AdminSelfProfileSerializer(BaseModelSerializer):
     login = serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
     permissions_summary = serializers.SerializerMethodField()
+    remove_avatar = serializers.BooleanField(
+        write_only=True,
+        required=False,
+        default=False,
+        help_text="True bo'lsa, mavjud rasm o'chirilib, bo'sh qoldiriladi.",
+    )
 
     class Meta:
         model = User
@@ -422,6 +430,7 @@ class AdminSelfProfileSerializer(BaseModelSerializer):
             "first_name",
             "last_name",
             "avatar",
+            "remove_avatar",
             "phone_number",
             "login",
             "role",
@@ -429,6 +438,20 @@ class AdminSelfProfileSerializer(BaseModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "login", "role", "permissions_summary", "created_at"]
+
+    def update(self, instance, validated_data):
+        """
+        Eski rasmni saqlagichdan tozalaydi — `remove_avatar=True` bo'lganda
+        (bo'shatish) yoki yangi `avatar` yuklanganda (almashtirish), aks holda
+        Django eski faylni avtomatik o'chirmay, "osilib qolgan" fayl qoldiradi.
+        """
+        remove_avatar = validated_data.pop("remove_avatar", False)
+        new_avatar = validated_data.get("avatar")
+        if (remove_avatar or new_avatar) and instance.avatar:
+            instance.avatar.delete(save=False)
+        if remove_avatar:
+            instance.avatar = None
+        return super().update(instance, validated_data)
 
     def get_login(self, obj):
         """Ko'rsatish uchun login: email bo'lsa uning local qismi, aks holda yashirilgan telefon."""
@@ -567,6 +590,21 @@ class AdminUserMatchHistorySerializer(BaseModelSerializer):
         return "qabul_qilingan"
 
 
+def _actor_display_name(actor):
+    """
+    Auditlog yozuvidagi `actor` uchun tarixda ko'rsatiladigan qisqa ismni
+    qaytaradi (masalan "A. Muxtorov"). Actor bo'lmasa — "Avtomatik".
+    """
+    if not actor:
+        return "Avtomatik"
+    actor_profile = getattr(actor, "profile", None)
+    if actor_profile and (actor_profile.first_name or actor_profile.last_name):
+        first = actor_profile.first_name or ""
+        last = actor_profile.last_name or ""
+        return f"{first[0]}. {last}".strip() if first else last
+    return actor.phone_number or "Admin"
+
+
 def build_user_history(user):
     """
     Foydalanuvchi tarixiy voqealar ro'yxatini qurib qaytaradi.
@@ -642,36 +680,83 @@ def build_user_history(user):
             entry = (
                 LogEntry.objects.filter(
                     content_type=ct,
-                    object_id=str(user.pk),
+                    object_pk=str(user.pk),
                     action=LogEntry.Action.UPDATE,
                 )
-                .filter(changes__contains='"is_verified"')
+                .filter(changes__has_key="is_verified")
                 .order_by("timestamp")
                 .last()
             )
             if entry:
-                actor_name = "Avtomatik"
-                if entry.actor:
-                    actor_profile = getattr(entry.actor, "profile", None)
-                    if actor_profile and (
-                        actor_profile.first_name or actor_profile.last_name
-                    ):
-                        first = actor_profile.first_name or ""
-                        last = actor_profile.last_name or ""
-                        actor_name = f"{first[0]}. {last}".strip() if first else last
-                    else:
-                        actor_name = entry.actor.phone_number or "Admin"
                 events.append(
                     {
                         "event_type": "selfie_verified",
                         "label": "Selfi tasdiqlandi",
-                        "actor": actor_name,
+                        "actor": _actor_display_name(entry.actor),
                         "date": entry.timestamp,
                         "is_done": True,
                     }
                 )
         except Exception:
             pass
+
+    # Bloklandi / Blokdan chiqarildi — auditlog orqali, `is_blocked`
+    # maydoni o'zgargan HAMMA yozuvlar (bir necha marta bo'lishi mumkin).
+    try:
+        from auditlog.models import LogEntry
+        from django.contrib.contenttypes.models import ContentType
+
+        ct = ContentType.objects.get_for_model(User)
+        block_entries = (
+            LogEntry.objects.filter(
+                content_type=ct,
+                object_pk=str(user.pk),
+                action=LogEntry.Action.UPDATE,
+            )
+            .filter(changes__has_key="is_blocked")
+            .select_related("actor", "actor__profile")
+            .order_by("timestamp")
+        )
+        for entry in block_entries:
+            change = entry.changes_dict.get("is_blocked")
+            if not change or len(change) < 2 or change[0] == change[1]:
+                continue
+            became_blocked = str(change[1]) == "True"
+            events.append(
+                {
+                    "event_type": "user_blocked"
+                    if became_blocked
+                    else "user_unblocked",
+                    "label": "Bloklandi" if became_blocked else "Blokdan chiqarildi",
+                    "actor": _actor_display_name(entry.actor),
+                    "date": entry.timestamp,
+                    "is_done": True,
+                }
+            )
+    except Exception:
+        pass
+
+    # Shikoyat tasdiqlandi — unga nisbatan qabul qilingan shikoyat asosli deb
+    # topilgan holatlar (ogohlantirish yoki bloklash chorasi bilan birga).
+    approved_complaints = Complaint.objects.filter(
+        to_user=user, status=ComplaintStatus.APPROVED, is_active=True
+    ).select_related("resolved_by", "resolved_by__profile")
+    for complaint in approved_complaints:
+        if complaint.enforcement_action == ComplaintEnforcementAction.WARN:
+            label = "Shikoyat tasdiqlandi — ogohlantirish yuborildi"
+        elif complaint.enforcement_action == ComplaintEnforcementAction.BLOCK:
+            label = "Shikoyat tasdiqlandi — profil bloklandi"
+        else:
+            label = "Shikoyat tasdiqlandi"
+        events.append(
+            {
+                "event_type": "complaint_approved",
+                "label": label,
+                "actor": _actor_display_name(complaint.resolved_by),
+                "date": complaint.resolved_at,
+                "is_done": True,
+            }
+        )
 
     # Vakil biriktirildi
     reps = user.represented_by_infos.filter(is_active=True).order_by("created_at")

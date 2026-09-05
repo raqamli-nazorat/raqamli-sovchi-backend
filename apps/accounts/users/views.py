@@ -217,7 +217,7 @@ class AdminProfileView(AutoSchemaMixin, generics.RetrieveUpdateAPIView):
             type=str,
             location=OpenApiParameter.QUERY,
             description="Foydalanuvchi holati bo'yicha filtrlash.",
-            enum=["tasdiqlangan", "tekshiruvda", "bloklangan", "anketa to'liq emas"],
+            enum=["tasdiqlangan", "bloklangan", "anketa to'liq emas"],
         ),
         OpenApiParameter(
             name="has_representative",
@@ -416,6 +416,8 @@ class UserViewSet(BaseManageViewSet):
                 "properties": {
                     "message": {"type": "string"},
                     "is_blocked": {"type": "boolean"},
+                    "reason": {"type": "string"},
+                    "reason_display": {"type": "string"},
                 },
             }
         },
@@ -452,6 +454,8 @@ class UserViewSet(BaseManageViewSet):
             {
                 "message": "Foydalanuvchi blokdan chiqarildi.",
                 "is_blocked": False,
+                "reason": reason_key,
+                "reason_display": reason_display,
             },
             status=status.HTTP_200_OK,
         )
