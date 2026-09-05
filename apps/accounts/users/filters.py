@@ -104,22 +104,14 @@ class UserFilter(django_filters.FilterSet):
             "approved": "approved",
             "anketa to'liq emas": "incomplete",
             "incomplete": "incomplete",
-            "tekshiruvda": "review",
-            "review": "review",
         }
         target = val_map.get(value.lower(), value)
         if target == "blocked":
             return queryset.filter(is_blocked=True)
         elif target == "approved":
-            return queryset.filter(is_blocked=False, is_verified=True)
+            return queryset.filter(is_blocked=False, profile__isnull=False)
         elif target == "incomplete":
-            return queryset.filter(
-                is_blocked=False, is_verified=False, profile__isnull=True
-            )
-        elif target == "review":
-            return queryset.filter(
-                is_blocked=False, is_verified=False, profile__isnull=False
-            )
+            return queryset.filter(is_blocked=False, profile__isnull=True)
         return queryset
 
 

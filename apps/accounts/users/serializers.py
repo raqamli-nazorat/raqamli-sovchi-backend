@@ -220,9 +220,6 @@ class UserSerializer(BaseModelSerializer):
         if pct < 50:
             return "Anketa to'liq emas"
 
-        if not obj.is_verified:
-            return "Tekshiruvda"
-
         return "Tasdiqlangan"
 
 

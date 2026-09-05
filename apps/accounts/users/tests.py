@@ -1,11 +1,13 @@
+import tempfile
 from datetime import timedelta
 
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.complaints.models import Complaint, ComplaintReason
 from apps.accounts.notifications.models import Notification
 from apps.accounts.profiles.models import (
     CandidateRole,
@@ -509,6 +511,103 @@ class AdminUserHistoryTestCase(TestCase):
         self.assertIsNone(self._questionnaire_event(events))
         self.assertTrue(any(e["event_type"] == "profile_created" for e in events))
 
+    def test_history_includes_block_and_unblock_events_with_actor(self):
+        # `force_authenticate()` DRF Request qatlamida ishlaydi — bu esa
+        # `AuditlogMiddleware`dan KEYIN, shuning uchun auditlog actor'ni ushlab
+        # qololmaydi. Haqiqiy so'rovdagidek (Authorization header) ishlashini
+        # tekshirish uchun haqiqiy JWT token beriladi.
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        token = str(RefreshToken.for_user(self.admin).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        self.client.post(
+            f"/api/v1/accounts/users/{self.candidate.id}/block/",
+            {"reason": "fraud"},
+            format="json",
+        )
+        self.client.post(
+            f"/api/v1/accounts/users/{self.candidate.id}/unblock/",
+            {"reason": "mistake"},
+            format="json",
+        )
+
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        blocked_event = next(
+            (e for e in events if e["event_type"] == "user_blocked"), None
+        )
+        unblocked_event = next(
+            (e for e in events if e["event_type"] == "user_unblocked"), None
+        )
+        self.assertIsNotNone(blocked_event)
+        self.assertIsNotNone(unblocked_event)
+        self.assertEqual(blocked_event["label"], "Bloklandi")
+        self.assertEqual(unblocked_event["label"], "Blokdan chiqarildi")
+        self.assertEqual(blocked_event["actor"], self.admin.phone_number)
+        self.assertEqual(unblocked_event["actor"], self.admin.phone_number)
+
+    def test_history_omits_block_events_when_never_blocked(self):
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event_types = {e["event_type"] for e in events}
+        self.assertNotIn("user_blocked", event_types)
+        self.assertNotIn("user_unblocked", event_types)
+
+    def _approve_complaint(self, enforcement_action):
+        """Nomzodga nisbatan shikoyat yaratib, uni tasdiqlaydi (decision=approved)."""
+        complainant = User.objects.create(
+            phone_number="+998900000032",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        complaint = Complaint.objects.create(
+            from_user=complainant,
+            to_user=self.candidate,
+            reason=ComplaintReason.FRAUD,
+        )
+        self.client.post(
+            f"/api/v1/accounts/complaints/{complaint.id}/decision/",
+            {"decision": "approved", "enforcement_action": enforcement_action},
+            format="json",
+        )
+        return complaint
+
+    def test_history_includes_complaint_approved_with_warn(self):
+        self._approve_complaint("warn")
+
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event = next(
+            (e for e in events if e["event_type"] == "complaint_approved"), None
+        )
+        self.assertIsNotNone(event)
+        self.assertEqual(
+            event["label"], "Shikoyat tasdiqlandi — ogohlantirish yuborildi"
+        )
+        self.assertEqual(event["actor"], self.admin.phone_number)
+
+    def test_history_includes_complaint_approved_with_block(self):
+        self._approve_complaint("block")
+
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event = next(
+            (e for e in events if e["event_type"] == "complaint_approved"), None
+        )
+        self.assertIsNotNone(event)
+        self.assertEqual(event["label"], "Shikoyat tasdiqlandi — profil bloklandi")
+
+    def test_history_omits_complaint_approved_when_no_complaints(self):
+        response, events = self._history(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event_types = {e["event_type"] for e in events}
+        self.assertNotIn("complaint_approved", event_types)
+
     def test_history_unauthenticated_returns_401(self):
         self.client.force_authenticate(None)
         response = self.client.get(
@@ -552,6 +651,8 @@ class AdminUserUnblockTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.blocked_user.refresh_from_db()
         self.assertFalse(self.blocked_user.is_blocked)
+        self.assertEqual(response.data["reason"], "mistake")
+        self.assertEqual(response.data["reason_display"], "Xato bloklangan edi")
 
     def test_unblock_user_without_reason_invalid(self):
         response = self.client.post(self.url, {}, format="json")
@@ -590,8 +691,13 @@ class AdminUserUnblockTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class AdminProfileTestCase(TestCase):
-    """Admin panelga kiruvchi xodimning o'z profilini (staff/me/) ko'rish/tahrirlash testlari."""
+    """
+    Admin panelga kiruvchi xodimning o'z profilini (staff/me/) ko'rish/tahrirlash
+    testlari. Rasm yuklovchi testlar haqiqiy `media/` papkasini ifloslantirmasligi
+    uchun `MEDIA_ROOT` vaqtinchalik papkaga almashtirilgan.
+    """
 
     def setUp(self):
         self.client = APIClient()
@@ -652,7 +758,68 @@ class AdminProfileTestCase(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_remove_avatar_clears_existing_avatar(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.admin.avatar = SimpleUploadedFile(
+            "old.jpg", b"fake-image-bytes", content_type="image/jpeg"
+        )
+        self.admin.save(update_fields=["avatar"])
+        old_avatar_name = self.admin.avatar.name
+        self.assertTrue(self.admin.avatar.storage.exists(old_avatar_name))
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {"remove_avatar": True})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.admin.refresh_from_db()
+        self.assertFalse(self.admin.avatar)
+        self.assertFalse(self.admin.avatar.storage.exists(old_avatar_name))
+
+    def test_update_admin_profile_without_remove_avatar_keeps_avatar(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.admin.avatar = SimpleUploadedFile(
+            "keep.jpg", b"fake-image-bytes", content_type="image/jpeg"
+        )
+        self.admin.save(update_fields=["avatar"])
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {"first_name": "Aziz"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.avatar)
+
+    def test_upload_new_avatar_deletes_old_one_from_storage(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.admin.avatar = SimpleUploadedFile(
+            "old.jpg", b"old-image-bytes", content_type="image/jpeg"
+        )
+        self.admin.save(update_fields=["avatar"])
+        old_avatar_name = self.admin.avatar.name
+        storage = self.admin.avatar.storage
+
+        # API orqali yuklanganda `ImageField` haqiqiy rasm ekanini tekshiradi
+        # (Pillow), shuning uchun soxta baytlar emas, minimal to'g'ri GIF beriladi.
+        valid_gif = (
+            b"GIF87a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!"
+            b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00"
+            b"\x00\x02\x02D\x01\x00;"
+        )
+        self.client.force_authenticate(self.admin)
+        new_file = SimpleUploadedFile("new.gif", valid_gif, content_type="image/gif")
+        response = self.client.patch(self.url, {"avatar": new_file})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.avatar)
+        self.assertNotEqual(self.admin.avatar.name, old_avatar_name)
+        self.assertFalse(storage.exists(old_avatar_name))
+
     def test_admin_profile_forbidden_for_candidate_returns_403(self):
         self.client.force_authenticate(self.candidate)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
