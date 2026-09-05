@@ -511,11 +511,12 @@ class AdminUserHistoryTestCase(TestCase):
         self.assertIsNone(self._questionnaire_event(events))
         self.assertTrue(any(e["event_type"] == "profile_created" for e in events))
 
-    def test_history_includes_block_and_unblock_events_with_actor(self):
-        # `force_authenticate()` DRF Request qatlamida ishlaydi — bu esa
-        # `AuditlogMiddleware`dan KEYIN, shuning uchun auditlog actor'ni ushlab
-        # qololmaydi. Haqiqiy so'rovdagidek (Authorization header) ishlashini
-        # tekshirish uchun haqiqiy JWT token beriladi.
+    def test_history_omits_block_and_unblock_events_after_moving_to_complaint_detail(
+        self,
+    ):
+        # Bloklandi/Blokdan chiqarildi voqealari endi user historyda emas,
+        # ComplaintDetailSerializer.block_history da ko'rsatiladi (qarang:
+        # apps/accounts/complaints/tests.py).
         from rest_framework_simplejwt.tokens import RefreshToken
 
         token = str(RefreshToken.for_user(self.admin).access_token)
@@ -534,18 +535,9 @@ class AdminUserHistoryTestCase(TestCase):
         response, events = self._history(self.candidate)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        blocked_event = next(
-            (e for e in events if e["event_type"] == "user_blocked"), None
-        )
-        unblocked_event = next(
-            (e for e in events if e["event_type"] == "user_unblocked"), None
-        )
-        self.assertIsNotNone(blocked_event)
-        self.assertIsNotNone(unblocked_event)
-        self.assertEqual(blocked_event["label"], "Bloklandi")
-        self.assertEqual(unblocked_event["label"], "Blokdan chiqarildi")
-        self.assertEqual(blocked_event["actor"], self.admin.phone_number)
-        self.assertEqual(unblocked_event["actor"], self.admin.phone_number)
+        event_types = {e["event_type"] for e in events}
+        self.assertNotIn("user_blocked", event_types)
+        self.assertNotIn("user_unblocked", event_types)
 
     def test_history_omits_block_events_when_never_blocked(self):
         response, events = self._history(self.candidate)
@@ -822,4 +814,3 @@ class AdminProfileTestCase(TestCase):
         self.client.force_authenticate(self.candidate)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-

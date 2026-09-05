@@ -158,6 +158,7 @@ class ComplaintDetailSerializer(BaseModelSerializer):
     profile_snapshot = serializers.SerializerMethodField()
     ai_analysis = serializers.SerializerMethodField()
     previous_complaints_count = serializers.SerializerMethodField()
+    block_history = serializers.SerializerMethodField()
 
     class Meta:
         model = Complaint
@@ -181,6 +182,7 @@ class ComplaintDetailSerializer(BaseModelSerializer):
             "profile_snapshot",
             "ai_analysis",
             "previous_complaints_count",
+            "block_history",
             "created_at",
             "updated_at",
         ]
@@ -214,6 +216,50 @@ class ComplaintDetailSerializer(BaseModelSerializer):
             .exclude(pk=obj.pk)
             .count()
         )
+
+    def get_block_history(self, obj):
+        """
+        Shikoyat qilingan foydalanuvchining bloklanish/blokdan chiqarilish
+        tarixi (auditlog orqali, `is_blocked` maydoni o'zgargan har bir yozuv).
+        """
+        from auditlog.models import LogEntry
+        from django.contrib.contenttypes.models import ContentType
+
+        from apps.accounts.users.admin_serializers import _actor_display_name
+
+        events = []
+        try:
+            ct = ContentType.objects.get_for_model(User)
+            block_entries = (
+                LogEntry.objects.filter(
+                    content_type=ct,
+                    object_pk=str(obj.to_user_id),
+                    action=LogEntry.Action.UPDATE,
+                )
+                .filter(changes__has_key="is_blocked")
+                .select_related("actor", "actor__profile")
+                .order_by("timestamp")
+            )
+            for entry in block_entries:
+                change = entry.changes_dict.get("is_blocked")
+                if not change or len(change) < 2 or change[0] == change[1]:
+                    continue
+                became_blocked = str(change[1]) == "True"
+                events.append(
+                    {
+                        "event_type": "user_blocked"
+                        if became_blocked
+                        else "user_unblocked",
+                        "label": "Bloklandi"
+                        if became_blocked
+                        else "Blokdan chiqarildi",
+                        "actor": _actor_display_name(entry.actor),
+                        "date": entry.timestamp,
+                    }
+                )
+        except Exception:
+            pass
+        return events
 
 
 class ComplaintUpdateSerializer(BaseModelSerializer):

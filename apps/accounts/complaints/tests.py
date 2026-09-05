@@ -517,6 +517,138 @@ class ComplaintApiTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def _authenticate_with_real_token(self, user):
+        """
+        `force_authenticate()` AuditlogMiddleware'dan KEYIN ishlaydi, shuning
+        uchun auditlog actor'ni ushlab qololmaydi. Haqiqiy so'rovdagidek
+        (Authorization header) ishlashini tekshirish uchun ishlatiladi.
+        """
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        token = str(RefreshToken.for_user(user).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_retrieve_complaint_includes_block_history_with_actor_success(
+        self, mock_register
+    ):
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+        self._authenticate_with_real_token(self.admin)
+        self.client.post(
+            f"{self.url}{complaint.id}/decision/",
+            {"decision": "approved", "enforcement_action": "block"},
+            format="json",
+        )
+
+        response = self.client.get(f"{self.url}{complaint.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        block_history = response.data["block_history"]
+        blocked_event = next(
+            (e for e in block_history if e["event_type"] == "user_blocked"), None
+        )
+        self.assertIsNotNone(blocked_event)
+        self.assertEqual(blocked_event["label"], "Bloklandi")
+        self.assertEqual(blocked_event["actor"], self.admin.phone_number)
+
+    def test_retrieve_complaint_omits_block_history_when_never_blocked(self):
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(f"{self.url}{complaint.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["block_history"], [])
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_unblock_complaint_success(self, mock_register):
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+        self._authenticate_with_real_token(self.admin)
+        self.client.post(
+            f"{self.url}{complaint.id}/decision/",
+            {"decision": "approved", "enforcement_action": "block"},
+            format="json",
+        )
+
+        response = self.client.post(f"{self.url}{complaint.id}/unblock/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user2.refresh_from_db()
+        self.assertFalse(self.user2.is_blocked)
+        unblocked_event = next(
+            (
+                e
+                for e in response.data["block_history"]
+                if e["event_type"] == "user_unblocked"
+            ),
+            None,
+        )
+        self.assertIsNotNone(unblocked_event)
+        self.assertEqual(unblocked_event["actor"], self.admin.phone_number)
+
+    def test_unblock_complaint_without_block_enforcement_invalid_data(self):
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(f"{self.url}{complaint.id}/unblock/")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_unblock_complaint_already_unblocked_invalid_data(self, mock_register):
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+        self.client.force_authenticate(user=self.admin)
+        self.client.post(
+            f"{self.url}{complaint.id}/decision/",
+            {"decision": "approved", "enforcement_action": "block"},
+            format="json",
+        )
+        self.user2.is_blocked = False
+        self.user2.save(update_fields=["is_blocked"])
+
+        response = self.client.post(f"{self.url}{complaint.id}/unblock/")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_unblock_complaint_unauthenticated(self):
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+        response = self.client.post(f"{self.url}{complaint.id}/unblock/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_unblock_complaint_forbidden(self):
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.post(f"{self.url}{complaint.id}/unblock/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class ComplaintQuestionnaireProgressTestCase(TestCase):
     def setUp(self):
