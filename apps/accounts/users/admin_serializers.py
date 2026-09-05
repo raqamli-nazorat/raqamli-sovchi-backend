@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.contrib.auth.models import Permission
 from rest_framework import serializers
 
 from apps.accounts.complaints.models import Complaint
@@ -405,6 +406,59 @@ class AdminUserDetailSerializer(BaseModelSerializer):
             "created_at": obj.created_at,
             "deactivated_at": obj.updated_at if not obj.is_active else None,
         }
+
+
+class AdminSelfProfileSerializer(BaseModelSerializer):
+    """Admin panelga kiruvchi xodimning o'z profilini ko'rish/tahrirlashi uchun serializer."""
+
+    login = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    permissions_summary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "avatar",
+            "phone_number",
+            "login",
+            "role",
+            "permissions_summary",
+            "created_at",
+        ]
+        read_only_fields = ["id", "login", "role", "permissions_summary", "created_at"]
+
+    def get_login(self, obj):
+        """Ko'rsatish uchun login: email bo'lsa uning local qismi, aks holda yashirilgan telefon."""
+        if obj.email:
+            return obj.email.split("@")[0]
+        return _mask_phone(obj.phone_number)
+
+    def get_role(self, obj):
+        """Rol nomi va ID si."""
+        if not obj.role:
+            return None
+        return {"id": str(obj.role.id), "name": obj.role.name}
+
+    def get_permissions_summary(self, obj):
+        """Rolning barcha mavjud huquqlarga ega yoki yo'qligini qisqa matn bilan bildiradi."""
+        if not obj.role:
+            return None
+        role_perms_count = obj.role.permissions.count()
+        total_perms_count = Permission.objects.exclude(
+            content_type__app_label__in=[
+                "admin",
+                "auth",
+                "sessions",
+                "contenttypes",
+                "django_celery_beat",
+            ]
+        ).count()
+        if total_perms_count and role_perms_count >= total_perms_count:
+            return "To'liq huquq"
+        return f"Cheklangan huquq ({role_perms_count} ta)"
 
 
 class AdminUserBlockSerializer(serializers.Serializer):

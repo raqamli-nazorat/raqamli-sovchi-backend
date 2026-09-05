@@ -588,3 +588,71 @@ class AdminUserUnblockTestCase(TestCase):
         self.client.force_authenticate(self.blocked_user)
         response = self.client.post(self.url, {"reason": "mistake"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AdminProfileTestCase(TestCase):
+    """Admin panelga kiruvchi xodimning o'z profilini (staff/me/) ko'rish/tahrirlash testlari."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = "/api/v1/accounts/staff/me/"
+        self.admin = User.objects.create(
+            phone_number="+998900000020",
+            auth_provider=AuthProvider.PHONE,
+            first_name="Abdulaziz",
+            last_name="Muxtorov",
+            is_staff=True,
+            is_superuser=True,
+        )
+
+        self.default_role = Role.objects.filter(is_default=True).first()
+        self.candidate = User.objects.create(
+            phone_number="+998900000021",
+            auth_provider=AuthProvider.PHONE,
+            role=self.default_role,
+        )
+
+    def test_get_admin_profile_success(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data.get("data", response.data)
+        self.assertEqual(data["first_name"], "Abdulaziz")
+        self.assertEqual(data["last_name"], "Muxtorov")
+        self.assertEqual(data["phone_number"], "+998900000020")
+        self.assertIn("login", data)
+        self.assertIn("permissions_summary", data)
+        self.assertIn("created_at", data)
+
+    def test_update_admin_profile_success(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(
+            self.url,
+            {
+                "first_name": "Aziz",
+                "last_name": "Sodiqov",
+                "phone_number": "+998901112233",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.first_name, "Aziz")
+        self.assertEqual(self.admin.last_name, "Sodiqov")
+        self.assertEqual(self.admin.phone_number, "+998901112233")
+
+    def test_update_admin_profile_invalid_data_returns_400(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.patch(self.url, {"phone_number": "901234567"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_admin_profile_unauthenticated_returns_401(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_admin_profile_forbidden_for_candidate_returns_403(self):
+        self.client.force_authenticate(self.candidate)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
