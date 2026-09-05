@@ -89,8 +89,6 @@ def get_user_status_label(user):
         return "Bloklangan"
     if get_profile_completion_percentage(user) < 50:
         return "Anketa to'liq emas"
-    if not user.is_verified:
-        return "Tekshiruvda"
     return "Tasdiqlangan"
 
 
