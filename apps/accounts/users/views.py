@@ -8,6 +8,7 @@ from rest_framework import generics, permissions, status, views
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -16,6 +17,7 @@ from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
 from .admin_serializers import (
+    AdminSelfProfileSerializer,
     AdminUserBlockSerializer,
     AdminUserComplaintSerializer,
     AdminUserDetailSerializer,
@@ -27,6 +29,7 @@ from .admin_serializers import (
 )
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
 from .models import BlockedUser, Role, User, UserDevice, UserPledge
+from .permissions import IsStaffMember
 from .serializers import (
     BlockedUserSerializer,
     ChangePasswordSerializer,
@@ -161,6 +164,18 @@ class UserMeView(AutoSchemaMixin, generics.RetrieveDestroyAPIView):
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save(update_fields=["is_active"])
+
+
+class AdminProfileView(AutoSchemaMixin, generics.RetrieveUpdateAPIView):
+    """Admin panelga kiruvchi xodimning o'z profilini (F.I.Sh, rasm, telefon) ko'rish/tahrirlashi."""
+
+    permission_classes = [IsStaffMember]
+    serializer_class = AdminSelfProfileSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def get_object(self):
+        return self.request.user
 
 
 @extend_schema(

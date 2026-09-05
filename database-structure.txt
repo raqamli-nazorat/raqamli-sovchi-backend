@@ -8,6 +8,9 @@ USER & AUTH
         auth_provider: enum (GOOGLE, PHONE, TELEGRAM, EMAIL)
         is_verified: boolean
         is_blocked: boolean
+        first_name: string [AbstractUser dan meros, faqat admin panel xodimlari uchun ishlatiladi]
+        last_name: string [AbstractUser dan meros, faqat admin panel xodimlari uchun ishlatiladi]
+        avatar: image [null] — admin panel xodimining profil rasmi (nomzod Profile.photos'idan alohida)
         created_at: timestamp
         updated_at: timestamp
 

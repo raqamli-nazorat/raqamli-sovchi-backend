@@ -92,6 +92,13 @@ class User(AbstractUser, RolePermissionsMixin, BaseModel):
     is_blocked = models.BooleanField(
         default=False, verbose_name="Bloklangan foydalanuvchi"
     )
+    avatar = models.ImageField(
+        upload_to="admin_avatars/",
+        null=True,
+        blank=True,
+        verbose_name="Rasm",
+        help_text="Admin panelga kiruvchi xodim/admin uchun profil rasmi",
+    )
 
     objects = UserManager()
 
