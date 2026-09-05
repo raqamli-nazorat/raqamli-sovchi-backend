@@ -433,22 +433,9 @@ class UserViewSet(BaseManageViewSet):
         reason_labels = dict(AdminUserUnblockSerializer.REASON_CHOICES)
         reason_display = reason_labels.get(reason_key, reason_key)
 
-        user.is_blocked = False
-        user.save(update_fields=["is_blocked"])
+        from .services import unblock_user as unblock_user_service
 
-        from apps.core.utils.face import remove_user_faces_from_blocked
-
-        remove_user_faces_from_blocked(user)
-
-        if notify_user:
-            from apps.accounts.notifications.models import Notification
-
-            Notification.objects.create(
-                user=user,
-                title="Profilingiz blokdan chiqarildi",
-                message=f"Sababi: {reason_display}",
-                extra_data={"reason": reason_key, "action": "unblock"},
-            )
+        unblock_user_service(user, reason=reason_display, notify_user=notify_user)
 
         return Response(
             {
