@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AdminProfileView,
     BlockedUserViewSet,
     ChangePasswordView,
     CustomTokenObtainPairView,
@@ -27,6 +28,7 @@ router.register(r"blocked-users", BlockedUserViewSet, basename="blocked-user")
 
 urlpatterns = [
     path("users/me/", UserMeView.as_view(), name="user-me"),
+    path("staff/me/", AdminProfileView.as_view(), name="staff-me"),
     path("auth/google/", GoogleLoginView.as_view(), name="auth-google"),
     path("auth/phone/", PhoneAuthView.as_view(), name="auth-phone"),
     path("auth/email/", EmailAuthView.as_view(), name="auth-email"),
