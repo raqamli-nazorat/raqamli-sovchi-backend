@@ -11,7 +11,7 @@ from apps.core.base.permissions import FullDjangoModelPermissions
 from apps.core.base.views import BaseManageViewSet
 
 from .filters import ComplaintFilter
-from .models import Complaint, ComplaintStatus
+from .models import Complaint, ComplaintEnforcementAction, ComplaintStatus
 from .serializers import (
     ComplaintCreateSerializer,
     ComplaintDecisionSerializer,
@@ -42,7 +42,7 @@ class ComplaintViewSet(BaseManageViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [permissions.IsAuthenticated()]
-        if self.action == "decision":
+        if self.action in ("decision", "unblock"):
             return [permissions.IsAuthenticated()]
         if self.action == "my":
             return [permissions.IsAuthenticated()]
@@ -59,7 +59,7 @@ class ComplaintViewSet(BaseManageViewSet):
             "chat_room",
         ).active()
 
-        if self.action in ["retrieve", "decision"]:
+        if self.action in ["retrieve", "decision", "unblock"]:
             qs = qs.prefetch_related("chat_room__messages__sender__profile")
 
         return qs
@@ -175,6 +175,53 @@ class ComplaintViewSet(BaseManageViewSet):
 
             if decision == ComplaintStatus.APPROVED:
                 apply_complaint_enforcement(complaint, enforcement_action)
+
+        response_serializer = self.get_serializer(complaint)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Shikoyat orqali bloklangan foydalanuvchini blokdan chiqarish",
+        description=(
+            "Faqat shu shikoyat asosida (enforcement_action='block') hozir "
+            "bloklangan foydalanuvchi uchun ishlaydi. Sabab talab qilinmaydi — "
+            "kontekst shikoyatning o'zidan ma'lum."
+        ),
+        request=None,
+        responses={200: ComplaintDetailSerializer},
+    )
+    @action(detail=True, methods=["post"], url_path="unblock")
+    def unblock(self, request, pk=None):
+        if not is_staff_like(request.user):
+            return Response(
+                {"detail": "Sizda ushbu amalni bajarish huquqi yo'q."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        complaint = self.get_object()
+
+        if (
+            complaint.status != ComplaintStatus.APPROVED
+            or complaint.enforcement_action != ComplaintEnforcementAction.BLOCK
+        ):
+            return Response(
+                {"detail": "Bu shikoyat orqali hech kim bloklanmagan."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        to_user = complaint.to_user
+        if not to_user.is_blocked:
+            return Response(
+                {"detail": "Foydalanuvchi allaqachon blokdan chiqarilgan."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from apps.accounts.users.services import unblock_user
+
+        unblock_user(
+            to_user,
+            reason=f"Shikoyat (#{complaint.id}) bo'yicha bloklash bekor qilindi",
+            notify_user=bool(request.data.get("notify_user", False)),
+        )
 
         response_serializer = self.get_serializer(complaint)
         return Response(response_serializer.data, status=status.HTTP_200_OK)

@@ -700,41 +700,41 @@ def build_user_history(user):
         except Exception:
             pass
 
-    # Bloklandi / Blokdan chiqarildi — auditlog orqali, `is_blocked`
-    # maydoni o'zgargan HAMMA yozuvlar (bir necha marta bo'lishi mumkin).
-    try:
-        from auditlog.models import LogEntry
-        from django.contrib.contenttypes.models import ContentType
-
-        ct = ContentType.objects.get_for_model(User)
-        block_entries = (
-            LogEntry.objects.filter(
-                content_type=ct,
-                object_pk=str(user.pk),
-                action=LogEntry.Action.UPDATE,
-            )
-            .filter(changes__has_key="is_blocked")
-            .select_related("actor", "actor__profile")
-            .order_by("timestamp")
-        )
-        for entry in block_entries:
-            change = entry.changes_dict.get("is_blocked")
-            if not change or len(change) < 2 or change[0] == change[1]:
-                continue
-            became_blocked = str(change[1]) == "True"
-            events.append(
-                {
-                    "event_type": "user_blocked"
-                    if became_blocked
-                    else "user_unblocked",
-                    "label": "Bloklandi" if became_blocked else "Blokdan chiqarildi",
-                    "actor": _actor_display_name(entry.actor),
-                    "date": entry.timestamp,
-                    "is_done": True,
-                }
-            )
-    except Exception:
-        pass
+    # Bloklandi / Blokdan chiqarildi — shikoyat detailiga ko'chirildi, qarang:
+    # apps/accounts/complaints/serializers.py: ComplaintDetailSerializer.get_block_history
+    # try:
+    #     from auditlog.models import LogEntry
+    #     from django.contrib.contenttypes.models import ContentType
+    #
+    #     ct = ContentType.objects.get_for_model(User)
+    #     block_entries = (
+    #         LogEntry.objects.filter(
+    #             content_type=ct,
+    #             object_pk=str(user.pk),
+    #             action=LogEntry.Action.UPDATE,
+    #         )
+    #         .filter(changes__has_key="is_blocked")
+    #         .select_related("actor", "actor__profile")
+    #         .order_by("timestamp")
+    #     )
+    #     for entry in block_entries:
+    #         change = entry.changes_dict.get("is_blocked")
+    #         if not change or len(change) < 2 or change[0] == change[1]:
+    #             continue
+    #         became_blocked = str(change[1]) == "True"
+    #         events.append(
+    #             {
+    #                 "event_type": "user_blocked"
+    #                 if became_blocked
+    #                 else "user_unblocked",
+    #                 "label": "Bloklandi" if became_blocked else "Blokdan chiqarildi",
+    #                 "actor": _actor_display_name(entry.actor),
+    #                 "date": entry.timestamp,
+    #                 "is_done": True,
+    #             }
+    #         )
+    # except Exception:
+    #     pass
 
     # Shikoyat tasdiqlandi — unga nisbatan qabul qilingan shikoyat asosli deb
     # topilgan holatlar (ogohlantirish yoki bloklash chorasi bilan birga).

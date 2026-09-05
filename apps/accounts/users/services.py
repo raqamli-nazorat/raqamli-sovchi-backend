@@ -362,3 +362,37 @@ def block_user(user, reason, notify_user=False):
         )
 
     return user
+
+
+def unblock_user(user, reason=None, notify_user=False):
+    """
+    Foydalanuvchini blokdan chiqaradi: `is_blocked` belgisini olib tashlaydi
+    va yuzini qora ro'yxatdan (BlockedFace) tozalaydi.
+
+    :param user: Blokdan chiqariladigan foydalanuvchi.
+    :param reason: Blokdan chiqarish sababi (ixtiyoriy, faqat bildirishnoma matnida ishlatiladi).
+    :param notify_user: True bo'lsa, foydalanuvchiga bildirishnoma yuboriladi.
+    :return: Blokdan chiqarilgan foydalanuvchi.
+    """
+    from apps.core.utils.face import remove_user_faces_from_blocked
+
+    user.is_blocked = False
+    user.save(update_fields=["is_blocked"])
+
+    remove_user_faces_from_blocked(user)
+
+    if notify_user:
+        from apps.accounts.notifications.models import Notification
+
+        message = "Profilingiz blokdan chiqarildi."
+        if reason:
+            message = f"Profilingiz blokdan chiqarildi. Sababi: {reason}"
+
+        Notification.objects.create(
+            user=user,
+            title="Profilingiz blokdan chiqarildi",
+            message=message,
+            extra_data={"reason": reason} if reason else {},
+        )
+
+    return user
