@@ -6,6 +6,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.accounts.notifications.models import Notification
 from apps.accounts.profiles.models import (
     CandidateRole,
     GenderType,
@@ -520,4 +521,70 @@ class AdminUserHistoryTestCase(TestCase):
         response = self.client.get(
             f"/api/v1/accounts/users/{self.candidate.id}/history/"
         )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AdminUserUnblockTestCase(TestCase):
+    """`POST /api/v1/accounts/users/{id}/unblock/` testlari."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create(
+            phone_number="+998900000040",
+            auth_provider=AuthProvider.PHONE,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.force_authenticate(self.admin)
+
+        self.role = Role.objects.filter(is_default=True).first()
+        self.blocked_user = User.objects.create(
+            phone_number="+998900000041",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+            is_blocked=True,
+        )
+        self.url = f"/api/v1/accounts/users/{self.blocked_user.id}/unblock/"
+
+    def test_unblock_user_success(self):
+        response = self.client.post(self.url, {"reason": "mistake"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.blocked_user.refresh_from_db()
+        self.assertFalse(self.blocked_user.is_blocked)
+
+    def test_unblock_user_without_reason_invalid(self):
+        response = self.client.post(self.url, {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.blocked_user.refresh_from_db()
+        self.assertTrue(self.blocked_user.is_blocked)
+
+    def test_unblock_user_with_notify_sends_notification(self):
+        response = self.client.post(
+            self.url,
+            {"reason": "appeal_accepted", "notify_user": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        notification = Notification.objects.filter(user=self.blocked_user).first()
+        self.assertIsNotNone(notification)
+        self.assertEqual(notification.title, "Profilingiz blokdan chiqarildi")
+        self.assertIn("Apellyatsiya qabul qilindi", notification.message)
+
+    def test_unblock_user_without_notify_does_not_send_notification(self):
+        response = self.client.post(self.url, {"reason": "mistake"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Notification.objects.filter(user=self.blocked_user).exists())
+
+    def test_unblock_user_unauthenticated_returns_401(self):
+        self.client.force_authenticate(None)
+        response = self.client.post(self.url, {"reason": "mistake"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_unblock_user_forbidden_for_user_without_permission(self):
+        self.client.force_authenticate(self.blocked_user)
+        response = self.client.post(self.url, {"reason": "mistake"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -22,6 +22,7 @@ from .admin_serializers import (
     AdminUserHistorySerializer,
     AdminUserListSerializer,
     AdminUserMatchHistorySerializer,
+    AdminUserUnblockSerializer,
     build_user_history,
 )
 from .filters import RoleFilter, UserFilter, UserPledgeFilter
@@ -391,16 +392,46 @@ class UserViewSet(BaseManageViewSet):
             status=status.HTTP_200_OK,
         )
 
-    @extend_schema(summary="Foydalanuvchini blokdan chiqarish")
+    @extend_schema(
+        summary="Foydalanuvchini blokdan chiqarish",
+        request=AdminUserUnblockSerializer,
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "is_blocked": {"type": "boolean"},
+                },
+            }
+        },
+    )
     @action(detail=True, methods=["post"], url_path="unblock")
     def unblock_user(self, request, pk=None):
+        serializer = AdminUserUnblockSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         user = self.get_object()
+        reason_key = serializer.validated_data["reason"]
+        notify_user = serializer.validated_data.get("notify_user", False)
+        reason_labels = dict(AdminUserUnblockSerializer.REASON_CHOICES)
+        reason_display = reason_labels.get(reason_key, reason_key)
+
         user.is_blocked = False
         user.save(update_fields=["is_blocked"])
 
         from apps.core.utils.face import remove_user_faces_from_blocked
 
         remove_user_faces_from_blocked(user)
+
+        if notify_user:
+            from apps.accounts.notifications.models import Notification
+
+            Notification.objects.create(
+                user=user,
+                title="Profilingiz blokdan chiqarildi",
+                message=f"Sababi: {reason_display}",
+                extra_data={"reason": reason_key, "action": "unblock"},
+            )
 
         return Response(
             {

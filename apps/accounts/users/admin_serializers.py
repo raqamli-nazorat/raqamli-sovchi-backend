@@ -422,6 +422,21 @@ class AdminUserBlockSerializer(serializers.Serializer):
     notify_user = serializers.BooleanField(default=False, required=False)
 
 
+class AdminUserUnblockSerializer(serializers.Serializer):
+    """Admin tomonidan foydalanuvchini blokdan chiqarish uchun serializer."""
+
+    REASON_CHOICES = [
+        ("appeal_accepted", "Apellyatsiya qabul qilindi"),
+        ("mistake", "Xato bloklangan edi"),
+        ("reviewed_cleared", "Qayta ko'rib chiqildi, qoidabuzarlik topilmadi"),
+        ("penalty_period_ended", "Jazo muddati tugadi"),
+        ("other", "Boshqa"),
+    ]
+
+    reason = serializers.ChoiceField(choices=REASON_CHOICES)
+    notify_user = serializers.BooleanField(default=False, required=False)
+
+
 class AdminUserComplaintSerializer(BaseModelSerializer):
     """Foydalanuvchiga kelib tushgan shikoyatlar ro'yxati uchun serializer."""
 
