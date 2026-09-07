@@ -365,15 +365,23 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class BlockedUserSerializer(BaseModelSerializer):
+    blocked_info = serializers.SerializerMethodField()
+
+    def get_blocked_info(self, obj):
+        """Bloklangan foydalanuvchining ism, familya va birinchi profil rasmini qaytaradi."""
+        user = obj.blocked
+        profile = getattr(user, "profile", None)
+        first_photo = profile.photos.order_by("order").first() if profile else None
+        return {
+            "id": user.id,
+            "phone_number": str(user.phone_number),
+            "email": user.email,
+            "first_name": profile.first_name if profile else None,
+            "last_name": profile.last_name if profile else None,
+            "avatar": first_photo.image.url if first_photo else None,
+        }
+
     class Meta:
         model = BlockedUser
-        fields = ["id", "blocker", "blocked", "reason", "created_at"]
+        fields = ["id", "blocker", "blocked", "blocked_info", "reason", "created_at"]
         read_only_fields = ["id", "blocker", "created_at"]
-        related_fields = {
-            "blocked": [
-                "id",
-                "phone_number",
-                "email",
-                "profile",
-            ]
-        }

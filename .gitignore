@@ -183,3 +183,6 @@ CLAUDE.md
 
 # Media (foydalanuvchi yuklagan fayllar, seed rasmlari)
 media/
+
+# Static fayllar (collectstatic orqali qayta yaratiladi)
+staticfiles/

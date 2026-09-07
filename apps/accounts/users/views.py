@@ -742,9 +742,11 @@ class BlockedUserViewSet(BaseManageViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = BlockedUser.objects.select_related(
-            "blocker", "blocked", "blocked__profile"
-        ).active()
+        qs = (
+            BlockedUser.objects.select_related("blocker", "blocked", "blocked__profile")
+            .prefetch_related("blocked__profile__photos")
+            .active()
+        )
 
         return qs.filter(blocker=user)
 
