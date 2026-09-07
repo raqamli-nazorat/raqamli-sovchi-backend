@@ -649,6 +649,76 @@ class ComplaintApiTestCase(TestCase):
         response = self.client.post(f"{self.url}{complaint.id}/unblock/")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_apply_enforcement_block_idempotent_success(self, mock_register):
+        from apps.accounts.complaints.services import apply_complaint_enforcement
+
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+            status=ComplaintStatus.APPROVED,
+            enforcement_action="block",
+        )
+
+        apply_complaint_enforcement(complaint, "block")
+        apply_complaint_enforcement(complaint, "block")
+
+        self.user2.refresh_from_db()
+        self.assertTrue(self.user2.is_blocked)
+        self.assertEqual(
+            Notification.objects.filter(
+                user=self.user2, title="Profilingiz bloklandi"
+            ).count(),
+            1,
+        )
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_admin_save_model_approve_block_blocks_user_success(self, mock_register):
+        from django.contrib.admin.sites import AdminSite
+        from django.test import RequestFactory
+
+        from apps.accounts.complaints.admin import ComplaintAdmin
+
+        complaint = Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+        )
+        complaint.status = ComplaintStatus.APPROVED
+        complaint.enforcement_action = "block"
+
+        request = RequestFactory().post("/")
+        request.user = self.admin
+
+        class _Form:
+            changed_data = ["status", "enforcement_action"]
+
+        ComplaintAdmin(Complaint, AdminSite()).save_model(
+            request, complaint, _Form(), change=True
+        )
+
+        self.user2.refresh_from_db()
+        self.assertTrue(self.user2.is_blocked)
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_reconcile_command_blocks_inconsistent_users_success(self, mock_register):
+        from django.core.management import call_command
+
+        Complaint.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            reason="fraud",
+            status=ComplaintStatus.APPROVED,
+            enforcement_action="block",
+        )
+        self.assertFalse(self.user2.is_blocked)
+
+        call_command("reconcile_complaint_blocks")
+
+        self.user2.refresh_from_db()
+        self.assertTrue(self.user2.is_blocked)
+
 
 class ComplaintQuestionnaireProgressTestCase(TestCase):
     def setUp(self):

@@ -1,5 +1,6 @@
 import tempfile
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
@@ -900,3 +901,74 @@ class BlockedUserListTestCase(TestCase):
     def test_list_unauthenticated_returns_401(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class UserBlockSideEffectsTestCase(TestCase):
+    """
+    `is_blocked` o'zgarishida yon ta'sirlar (yuz qora ro'yxati, bildirishnoma)
+    yagona signalda bajarilishi — bloklash qaysi yo'ldan kelganidan qat'iy
+    nazar — testlari.
+    """
+
+    def setUp(self):
+        self.role = Role.objects.filter(is_default=True).first()
+        self.user = User.objects.create(
+            phone_number="+998900000090",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_direct_is_blocked_change_triggers_side_effects(self, mock_register):
+        # `block_user` servisidan o'tmasdan, to'g'ridan-to'g'ri (masalan Django
+        # admin checkbox yoki shell) o'zgartirish ham yon ta'sirni chaqiradi.
+        self.user.is_blocked = True
+        self.user.save(update_fields=["is_blocked"])
+
+        mock_register.assert_called_once()
+
+    @patch("apps.core.utils.face.remove_user_faces_from_blocked")
+    def test_direct_unblock_triggers_face_cleanup(self, mock_remove):
+        self.user.is_blocked = True
+        self.user.save(update_fields=["is_blocked"])
+
+        self.user.is_blocked = False
+        self.user.save(update_fields=["is_blocked"])
+
+        mock_remove.assert_called_once()
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_unrelated_save_does_not_trigger_side_effects(self, mock_register):
+        self.user.is_verified = True
+        self.user.save(update_fields=["is_verified"])
+
+        mock_register.assert_not_called()
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_block_user_idempotent_single_notification(self, mock_register):
+        from apps.accounts.users.services import block_user
+
+        block_user(self.user, reason="fraud", notify_user=True)
+        block_user(self.user, reason="fraud", notify_user=True)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_blocked)
+        self.assertEqual(
+            Notification.objects.filter(
+                user=self.user, title="Profilingiz bloklandi"
+            ).count(),
+            1,
+        )
+        mock_register.assert_called_once()
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_block_side_effect_error_does_not_break_block(self, mock_register):
+        # Yuz operatsiyasi xato bersa ham foydalanuvchi bloklangan bo'lib qoladi.
+        mock_register.side_effect = RuntimeError("DeepFace ishlamadi")
+
+        from apps.accounts.users.services import block_user
+
+        block_user(self.user, reason="fraud")
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_blocked)

@@ -109,11 +109,18 @@ def verify_user_face(user, uploaded_file):
             if probe_emb:
                 is_blocked_match, bf_obj, dist = check_against_blocked_faces(probe_emb)
                 if is_blocked_match:
+                    block_reason = (
+                        "Bloklangan shaxs yuzi bilan yangi hisob ochishga urinish"
+                    )
+                    # Yuzni qora ro'yxatga olishni (aynan shu selfie embeddingi
+                    # bilan) shu yerda o'zimiz bajaramiz — signal takrorlamasin.
                     user.is_blocked = True
-                    user.save(update_fields=["is_blocked"])
+                    user._block_reason = block_reason
+                    user._skip_block_side_effects = True
+                    user.save(update_fields=["is_blocked", "updated_at"])
                     register_user_faces_as_blocked(
                         user,
-                        reason="Bloklangan shaxs yuzi bilan yangi hisob ochishga urinish",
+                        reason=block_reason,
                         embedding=probe_emb,
                     )
                     return status.HTTP_403_FORBIDDEN, {

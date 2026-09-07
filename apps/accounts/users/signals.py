@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Permission
 from django.db import OperationalError, ProgrammingError
-from django.db.models.signals import post_migrate, post_save
+from django.db.models.signals import post_migrate, post_save, pre_save
 from django.dispatch import receiver
 
 from apps.accounts.users.models import Role, User
@@ -100,3 +100,65 @@ def assign_default_user_role(sender, instance, created, **kwargs):
                 instance.save(update_fields=["role"])
         except (ProgrammingError, OperationalError):
             pass
+
+
+@receiver(pre_save, sender=User)
+def capture_is_blocked_transition(sender, instance, update_fields=None, **kwargs):
+    """
+    Saqlashdan oldin `is_blocked` maydoni o'zgarganini aniqlab, natijani
+    `instance._is_blocked_transition` ga yozadi (True — bloklandi, False —
+    blokdan chiqdi, None — o'zgarmadi). Yon ta'sirlarni `post_save`
+    bajaradi.
+
+    Bu tekshiruv har qanday saqlash yo'lida (API, Django admin, shell,
+    data migration) ishlaydi — shu tufayli bloklash oqibatlari yagona
+    joyda kafolatlanadi.
+    """
+    instance._is_blocked_transition = None
+
+    if instance._state.adding:
+        return
+    if update_fields is not None and "is_blocked" not in update_fields:
+        return
+
+    old_is_blocked = (
+        sender.objects.filter(pk=instance.pk)
+        .values_list("is_blocked", flat=True)
+        .first()
+    )
+    if old_is_blocked is not None and old_is_blocked != instance.is_blocked:
+        instance._is_blocked_transition = instance.is_blocked
+
+
+@receiver(post_save, sender=User)
+def handle_is_blocked_transition(sender, instance, created, **kwargs):
+    """
+    `is_blocked` o'zgargan bo'lsa yon ta'sirlarni ishga tushiradi: yuzni
+    qora ro'yxatga olish/tozalash va (so'ralgan bo'lsa) bildirishnoma.
+
+    Sabab va bildirishnoma bayrog'i `block_user`/`unblock_user` tomonidan
+    `instance` ga vaqtinchalik qo'yiladi; boshqa yo'llarda (masalan admin
+    checkbox) ular bo'lmaydi va standart qiymatlar ishlatiladi.
+    """
+    transitioned_to = getattr(instance, "_is_blocked_transition", None)
+    if transitioned_to is None:
+        return
+
+    instance._is_blocked_transition = None
+
+    # Chaqiruvchi yon ta'sirni o'zi bajarmoqchi bo'lsa (masalan yuz tekshiruvi
+    # aynan bir embeddingni qo'shishi kerak) — signal uni takrorlamaydi.
+    if getattr(instance, "_skip_block_side_effects", False):
+        return
+
+    reason = getattr(instance, "_block_reason", None)
+    notify_user = getattr(instance, "_block_notify", False)
+
+    from apps.accounts.users.services import apply_user_block_side_effects
+
+    apply_user_block_side_effects(
+        instance,
+        blocked=bool(transitioned_to),
+        reason=reason,
+        notify_user=notify_user,
+    )
