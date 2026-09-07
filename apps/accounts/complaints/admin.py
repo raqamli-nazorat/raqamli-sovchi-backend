@@ -112,10 +112,30 @@ class ComplaintAdmin(BaseModelAdmin):
     status_badge.short_description = "Holati"
 
     def save_model(self, request, obj, form, change):
-        """Admin qarorini saqlashda resolved_by va resolved_at avtomatik to'ldiriladi."""
+        """
+        Admin qarorini saqlashda `resolved_by`/`resolved_at` avtomatik
+        to'ldiriladi. Bundan tashqari, qaror shu saqlashda `approved` ga
+        o'tsa (yoki chora endi tanlansa), API `decision` endpointidagidek
+        `apply_complaint_enforcement` chaqiriladi — shunda admin paneldan
+        "bloklash" tanlansa foydalanuvchi haqiqatan bloklanadi.
+        """
         if change and obj.status != ComplaintStatus.PENDING:
             if not obj.resolved_by_id:
                 obj.resolved_by = request.user
             if not obj.resolved_at:
                 obj.resolved_at = timezone.now()
         super().save_model(request, obj, form, change)
+
+        enforcement_touched = (
+            not change
+            or "status" in form.changed_data
+            or "enforcement_action" in form.changed_data
+        )
+        if (
+            enforcement_touched
+            and obj.status == ComplaintStatus.APPROVED
+            and obj.enforcement_action
+        ):
+            from .services import apply_complaint_enforcement
+
+            apply_complaint_enforcement(obj, obj.enforcement_action)
