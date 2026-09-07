@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -13,6 +14,7 @@ from apps.accounts.profiles.models import (
     CandidateRole,
     GenderType,
     Profile,
+    ProfilePhoto,
     RepresentativeInfo,
 )
 from apps.accounts.questionnaire.models import (
@@ -22,7 +24,7 @@ from apps.accounts.questionnaire.models import (
     TargetGender,
     UserAnswer,
 )
-from apps.accounts.users.models import AuthProvider, Role, User
+from apps.accounts.users.models import AuthProvider, BlockedUser, Role, User
 
 
 class PhoneAuthTestCase(TestCase):
@@ -814,3 +816,87 @@ class AdminProfileTestCase(TestCase):
         self.client.force_authenticate(self.candidate)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class BlockedUserListTestCase(TestCase):
+    """`GET /api/v1/accounts/blocked-users/` — `blocked_info` maydoni testlari.
+
+    Rasm yuklovchi test haqiqiy `media/` papkasini ifloslantirmasligi uchun
+    `MEDIA_ROOT` vaqtinchalik papkaga almashtirilgan.
+    """
+
+    url = "/api/v1/accounts/blocked-users/"
+
+    def setUp(self):
+        self.client = APIClient()
+        self.role = Role.objects.filter(is_default=True).first()
+
+        self.blocker = User.objects.create(
+            phone_number="+998900000030",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.blocked = User.objects.create(
+            phone_number="+998900000031",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+            email="blocked@example.com",
+        )
+        profile = Profile.objects.create(
+            user=self.blocked,
+            first_name="Bloklangan",
+            last_name="Nomzod",
+            gender=GenderType.FEMALE,
+            candidate_type=CandidateRole.BRIDE,
+            birth_date="1997-01-01",
+            height=165,
+        )
+        ProfilePhoto.objects.create(
+            profile=profile,
+            image=SimpleUploadedFile(
+                "p.jpg", b"fake-image-bytes", content_type="image/jpeg"
+            ),
+            order=1,
+            is_main=True,
+        )
+        BlockedUser.objects.create(
+            blocker=self.blocker,
+            blocked=self.blocked,
+            reason="Bezovta qiluvchi xabarlar",
+        )
+
+    def _results(self, response):
+        data = response.data.get("data", response.data)
+        return data["results"] if isinstance(data, dict) else data
+
+    def test_list_returns_blocked_info_success(self):
+        self.client.force_authenticate(self.blocker)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = self._results(response)
+        self.assertEqual(len(results), 1)
+        info = results[0]["blocked_info"]
+        self.assertEqual(str(info["id"]), str(self.blocked.id))
+        self.assertEqual(info["phone_number"], "+998900000031")
+        self.assertEqual(info["email"], "blocked@example.com")
+        self.assertEqual(info["first_name"], "Bloklangan")
+        self.assertEqual(info["last_name"], "Nomzod")
+        self.assertTrue(info["avatar"])
+
+    def test_list_returns_only_own_blocks(self):
+        other = User.objects.create(
+            phone_number="+998900000032",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.client.force_authenticate(other)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(self._results(response)), 0)
+
+    def test_list_unauthenticated_returns_401(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
