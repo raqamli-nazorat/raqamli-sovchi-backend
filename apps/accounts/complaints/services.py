@@ -194,6 +194,11 @@ def apply_complaint_enforcement(complaint, enforcement_action):
     Tasdiqlangan shikoyat bo'yicha tanlangan chorani amalga oshiradi:
     foydalanuvchiga ogohlantirish yuboradi yoki uni platforma bo'yicha bloklaydi.
 
+    Idempotent — takroriy chaqiruvda ikkinchi marta ogohlantirish yubormaydi
+    va allaqachon bloklangan foydalanuvchini qayta bloklamaydi. Shu sababli
+    uni DRF `decision` endpointidan ham, Django admin `save_model` dan ham,
+    reconcile buyrug'idan ham xavfsiz chaqirsa bo'ladi.
+
     :param complaint: Tasdiqlangan Complaint obyekti.
     :param enforcement_action: ComplaintEnforcementAction qiymati.
     :return: None
@@ -204,6 +209,13 @@ def apply_complaint_enforcement(complaint, enforcement_action):
     to_user = complaint.to_user
 
     if enforcement_action == ComplaintEnforcementAction.WARN:
+        already_warned = Notification.objects.filter(
+            user=to_user,
+            extra_data__complaint_id=str(complaint.id),
+            extra_data__action="warn",
+        ).exists()
+        if already_warned:
+            return
         Notification.objects.create(
             user=to_user,
             title="Ogohlantirish",

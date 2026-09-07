@@ -336,63 +336,113 @@ def authenticate_email_user(email, request):
 
 def block_user(user, reason, notify_user=False):
     """
-    Foydalanuvchini platforma bo'yicha bloklaydi: `is_blocked` belgisini
-    o'rnatadi va yuz embeddinglarini qora ro'yxatga (BlockedFace) yozadi.
+    Foydalanuvchini platforma bo'yicha bloklaydi.
+
+    Bu — `is_blocked` ni `True` qilishning yagona qulay darvozasi. Yon
+    ta'sirlar (yuzni qora ro'yxatga olish, bildirishnoma) shu yerda emas,
+    `is_blocked` o'zgarishini kuzatuvchi signalda (`users.signals`)
+    bajariladi — shu tufayli Django admin, API yoki har qanday boshqa yo'l
+    bir xil natija beradi.
+
+    Idempotent: allaqachon bloklangan foydalanuvchi uchun hech nima qilmaydi.
 
     :param user: Bloklanadigan foydalanuvchi.
-    :param reason: Bloklash sababi (matn, BlockedFace.reason ga yoziladi).
+    :param reason: Bloklash sababi (matn, `BlockedFace.reason` ga yoziladi).
     :param notify_user: True bo'lsa, foydalanuvchiga bildirishnoma yuboriladi.
-    :return: Bloklangan foydalanuvchi.
+    :return: Foydalanuvchi obyekti.
     """
-    from apps.core.utils.face import register_user_faces_as_blocked
+    if user.is_blocked:
+        return user
 
+    user._block_reason = reason
+    user._block_notify = notify_user
     user.is_blocked = True
-    user.save(update_fields=["is_blocked"])
-
-    register_user_faces_as_blocked(user, reason=reason)
-
-    if notify_user:
-        from apps.accounts.notifications.models import Notification
-
-        Notification.objects.create(
-            user=user,
-            title="Profilingiz bloklandi",
-            message=f"Profilingiz quyidagi sabab bo'yicha bloklandi: {reason}",
-            extra_data={"reason": reason},
-        )
-
+    user.save(update_fields=["is_blocked", "updated_at"])
     return user
 
 
 def unblock_user(user, reason=None, notify_user=False):
     """
-    Foydalanuvchini blokdan chiqaradi: `is_blocked` belgisini olib tashlaydi
-    va yuzini qora ro'yxatdan (BlockedFace) tozalaydi.
+    Foydalanuvchini blokdan chiqaradi.
+
+    `block_user` bilan teng huquqli darvoza. Yon ta'sirlar (yuzni qora
+    ro'yxatdan tozalash, bildirishnoma) signalda bajariladi.
+
+    Idempotent: bloklanmagan foydalanuvchi uchun hech nima qilmaydi.
 
     :param user: Blokdan chiqariladigan foydalanuvchi.
-    :param reason: Blokdan chiqarish sababi (ixtiyoriy, faqat bildirishnoma matnida ishlatiladi).
+    :param reason: Blokdan chiqarish sababi (ixtiyoriy, bildirishnoma matnida ishlatiladi).
     :param notify_user: True bo'lsa, foydalanuvchiga bildirishnoma yuboriladi.
-    :return: Blokdan chiqarilgan foydalanuvchi.
+    :return: Foydalanuvchi obyekti.
     """
-    from apps.core.utils.face import remove_user_faces_from_blocked
+    if not user.is_blocked:
+        return user
 
+    user._block_reason = reason
+    user._block_notify = notify_user
     user.is_blocked = False
-    user.save(update_fields=["is_blocked"])
+    user.save(update_fields=["is_blocked", "updated_at"])
+    return user
 
-    remove_user_faces_from_blocked(user)
+
+def apply_user_block_side_effects(user, *, blocked, reason=None, notify_user=False):
+    """
+    `is_blocked` o'zgarganda ishlaydigan yon ta'sirlar: yuzni qora ro'yxatga
+    olish/olib tashlash va (kerak bo'lsa) bildirishnoma. `users.signals`
+    dagi transition-signaldan chaqiriladi, shu sababli bloklash qaysi
+    yo'ldan kelganidan qat'iy nazar bir xil bajariladi.
+
+    Yuz operatsiyasi (DeepFace, sekin) xatoliklari yutiladi — ular bloklash
+    tranzaksiyasini bekor qilmasligi kerak.
+
+    :param user: Foydalanuvchi.
+    :param blocked: Yangi holat — True (bloklandi) yoki False (blokdan chiqdi).
+    :param reason: Sabab matni.
+    :param notify_user: True bo'lsa bildirishnoma yuboriladi.
+    :return: None
+    """
+    from apps.core.utils.face import (
+        register_user_faces_as_blocked,
+        remove_user_faces_from_blocked,
+    )
+
+    try:
+        if blocked:
+            register_user_faces_as_blocked(
+                user, reason=reason or "Foydalanuvchi bloklandi"
+            )
+        else:
+            remove_user_faces_from_blocked(user)
+    except Exception as e:
+        logger.warning(
+            "Blok yon ta'sirini bajarishda xatolik (user=%s): %s", user.id, e
+        )
 
     if notify_user:
-        from apps.accounts.notifications.models import Notification
+        _send_block_notification(user, blocked=blocked, reason=reason)
 
+
+def _send_block_notification(user, *, blocked, reason=None):
+    """Bloklash/blokdan chiqarish bo'yicha foydalanuvchiga bildirishnoma yuboradi."""
+    from apps.accounts.notifications.models import Notification
+
+    if blocked:
+        message = "Profilingiz bloklandi."
+        if reason:
+            message = f"Profilingiz quyidagi sabab bo'yicha bloklandi: {reason}"
+        Notification.objects.create(
+            user=user,
+            title="Profilingiz bloklandi",
+            message=message,
+            extra_data={"reason": reason} if reason else {},
+        )
+    else:
         message = "Profilingiz blokdan chiqarildi."
         if reason:
             message = f"Profilingiz blokdan chiqarildi. Sababi: {reason}"
-
         Notification.objects.create(
             user=user,
             title="Profilingiz blokdan chiqarildi",
             message=message,
             extra_data={"reason": reason} if reason else {},
         )
-
-    return user
