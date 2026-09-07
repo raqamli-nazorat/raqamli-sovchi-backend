@@ -1,15 +1,17 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
+from .exports import ExportExcelMixin
 
-class BaseModelAdmin(ModelAdmin):
+
+class BaseModelAdmin(ExportExcelMixin, ModelAdmin):
     def delete_model(self, request, obj):
         obj.delete()
 
     def delete_queryset(self, request, queryset):
         queryset.delete()
 
-    actions = ["really_hard_delete"]
+    actions = ["export_to_excel", "really_hard_delete"]
 
     @admin.action(description="Butunlay o'chirish")
     def really_hard_delete(self, request, queryset):
