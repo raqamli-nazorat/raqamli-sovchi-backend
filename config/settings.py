@@ -71,6 +71,7 @@ LOCAL_APPS = [
     "apps.core.audits",
     "apps.core.locations",
     "apps.core.references",
+    "apps.core.dashboard",
     "apps.accounts.profiles",
     "apps.accounts.questionnaire",
     "apps.accounts.complaints",
@@ -221,6 +222,8 @@ REST_FRAMEWORK = {
         "match_request": "20/h",
         "photo_request": "20/h",
         "login": "5/15m",
+        # Boshqaruv paneli — ogʻir aggregatsiya, tez-tez chaqirilmasin
+        "dashboard": "60/h",
     },
 }
 
