@@ -234,3 +234,24 @@ COMPLAINTS
 
 COMPLAINTS
 ===========================================>
+
+<===========================================
+CONSULTING
+    Psychologist ==> Platformadagi psixolog-mutaxassis (panel orqali boshqariladi)
+        id: uuid
+        first_name: string
+        last_name: string
+        phone_number: string [unique]
+        specialization: string
+        experience_years: smallint
+        price: int — sessiya narxi (so'm)
+        session_duration_minutes: smallint
+        bio: text [blank]
+        photo: image [null]
+        is_available: boolean — qabul qilmoqda (Figmadagi "Yoqish/O'chirish" toggle)
+        is_active: boolean — yumshoq o'chirish
+        created_at: timestamp
+        updated_at: timestamp
+
+CONSULTING
+===========================================>

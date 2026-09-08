@@ -80,6 +80,7 @@ LOCAL_APPS = [
     "apps.matches.match_requests",
     "apps.matches.chats",
     "apps.matches.photo_requests",
+    "apps.consulting.psychologists",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
