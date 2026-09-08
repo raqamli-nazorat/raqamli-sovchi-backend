@@ -1,0 +1,280 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+{{ block.super }}
+<div class="flex flex-row items-center">
+  <button
+    type="button"
+    onclick="openExportModal()"
+    class="bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 h-[38px] px-3 -my-1 rounded-lg text-white text-sm font-medium transition-colors shadow-sm"
+    title="Excel ga eksport qilish"
+  >
+    <span class="material-symbols-outlined" style="font-size:18px;line-height:1">download</span>
+    Excel
+  </button>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+
+{# ===== Modal ===== #}
+<div
+  id="export-excel-modal"
+  onclick="if(event.target===this)closeExportModal()"
+  style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px)"
+>
+  <div
+    style="display:flex;flex-direction:column;width:min(660px,calc(100vw - 32px));max-height:88vh;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden"
+    class="bg-white dark:bg-gray-900"
+  >
+
+    {# --- Sarlavha --- #}
+    <div
+      style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid"
+      class="border-gray-200 dark:border-gray-700"
+    >
+      <div>
+        <div style="font-size:16px;font-weight:600" class="text-gray-900 dark:text-white">
+          Excel eksport
+        </div>
+        <div id="export-count-label" style="font-size:13px;margin-top:2px" class="text-gray-500 dark:text-gray-400"></div>
+      </div>
+      <button
+        type="button"
+        onclick="closeExportModal()"
+        style="padding:4px;border-radius:6px;line-height:1"
+        class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+      >
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    {# --- Forma --- #}
+    <form
+      id="export-excel-form"
+      method="post"
+      action="{{ export_url }}"
+      style="display:flex;flex-direction:column;min-height:0;flex:1"
+      onsubmit="setTimeout(closeExportModal,200)"
+    >
+      {% csrf_token %}
+
+      {# Scrollable content #}
+      <div style="overflow-y:auto;flex:1;padding:16px 24px">
+
+        {# Boshqaruv qatori #}
+        <div
+          style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid"
+          class="border-gray-100 dark:border-gray-800"
+        >
+          <span
+            style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase"
+            class="text-gray-400 dark:text-gray-500"
+          >
+            Maydonlar
+          </span>
+          <span
+            style="font-size:11px"
+            class="text-gray-300 dark:text-gray-600"
+          >
+            — sudrab tartibini o'zgartiring
+          </span>
+          <div style="display:flex;align-items:center;gap:10px;margin-left:auto;font-size:13px">
+            <button type="button" onclick="toggleExportFields(true)"
+                    class="text-blue-600 dark:text-blue-400 hover:underline">
+              Barchasini tanlash
+            </button>
+            <span class="text-gray-300 dark:text-gray-600">|</span>
+            <button type="button" onclick="toggleExportFields(false)"
+                    class="text-blue-600 dark:text-blue-400 hover:underline">
+              Bekor qilish
+            </button>
+          </div>
+        </div>
+
+        {# Field ro'yxati — drag-and-drop #}
+        <div id="export-fields-list" style="display:flex;flex-direction:column;gap:2px">
+          {% for field in export_fields %}
+          <div
+            class="export-field-item"
+            draggable="true"
+            style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:2px solid transparent;cursor:default;user-select:none"
+          >
+            {# Drag tutqich #}
+            <span
+              class="drag-handle text-gray-300 dark:text-gray-600"
+              style="flex-shrink:0;cursor:grab;line-height:1;font-size:20px"
+              title="Tartibni o'zgartirish uchun suring"
+            >
+              <span class="material-symbols-outlined" style="font-size:20px">drag_indicator</span>
+            </span>
+
+            {# Checkbox #}
+            <input
+              type="checkbox"
+              name="fields"
+              value="{{ field.name }}"
+              checked
+              class="export-field-cb"
+              style="width:16px;height:16px;flex-shrink:0;accent-color:#2563eb;cursor:pointer"
+            >
+
+            {# Verbose nom #}
+            <span
+              style="font-size:14px;font-weight:500;flex:1"
+              class="text-gray-800 dark:text-gray-100"
+            >
+              {{ field.verbose }}
+            </span>
+
+            {# Texnik nom #}
+            <code
+              style="font-size:11px;flex-shrink:0"
+              class="text-gray-400 dark:text-gray-500"
+            >
+              {{ field.name }}
+            </code>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# --- Footer --- #}
+      <div
+        style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid"
+        class="border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60"
+      >
+        <button
+          type="button"
+          onclick="closeExportModal()"
+          style="font-size:14px"
+          class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors"
+        >
+          Bekor qilish
+        </button>
+        <button
+          type="submit"
+          style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#059669;color:white;font-size:14px;font-weight:500;border-radius:8px;border:none;cursor:pointer;transition:background 0.15s"
+          onmouseover="this.style.background='#047857'"
+          onmouseout="this.style.background='#059669'"
+        >
+          <span class="material-symbols-outlined" style="font-size:18px;line-height:1">download</span>
+          Excel yuklab olish
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Modal ochish / yopish ---------- */
+
+  function openExportModal() {
+    var selected = document.querySelectorAll(
+      '#changelist-form input[name="_selected_action"]:checked'
+    );
+    if (selected.length === 0) {
+      alert("Kamida 1 ta qatorni belgilang.");
+      return;
+    }
+
+    var form = document.getElementById("export-excel-form");
+    form.querySelectorAll('input[name="ids"]').forEach(function (el) { el.remove(); });
+    selected.forEach(function (cb) {
+      var inp = document.createElement("input");
+      inp.type = "hidden";
+      inp.name = "ids";
+      inp.value = cb.value;
+      form.appendChild(inp);
+    });
+
+    document.getElementById("export-count-label").textContent =
+      selected.length + " ta yozuv tanlangan";
+
+    document.getElementById("export-excel-modal").style.display = "flex";
+  }
+
+  function closeExportModal() {
+    document.getElementById("export-excel-modal").style.display = "none";
+  }
+
+  function toggleExportFields(state) {
+    document.querySelectorAll(".export-field-cb").forEach(function (cb) {
+      cb.checked = state;
+    });
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeExportModal();
+  });
+
+  window.openExportModal = openExportModal;
+  window.closeExportModal = closeExportModal;
+  window.toggleExportFields = toggleExportFields;
+
+  /* ---------- Drag-and-drop tartib o'zgartirish ---------- */
+
+  var dragSrc = null;
+
+  function initDragDrop() {
+    var list = document.getElementById("export-fields-list");
+    if (!list) return;
+
+    list.addEventListener("dragstart", function (e) {
+      var item = e.target.closest(".export-field-item");
+      if (!item) return;
+      dragSrc = item;
+      item.style.opacity = "0.4";
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    list.addEventListener("dragend", function () {
+      if (dragSrc) dragSrc.style.opacity = "1";
+      dragSrc = null;
+      list.querySelectorAll(".export-field-item").forEach(function (el) {
+        el.style.borderColor = "transparent";
+      });
+    });
+
+    list.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      var target = e.target.closest(".export-field-item");
+      list.querySelectorAll(".export-field-item").forEach(function (el) {
+        el.style.borderColor = "transparent";
+      });
+      if (target && target !== dragSrc) {
+        target.style.borderColor = "#2563eb";
+      }
+    });
+
+    list.addEventListener("drop", function (e) {
+      e.preventDefault();
+      var target = e.target.closest(".export-field-item");
+      if (!target || target === dragSrc || !dragSrc) return;
+
+      var items = Array.from(list.children);
+      var srcIdx = items.indexOf(dragSrc);
+      var tgtIdx = items.indexOf(target);
+
+      if (srcIdx < tgtIdx) {
+        list.insertBefore(dragSrc, target.nextSibling);
+      } else {
+        list.insertBefore(dragSrc, target);
+      }
+    });
+  }
+
+  // DOM tayyor bo'lganda ishga tushirish
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDragDrop);
+  } else {
+    initDragDrop();
+  }
+})();
+</script>
+{% endblock %}

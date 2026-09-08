@@ -59,11 +59,13 @@ class FunnelSerializer(serializers.Serializer):
 
 
 class TasksSerializer(serializers.Serializer):
-    """Navbatdagi vazifalar sanoqlari (moderation va ai_signals hozircha 0)."""
+    """Navbatdagi vazifalar sanoqlari (profile_moderation hozircha 0).
+
+    Ochiq shikoyatlar va AI signallari sidebar badge'iga koʻchdi
+    (`SidebarBadgesSerializer`).
+    """
 
     profile_moderation = serializers.IntegerField()
-    ai_signals = serializers.IntegerField()
-    complaints_open = serializers.IntegerField()
 
 
 class DashboardSummarySerializer(serializers.Serializer):
@@ -73,3 +75,16 @@ class DashboardSummarySerializer(serializers.Serializer):
     trend = TrendSerializer()
     funnel = FunnelSerializer()
     tasks = TasksSerializer()
+
+
+class SidebarBadgesSerializer(serializers.Serializer):
+    """Sidebar menyu punktlari yonidagi badge sanoqlari.
+
+    `ai_signals` hozircha modeli yoʻq — doim 0.
+    """
+
+    users = serializers.IntegerField()
+    ai_signals = serializers.IntegerField()
+    complaints_open = serializers.IntegerField()
+    questions = serializers.IntegerField()
+    psychologists = serializers.IntegerField()
