@@ -11,7 +11,7 @@ class BaseModelAdmin(ExportExcelMixin, ModelAdmin):
     def delete_queryset(self, request, queryset):
         queryset.delete()
 
-    actions = ["export_to_excel", "really_hard_delete"]
+    actions = ["really_hard_delete"]
 
     @admin.action(description="Butunlay o'chirish")
     def really_hard_delete(self, request, queryset):
