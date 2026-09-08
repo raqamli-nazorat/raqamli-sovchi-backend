@@ -225,6 +225,8 @@ REST_FRAMEWORK = {
         "login": "5/15m",
         # Boshqaruv paneli — ogʻir aggregatsiya, tez-tez chaqirilmasin
         "dashboard": "60/h",
+        # Sidebar badge sanoqlari — yengil, har sahifada chaqiriladi
+        "dashboard_sidebar": "600/h",
     },
 }
 

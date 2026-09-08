@@ -8,13 +8,14 @@ from apps.accounts.users.permissions import IsStaffMember
 from apps.core.base.mixins import AutoSchemaMixin
 from apps.core.utils.throttles import CustomScopedRateThrottle
 
-from .serializers import DashboardSummarySerializer
-from .services import get_dashboard_summary
+from .serializers import DashboardSummarySerializer, SidebarBadgesSerializer
+from .services import get_dashboard_summary, get_sidebar_badges
 
 DEFAULT_DAYS = 14
 MIN_DAYS = 1
 MAX_DAYS = 90
 CACHE_TTL = 300
+SIDEBAR_CACHE_TTL = 60
 
 
 class DashboardSummaryView(AutoSchemaMixin, APIView):
@@ -61,4 +62,23 @@ class DashboardSummaryView(AutoSchemaMixin, APIView):
         if data is None:
             data = get_dashboard_summary(days)
             cache.set(cache_key, data, CACHE_TTL)
+        return Response(data)
+
+
+class SidebarBadgesView(AutoSchemaMixin, APIView):
+    """Sidebar menyu yonidagi badge sanoqlari — yengil, `days` yoʻq."""
+
+    permission_classes = [IsStaffMember]
+    throttle_classes = [CustomScopedRateThrottle]
+    throttle_scope = "dashboard_sidebar"
+    serializer_class = SidebarBadgesSerializer
+
+    @extend_schema(responses=SidebarBadgesSerializer)
+    def get(self, request, *args, **kwargs):
+        """Barcha badge sanoqlarini qaytaradi (natija 60 soniya keshlanadi)."""
+        cache_key = "dashboard:sidebar"
+        data = cache.get(cache_key)
+        if data is None:
+            data = get_sidebar_badges()
+            cache.set(cache_key, data, SIDEBAR_CACHE_TTL)
         return Response(data)

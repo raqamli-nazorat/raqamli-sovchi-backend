@@ -10,10 +10,14 @@ Amallar:
   * bir nechta Complaint (koʻp qismi "koʻrilmoqda") yaratadi.
 
 Idempotent emas — har ishga tushirishda yangi moslik/suhbat/shikoyat qoʻshiladi.
+`--refresh` esa yangi yozuv qoʻshmaydi: faqat mavjud demo suhbat/shikoyat sanasini
+hozirgi vaqtga yaqinlashtiradi (demo maʼlumot "eskirganda" `active_chats` /
+`complaints_open` koʻrsatkichlarini qayta "jonli" qilish uchun).
 
 Ishlatish:
     python manage.py seed_dashboard_demo
     python manage.py seed_dashboard_demo --days 14
+    python manage.py seed_dashboard_demo --refresh   # sanalarni hozirgi vaqtga yaqinlashtiradi
     python manage.py seed_dashboard_demo --clear     # demo maʼlumotni oʻchiradi
 """
 
@@ -21,6 +25,7 @@ import random
 from datetime import timedelta
 
 from auditlog.context import disable_auditlog
+from django.core.cache import cache
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
@@ -58,6 +63,14 @@ class Command(BaseCommand):
             action="store_true",
             help="Demo maʼlumotni oʻchiradi va sanalarni hozirgi vaqtga qaytaradi.",
         )
+        parser.add_argument(
+            "--refresh",
+            action="store_true",
+            help=(
+                "Yangi yozuv qoʻshmaydi — mavjud demo suhbat/shikoyat sanasini "
+                "hozirgi vaqtga yaqinlashtiradi (koʻrsatkichlar 'eskirganda')."
+            ),
+        )
 
     def handle(self, *args, **options):
         user_ids = list(_test_users_qs().values_list("id", flat=True))
@@ -72,12 +85,25 @@ class Command(BaseCommand):
         with disable_auditlog(), transaction.atomic():
             if options["clear"]:
                 self._clear(user_ids)
+            elif options["refresh"]:
+                self._refresh_recency(user_ids)
             else:
                 self._spread_dates(user_ids, options["days"])
                 self._make_matches(options["days"])
                 self._make_complaints()
 
+        self._bust_dashboard_cache()
         self.stdout.write(self.style.SUCCESS("Tayyor."))
+
+    @staticmethod
+    def _bust_dashboard_cache():
+        """Boshqaruv paneli / sidebar keshini tozalaydi — natija darhol koʻrinsin."""
+        try:
+            cache.delete_pattern("dashboard:*")
+        except AttributeError:
+            # Redis boʻlmagan backend uchun: maʼlum kalitlarni qoʻlda oʻchirish
+            cache.delete("dashboard:sidebar")
+            cache.delete_many([f"dashboard:summary:{d}" for d in range(1, 91)])
 
     # --- Tozalash ---
 
@@ -96,6 +122,53 @@ class Command(BaseCommand):
         UserAnswer.objects.filter(profile__user_id__in=user_ids).update(created_at=now)
         self.stdout.write(
             "Demo maʼlumot oʻchirildi, sanalar hozirgi vaqtga qaytarildi."
+        )
+
+    # --- Sanalarni yangilash (eskirgan demo uchun) ---
+
+    def _refresh_recency(self, user_ids):
+        """Mavjud demo suhbat/shikoyat sanasini hozirgi vaqtga yaqinlashtiradi.
+
+        Yangi yozuv qoʻshilmaydi. Suhbatlarning taxminan yarmida oxirgi xabar
+        oxirgi 20 soat ichiga koʻchiriladi — ular yana "faol suhbat" sifatida
+        sanaladi; barcha ochiq shikoyatlar ham bugungi kunga tortiladi.
+        """
+        now = timezone.now()
+        rooms = list(
+            ChatRoom.objects.filter(
+                is_active=True,
+                match_request__from_profile__user_id__in=user_ids,
+            ).order_by("id")
+        )
+        refreshed = 0
+        for idx, room in enumerate(rooms):
+            if idx % 2:  # yarmi eski (nofaol) qoladi
+                continue
+            last = (
+                Message.objects.filter(chat_room=room, is_active=True)
+                .order_by("-created_at")
+                .first()
+            )
+            if last is None:
+                continue
+            Message.objects.filter(id=last.id).update(
+                created_at=now - timedelta(hours=random.randint(1, 20))
+            )
+            refreshed += 1
+
+        open_ids = list(
+            Complaint.objects.filter(
+                from_user_id__in=user_ids, status=ComplaintStatus.PENDING
+            ).values_list("id", flat=True)
+        )
+        for complaint_id in open_ids:
+            Complaint.objects.filter(id=complaint_id).update(
+                created_at=now - timedelta(hours=random.randint(1, 20))
+            )
+
+        self.stdout.write(
+            f"{refreshed} ta suhbat 'faol' holatga, "
+            f"{len(open_ids)} ta ochiq shikoyat bugunga yangilandi."
         )
 
     # --- Sanalarni yoyish ---

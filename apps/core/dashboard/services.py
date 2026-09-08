@@ -2,8 +2,14 @@
 
 Har bir koʻrsatkich alohida funksiyada hisoblanadi. Hali modeli yoʻq
 koʻrsatkichlar (nikoh natijasi, profil moderatsiya navbati, sunʼiy intellekt
-signallari) hozircha 0 / null qaytaradi — tegishli model yaratilganda faqat shu
-funksiyalar ichi almashtiriladi, `get_dashboard_summary` javob shakli oʻzgarmaydi.
+signallari, psixologlar) hozircha 0 / null qaytaradi — tegishli model yaratilganda
+faqat shu funksiyalar ichi almashtiriladi, javob shakli oʻzgarmaydi.
+
+Ikki javob quriladi:
+- `get_dashboard_summary(days)` — boshqaruv paneli sahifasi (trend, voronka, KPI).
+- `get_sidebar_badges()` — sidebar menyu yonidagi badge sanoqlari (yengil, `days` yoʻq).
+Takrorlanmaslik uchun sidebar egalik qiladigan sanoqlar (ochiq shikoyatlar, AI
+signallari) summary `tasks` blokidan chiqarilgan.
 """
 
 from datetime import timedelta
@@ -16,6 +22,7 @@ from apps.accounts.complaints.models import Complaint, ComplaintStatus
 from apps.accounts.profiles.models import CandidateRole, GenderType, Profile
 from apps.accounts.questionnaire.models import Question, TargetGender
 from apps.accounts.users.models import User
+from apps.consulting.psychologists.models import Psychologist
 from apps.matches.chats.models import ChatRoom
 from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
 
@@ -174,6 +181,11 @@ def count_open_complaints():
     ).count()
 
 
+def count_active_questions():
+    """Anketadagi jami faol savollar soni (trap savollar ham shu ichida)."""
+    return Question.objects.filter(is_active=True).count()
+
+
 # --- Hali modeli yoʻq koʻrsatkichlar ---
 # Tegishli model yaratilganda shu funksiyalar ichidagi qiymat real hisob-kitob
 # bilan almashtiriladi; response shakli va endpoint oʻzgarmaydi.
@@ -214,6 +226,11 @@ def count_ai_signals():
     return 0
 
 
+def count_psychologists():
+    """Qabul qilayotgan (faol) psixologlar soni."""
+    return Psychologist.objects.active().filter(is_available=True).count()
+
+
 def get_dashboard_summary(days):
     """Boshqaruv paneli uchun barcha koʻrsatkichlarni bitta lugʻatga yigʻadi."""
     return {
@@ -234,9 +251,20 @@ def get_dashboard_summary(days):
         },
         "trend": get_trend(days),
         "funnel": get_funnel(),
+        # Ochiq shikoyatlar va AI signallari sidebar badge'iga koʻchdi —
+        # bu yerda takrorlanmaydi (`get_sidebar_badges`).
         "tasks": {
             "profile_moderation": count_pending_profile_moderation(),
-            "ai_signals": count_ai_signals(),
-            "complaints_open": count_open_complaints(),
         },
+    }
+
+
+def get_sidebar_badges():
+    """Sidebar menyu punktlari yonidagi badge sanoqlari (`days` ga bogʻliq emas)."""
+    return {
+        "users": count_total_users(),
+        "ai_signals": count_ai_signals(),
+        "complaints_open": count_open_complaints(),
+        "questions": count_active_questions(),
+        "psychologists": count_psychologists(),
     }
