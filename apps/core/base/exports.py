@@ -2,15 +2,12 @@
 
 import io
 
-from django.contrib import admin, messages
+from django.contrib import messages
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.urls import reverse
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
-
-_SESSION_IDS = "admin_excel_export_ids"
-_SESSION_MODEL = "admin_excel_export_model"
 
 
 def _get_concrete_fields(model):
@@ -21,7 +18,6 @@ def _get_concrete_fields(model):
             continue
         if getattr(f, "many_to_many", False):
             continue
-        # ForeignKey uchun attname (masalan: role_id), oddiy field uchun name
         col_name = getattr(f, "attname", f.name)
         verbose = str(getattr(f, "verbose_name", col_name)).capitalize()
         result.append({"name": col_name, "verbose": verbose})
@@ -39,7 +35,6 @@ def _build_excel(model, ids, selected_fields):
     header_fill = PatternFill("solid", fgColor="4472C4")
     header_font = Font(bold=True, color="FFFFFF")
 
-    # Sarlavha qatori
     field_map = {f["name"]: f["verbose"] for f in _get_concrete_fields(model)}
     headers = [field_map.get(f, f) for f in selected_fields]
     ws.append(headers)
@@ -48,11 +43,9 @@ def _build_excel(model, ids, selected_fields):
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    # Ma'lumot qatorlari
     for row in qs:
         ws.append([("" if row[f] is None else str(row[f])) for f in selected_fields])
 
-    # Ustun kengligi avtomatik
     for col in ws.columns:
         max_len = max((len(str(cell.value or "")) for cell in col), default=10)
         ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 60)
@@ -71,77 +64,51 @@ def _build_excel(model, ids, selected_fields):
 
 
 class ExportExcelMixin:
-    """Har qanday ModelAdmin ga Excel eksport qo'shuvchi mixin."""
+    """Changelist sahifasida modal orqali Excel eksport qo'shuvchi mixin."""
+
+    change_list_template = "admin/export_excel_changelist.html"
 
     def get_urls(self):
         from django.urls import path
 
         meta = self.model._meta
-        url_name = f"{meta.app_label}_{meta.model_name}_export_excel_fields"
         extra = [
             path(
-                "export-excel-fields/",
-                self.admin_site.admin_view(self._export_excel_fields_view),
-                name=url_name,
+                "export-excel/",
+                self.admin_site.admin_view(self._export_excel_view),
+                name=f"{meta.app_label}_{meta.model_name}_export_excel",
             ),
         ]
         return extra + super().get_urls()
 
-    @admin.action(description="Excel ga eksport qilish")
-    def export_to_excel(self, request, queryset):
-        """Tanlangan qatorlarni Excel ga eksport qilish uchun field tanlash sahifasiga yo'naltiradi."""
-        ids = [str(pk) for pk in queryset.values_list("pk", flat=True)]
+    def changelist_view(self, request, extra_context=None):
+        """Changelist kontekstiga export maydonlari va URL ni qo'shadi."""
+        extra_context = extra_context or {}
+        meta = self.model._meta
+        extra_context["export_fields"] = _get_concrete_fields(self.model)
+        extra_context["export_url"] = reverse(
+            f"admin:{meta.app_label}_{meta.model_name}_export_excel"
+        )
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def _export_excel_view(self, request):
+        """POST: ids[] va fields[] qabul qilib Excel fayl qaytaradi."""
+        if request.method != "POST":
+            return redirect("../")
+
+        ids = request.POST.getlist("ids")
+        selected_fields = request.POST.getlist("fields")
+
         if not ids:
             self.message_user(
                 request, "Hech qanday yozuv tanlanmadi.", level=messages.WARNING
             )
-            return
+            return redirect("../")
 
-        request.session[_SESSION_IDS] = ids
-        request.session[_SESSION_MODEL] = {
-            "app_label": self.model._meta.app_label,
-            "model_name": self.model._meta.model_name,
-        }
-        meta = self.model._meta
-        url = reverse(f"admin:{meta.app_label}_{meta.model_name}_export_excel_fields")
-        return redirect(url)
-
-    def _export_excel_fields_view(self, request):
-        """Field tanlash sahifasi: GET — forma, POST — Excel yuklab olish."""
-        saved_model = request.session.get(_SESSION_MODEL, {})
-        meta = self.model._meta
-
-        # Sessiya boshqa model uchun ekanligini tekshirish
-        if (
-            saved_model.get("app_label") != meta.app_label
-            or saved_model.get("model_name") != meta.model_name
-        ):
+        if not selected_fields:
             self.message_user(
-                request,
-                "Sessiya eskirgan yoki noto'g'ri model. Qaytadan tanlang.",
-                level=messages.ERROR,
+                request, "Kamida 1 ta maydon tanlang.", level=messages.WARNING
             )
-            return redirect("../../")
+            return redirect("../")
 
-        ids = request.session.get(_SESSION_IDS, [])
-        fields = _get_concrete_fields(self.model)
-
-        if request.method == "POST":
-            selected = request.POST.getlist("fields")
-            if not selected:
-                self.message_user(
-                    request, "Kamida 1 ta maydon tanlang.", level=messages.WARNING
-                )
-            else:
-                return _build_excel(self.model, ids, selected)
-
-        context = {
-            **self.admin_site.each_context(request),
-            "title": f"{meta.verbose_name_plural} — Excel eksport",
-            "subtitle": f"{len(ids)} ta yozuv tanlangan",
-            "fields": fields,
-            "ids_count": len(ids),
-            "opts": meta,
-            "has_permission": True,
-        }
-        return render(request, "admin/export_excel_fields.html", context)
+        return _build_excel(self.model, ids, selected_fields)
