@@ -50,7 +50,7 @@ jobs:
             # Kerak bo'lganda pastdagi BITTA qatorni izohdan chiqaring (# ni oching),
             # deploy o'tgach yana izohga qaytaring.
             #   100 ta test nomzod/vakil yaratish (Farg'ona):
-            python manage.py seed_test_candidates || echo "seed bajarilmadi, deploy davom etadi"
+            # python manage.py seed_test_candidates || echo "seed bajarilmadi, deploy davom etadi"
             #   o'sha 100 ta test userni o'chirish:
             # python manage.py unseed_test_candidates || echo "unseed bajarilmadi, deploy davom etadi"
             # ======================================================================
