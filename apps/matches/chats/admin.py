@@ -12,6 +12,6 @@ class ChatRoomAdmin(BaseModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(BaseModelAdmin):
-    list_display = ("id", "chat_room", "sender", "is_read", "created_at")
+    list_display = ("id", "chat_room", "sender", "is_read", "attachment", "created_at")
     list_filter = ("is_read",)
     search_fields = ("content", "sender__phone_number", "sender__email")
