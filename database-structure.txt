@@ -206,6 +206,7 @@ MATCH & CHAT
         id: uuid
         chat_room: FK ChatRoom
         sender: FK User
+        reply_to: FK Message [null] (javob berilgan xabar, SET_NULL)
         content: text [blank]
         attachment: file [null]
         is_read: boolean

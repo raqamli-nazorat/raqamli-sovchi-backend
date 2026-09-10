@@ -106,12 +106,22 @@ def build_message_payload(message):
     :param message: Xabar (Message).
     :return: Serializatsiya qilingan xabar (dict).
     """
+    reply = message.reply_to
+    reply_payload = None
+    if reply is not None:
+        reply_payload = {
+            "id": str(reply.id),
+            "sender": str(reply.sender_id),
+            "content": reply.content,
+            "attachment": reply.attachment.url if reply.attachment else None,
+        }
     return {
         "id": str(message.id),
         "chat_room": str(message.chat_room_id),
         "sender": str(message.sender_id),
         "content": message.content,
         "attachment": message.attachment.url if message.attachment else None,
+        "reply_to": reply_payload,
         "is_read": message.is_read,
         "created_at": (message.created_at.isoformat() if message.created_at else ""),
     }
@@ -183,7 +193,7 @@ def notify_recipient_new_message(message):
     )
 
 
-def persist_chat_message(chat_room, sender, content):
+def persist_chat_message(chat_room, sender, content, reply_to_id=None):
     """
     Chat xabarini bazaga yozadi va qabul qiluvchiga bildirishnoma yaratadi.
 
@@ -194,10 +204,22 @@ def persist_chat_message(chat_room, sender, content):
     :param chat_room: Chat xonasi (ChatRoom).
     :param sender: Yuboruvchi (User).
     :param content: Xabar matni (str).
+    :param reply_to_id: Javob berilayotgan xabar ID si (str | None).
+    :raises ValueError: reply_to xabari topilmasa yoki boshqa xonaga tegishli bo'lsa.
     :return: Yaratilgan xabar (Message).
     """
+    reply_to = None
+    if reply_to_id:
+        reply_to = (
+            Message.objects.active().filter(pk=reply_to_id, chat_room=chat_room).first()
+        )
+        if reply_to is None:
+            raise ValueError(
+                "Javob berilayotgan xabar topilmadi yoki boshqa chat xonasiga tegishli."
+            )
+
     message = Message.objects.create(
-        chat_room=chat_room, sender=sender, content=content
+        chat_room=chat_room, sender=sender, content=content, reply_to=reply_to
     )
     notify_recipient_new_message(message)
     return message

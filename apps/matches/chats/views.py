@@ -83,6 +83,8 @@ class MessageViewSet(BaseManageViewSet):
     def get_queryset(self):
         qs = Message.objects.select_related(
             "sender",
+            "reply_to",
+            "reply_to__sender",
             "chat_room__match_request__from_profile__user",
             "chat_room__match_request__to_profile__user",
         ).active()
