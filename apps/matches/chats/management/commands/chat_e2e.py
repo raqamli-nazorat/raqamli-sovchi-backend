@@ -87,9 +87,26 @@ class Command(BaseCommand):
             self.stdout.write(f"ws ticket  : {ticket}  (amal qiladi: {ttl}s)")
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"WS URL     : ws://{host}/ws/chat/{room.id}/?ticket={ticket}"
+                    f"chat WS    : ws://{host}/ws/chat/{room.id}/?ticket={ticket}"
                 )
             )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"notif WS   : ws://{host}/ws/notifications/?ticket={ticket}"
+                )
+            )
+
+        self.stdout.write(
+            self.style.HTTP_INFO("\n--- ONLAYN HOLAT (presence) SINOVI ---")
+        )
+        self.stdout.write(
+            "1. USER B ni `notif WS` ga ula.\n"
+            "2. USER A ni `notif WS` ga ula -> B `{type:presence, status:online}` oladi.\n"
+            "3. USER A ulanishini uz -> B `{type:presence, status:offline, last_seen}` oladi.\n"
+            '4. Ulangan holda ~30s da bir `{"type":"ping"}` yubor -> `{type:pong}` qaytadi.\n'
+            f"REST tekshiruv: curl http://{host}/api/v1/matches/chat-rooms/{room.id}/presence/ "
+            "-H 'Authorization: Bearer <USER_A_ACCESS>'"
+        )
 
         self.stdout.write(
             self.style.HTTP_INFO("\n--- XABAR YUBORISH (REST -> WS ga tarqaladi) ---")
