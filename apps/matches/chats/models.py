@@ -35,6 +35,14 @@ class Message(BaseModel):
         related_name="sent_messages",
         verbose_name="Yuboruvchi",
     )
+    reply_to = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        related_name="replies",
+        blank=True,
+        null=True,
+        verbose_name="Javob berilgan xabar",
+    )
     content = models.TextField(blank=True, default="", verbose_name="Xabar matni")
     attachment = models.FileField(
         upload_to="chat_attachments/",

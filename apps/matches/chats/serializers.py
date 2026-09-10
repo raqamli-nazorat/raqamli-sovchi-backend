@@ -21,6 +21,15 @@ class ChatRoomReadSerializer(serializers.Serializer):
 
 
 class MessageSerializer(BaseModelSerializer):
+    # Javob berilayotgan xabar — faqat faol xabarlar qabul qilinadi. O'qishda
+    # `reply_to_info` (qisqa oldindan ko'rinish) sifatida qaytadi.
+    reply_to = serializers.PrimaryKeyRelatedField(
+        queryset=Message.objects.active(),
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+
     class Meta:
         model = Message
         fields = "__all__"
@@ -30,11 +39,15 @@ class MessageSerializer(BaseModelSerializer):
         related_fields = {
             "sender": ["id", "phone_number", "email"],
             "chat_room": ["id"],
+            "reply_to": {
+                "fields": ["id", "sender", "content", "attachment", "created_at"]
+            },
         }
 
     def validate(self, attrs):
         """
-        Xabarda kamida matn yoki biriktirilgan fayl bo'lishi shart.
+        Xabarda kamida matn yoki biriktirilgan fayl bo'lishi shart; `reply_to`
+        berilsa u ayni chat xonasiga tegishli bo'lishi kerak.
 
         :param attrs: Tekshiruvdan o'tgan maydonlar (dict).
         :return: O'zgarmagan attrs (dict).
@@ -51,6 +64,17 @@ class MessageSerializer(BaseModelSerializer):
             raise serializers.ValidationError(
                 "Xabar bo'sh bo'lishi mumkin emas: matn yoki fayl biriktiring."
             )
+
+        reply_to = attrs.get("reply_to")
+        if reply_to is not None:
+            chat_room = attrs.get(
+                "chat_room",
+                getattr(self.instance, "chat_room", None) if is_partial else None,
+            )
+            if chat_room is not None and reply_to.chat_room_id != chat_room.id:
+                raise serializers.ValidationError(
+                    "Javob berilayotgan xabar ushbu chat xonasiga tegishli emas."
+                )
         return attrs
 
     def validate_chat_room(self, value):

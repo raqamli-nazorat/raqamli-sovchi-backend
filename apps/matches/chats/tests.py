@@ -204,6 +204,46 @@ class ChatsTestCase(TestCase):
         msg.refresh_from_db()
         self.assertTrue(msg.is_read)
 
+    # --- reply_to (xabarga javob) ---
+
+    def test_reply_to_message_success(self):
+        original = self._create_message(self.user2, content="Asl savol")
+        self.client.force_authenticate(user=self.user1)
+        data = {
+            "chat_room": str(self.chat_room.id),
+            "content": "Mana javob",
+            "reply_to": str(original.id),
+        }
+        response = self.client.post("/api/v1/matches/messages/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["reply_to_info"]["id"], str(original.id))
+        msg = Message.objects.get(id=response.data["id"])
+        self.assertEqual(msg.reply_to_id, original.id)
+
+    def test_reply_to_message_from_other_room_invalid_data(self):
+        other_room = ChatRoom.objects.create(match_request=self.match_req)
+        foreign_msg = Message.objects.create(
+            chat_room=other_room, sender=self.user2, content="Boshqa xonadagi xabar"
+        )
+        self.client.force_authenticate(user=self.user1)
+        data = {
+            "chat_room": str(self.chat_room.id),
+            "content": "Javob",
+            "reply_to": str(foreign_msg.id),
+        }
+        response = self.client.post("/api/v1/matches/messages/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_reply_to_nonexistent_message_invalid_data(self):
+        self.client.force_authenticate(user=self.user1)
+        data = {
+            "chat_room": str(self.chat_room.id),
+            "content": "Javob",
+            "reply_to": str(uuid.uuid4()),
+        }
+        response = self.client.post("/api/v1/matches/messages/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     # --- mark-read / unread-count ---
 
     def test_mark_read_success(self):
@@ -405,6 +445,63 @@ class ChatWebSocketTestCase(TransactionTestCase):
             comm = self._connect(self.user1)
             self.assertTrue((await comm.connect())[0])
             await comm.send_json_to({"type": "message", "content": "   "})
+            event = await comm.receive_json_from(timeout=3)
+            self.assertEqual(event["type"], "error")
+            await comm.disconnect()
+
+        async_to_sync(scenario)()
+
+    def test_websocket_reply_to_message_success(self):
+        async def scenario():
+            original = await database_sync_to_async(Message.objects.create)(
+                chat_room=self.room, sender=self.user2, content="Asl savol"
+            )
+            comm_a = self._connect(self.user1)
+            comm_b = self._connect(self.user2)
+            self.assertTrue((await comm_a.connect())[0])
+            self.assertTrue((await comm_b.connect())[0])
+
+            await comm_a.send_json_to(
+                {
+                    "type": "message",
+                    "content": "WS javob",
+                    "reply_to": str(original.id),
+                }
+            )
+
+            event = await comm_b.receive_json_from(timeout=3)
+            self.assertEqual(event["type"], "message")
+            self.assertEqual(event["message"]["reply_to"]["id"], str(original.id))
+
+            new_msg = await database_sync_to_async(
+                lambda: Message.objects.get(id=event["message"]["id"]).reply_to_id
+            )()
+            self.assertEqual(new_msg, original.id)
+
+            await comm_a.disconnect()
+            await comm_b.disconnect()
+
+        async_to_sync(scenario)()
+
+    def test_websocket_reply_to_other_room_returns_error(self):
+        async def scenario():
+            other_room = await database_sync_to_async(ChatRoom.objects.create)(
+                match_request_id=self.room.match_request_id
+            )
+            foreign_msg = await database_sync_to_async(Message.objects.create)(
+                chat_room=other_room, sender=self.user2, content="Boshqa xona"
+            )
+            comm = self._connect(self.user1)
+            self.assertTrue((await comm.connect())[0])
+
+            await comm.send_json_to(
+                {
+                    "type": "message",
+                    "content": "Javob",
+                    "reply_to": str(foreign_msg.id),
+                }
+            )
+
             event = await comm.receive_json_from(timeout=3)
             self.assertEqual(event["type"], "error")
             await comm.disconnect()
