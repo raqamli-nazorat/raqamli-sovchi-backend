@@ -6,6 +6,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 
+from apps.accounts.notifications.presence import get_chat_partner_ids, get_presence
 from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 
 from .models import ChatRoom, Message
@@ -40,6 +41,32 @@ class ChatRoomViewSet(BaseReadOnlyViewSet):
             "match_request__to_profile__user",
         ).active()
         return filter_chat_rooms_for_user(qs, self.request.user)
+
+    @extend_schema(
+        summary="Suhbatdoshning onlayn holati",
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=True, methods=["get"], url_path="presence")
+    def presence(self, request, pk=None):
+        """Ushbu xonadagi ikkinchi ishtirokchining hozirgi onlayn holati."""
+        room = self.get_object()
+        mr = room.match_request
+        from_id = mr.from_profile.user_id if mr and mr.from_profile else None
+        to_id = mr.to_profile.user_id if mr and mr.to_profile else None
+        partner_id = to_id if str(from_id) == str(request.user.id) else from_id
+        if not partner_id:
+            raise NotFound("Suhbatdosh topilmadi.")
+        return Response(get_presence(partner_id))
+
+    @extend_schema(
+        summary="Barcha suhbatdoshlarning onlayn holati",
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=False, methods=["get"], url_path="presence")
+    def presence_all(self, request):
+        """Foydalanuvchining barcha suhbatdoshlari holati (chat ro'yxati ekrani uchun)."""
+        partner_ids = get_chat_partner_ids(request.user.id)
+        return Response({pid: get_presence(pid) for pid in partner_ids})
 
 
 class MessageViewSet(BaseManageViewSet):

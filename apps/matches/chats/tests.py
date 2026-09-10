@@ -249,6 +249,55 @@ class ChatsTestCase(TestCase):
         response = self.client.get("/api/v1/matches/messages/unread-count/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    # --- onlayn holat ---
+
+    def test_presence_returns_offline_when_partner_not_connected(self):
+        cache.delete(f"presence:conn:{self.user2.id}")
+        cache.delete(f"presence:last_seen:{self.user2.id}")
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/presence/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["user"], str(self.user2.id))
+        self.assertEqual(response.data["status"], "offline")
+
+    def test_presence_reflects_connected_partner(self):
+        cache.set(f"presence:conn:{self.user2.id}", 1, timeout=70)
+        self.addCleanup(cache.delete, f"presence:conn:{self.user2.id}")
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/presence/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "online")
+
+    def test_presence_unauthenticated(self):
+        response = self.client.get(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/presence/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_presence_not_found_for_non_participant(self):
+        outsider = User.objects.create(
+            phone_number="+998905555555",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.client.force_authenticate(user=outsider)
+        response = self.client.get(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/presence/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_presence_all_lists_partner_status(self):
+        cache.delete(f"presence:conn:{self.user2.id}")
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get("/api/v1/matches/chat-rooms/presence/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(str(self.user2.id), response.data)
+        self.assertEqual(response.data[str(self.user2.id)]["status"], "offline")
+
     # --- tartiblash ---
 
     def test_messages_ordered_chronologically(self):
