@@ -60,7 +60,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if not content:
                 await self._error("Xabar matni bo'sh bo'lishi mumkin emas.")
                 return
-            message = await self._persist_message(content)
+            try:
+                message = await self._persist_message(content, data.get("reply_to"))
+            except ValueError as exc:
+                await self._error(str(exc))
+                return
             await self.channel_layer.group_send(
                 self.group_name,
                 {"type": "chat_message", "message": self._payload(message)},
@@ -103,10 +107,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return qs.filter(pk=room_id).exists()
 
     @database_sync_to_async
-    def _persist_message(self, content):
+    def _persist_message(self, content, reply_to_id=None):
         """Xabarni bazaga yozadi va qabul qiluvchiga bildirishnoma yaratadi."""
         from .models import ChatRoom
         from .services import persist_chat_message
 
         room = ChatRoom.objects.get(pk=self.room_id)
-        return persist_chat_message(room, self.scope["user"], content)
+        return persist_chat_message(room, self.scope["user"], content, reply_to_id)
