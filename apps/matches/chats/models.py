@@ -35,7 +35,13 @@ class Message(BaseModel):
         related_name="sent_messages",
         verbose_name="Yuboruvchi",
     )
-    content = models.TextField(verbose_name="Xabar matni")
+    content = models.TextField(blank=True, default="", verbose_name="Xabar matni")
+    attachment = models.FileField(
+        upload_to="chat_attachments/",
+        blank=True,
+        null=True,
+        verbose_name="Biriktirilgan fayl",
+    )
     is_read = models.BooleanField(default=False, verbose_name="O'qilganligi")
 
     class Meta:
