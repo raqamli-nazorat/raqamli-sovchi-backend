@@ -206,7 +206,8 @@ MATCH & CHAT
         id: uuid
         chat_room: FK ChatRoom
         sender: FK User
-        content: text
+        content: text [blank]
+        attachment: file [null]
         is_read: boolean
         created_at: timestamp
         updated_at: timestamp
