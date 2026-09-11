@@ -57,8 +57,8 @@ class MatchRequestViewSet(BaseManageViewSet):
             sender_name = user_profile.first_name if user_profile else "Foydalanuvchi"
             Notification.objects.create(
                 user=instance.to_profile.user,
-                title="Yangi rasm ko'rish so'rovi",
-                message=f"{sender_name} sizga rasm ko'rish so'rovini yubordi.",
+                title="Yangi moslik so'rovi",
+                message=f"{sender_name} sizga moslik so'rovini yubordi.",
                 extra_data={
                     "type": "match_request_created",
                     "request_id": str(instance.id),
@@ -113,8 +113,8 @@ class MatchRequestViewSet(BaseManageViewSet):
             )
             Notification.objects.create(
                 user=match_req.from_profile.user,
-                title="Rasm ko'rish so'rovi qabul qilindi!",
-                message=f"{receiver_name} rasm ko'rish so'rovingizni qabul qildi.",
+                title="Moslik so'rovi qabul qilindi!",
+                message=f"{receiver_name} moslik so'rovingizni qabul qildi.",
                 extra_data={
                     "type": "match_request_accepted",
                     "request_id": str(match_req.id),
@@ -156,8 +156,8 @@ class MatchRequestViewSet(BaseManageViewSet):
             )
             Notification.objects.create(
                 user=match_req.from_profile.user,
-                title="Rasm ko'rish so'rovi rad etildi",
-                message=f"{receiver_name} rasm ko'rish so'rovingizni rad etdi.",
+                title="Moslik so'rovi rad etildi",
+                message=f"{receiver_name} moslik so'rovingizni rad etdi.",
                 extra_data={
                     "type": "match_request_rejected",
                     "request_id": str(match_req.id),
