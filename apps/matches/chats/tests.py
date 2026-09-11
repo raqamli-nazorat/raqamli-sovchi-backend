@@ -16,7 +16,7 @@ from apps.accounts.profiles.models import (
     ProfilePhoto,
 )
 from apps.accounts.users.models import AuthProvider, Role, User
-from apps.matches.chats.models import ChatRoom, Message
+from apps.matches.chats.models import MESSAGE_CONTENT_MAX_LENGTH, ChatRoom, Message
 from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
 
 INMEMORY_CHANNEL_LAYERS = {
@@ -165,6 +165,15 @@ class ChatsTestCase(TestCase):
     def test_send_empty_message_invalid_data(self):
         self.client.force_authenticate(user=self.user1)
         data = {"chat_room": str(self.chat_room.id), "content": "   "}
+        response = self.client.post("/api/v1/matches/messages/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_send_too_long_message_invalid_data(self):
+        self.client.force_authenticate(user=self.user1)
+        data = {
+            "chat_room": str(self.chat_room.id),
+            "content": "a" * (MESSAGE_CONTENT_MAX_LENGTH + 1),
+        }
         response = self.client.post("/api/v1/matches/messages/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -479,6 +488,19 @@ class ChatWebSocketTestCase(TransactionTestCase):
             comm = self._connect(self.user1)
             self.assertTrue((await comm.connect())[0])
             await comm.send_json_to({"type": "message", "content": "   "})
+            event = await comm.receive_json_from(timeout=3)
+            self.assertEqual(event["type"], "error")
+            await comm.disconnect()
+
+        async_to_sync(scenario)()
+
+    def test_too_long_websocket_message_returns_error(self):
+        async def scenario():
+            comm = self._connect(self.user1)
+            self.assertTrue((await comm.connect())[0])
+            await comm.send_json_to(
+                {"type": "message", "content": "a" * (MESSAGE_CONTENT_MAX_LENGTH + 1)}
+            )
             event = await comm.receive_json_from(timeout=3)
             self.assertEqual(event["type"], "error")
             await comm.disconnect()

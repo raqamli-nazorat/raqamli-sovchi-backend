@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.core.base.serializers import BaseModelSerializer
 
-from .models import ChatRoom, Message
+from .models import MESSAGE_CONTENT_MAX_LENGTH, ChatRoom, Message
 
 
 class ChatRoomSerializer(BaseModelSerializer):
@@ -74,6 +74,16 @@ class MessageSerializer(BaseModelSerializer):
         required=False,
         allow_null=True,
         write_only=True,
+    )
+    # Uzunlik chegarasi va xatolik matni o'zbekcha bo'lishi uchun aniq e'lon
+    # qilingan — avtomatik generatsiya qilingan maydon ingliz tilida xato beradi.
+    content = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=MESSAGE_CONTENT_MAX_LENGTH,
+        error_messages={
+            "max_length": f"Xabar matni juda uzun (maksimal {MESSAGE_CONTENT_MAX_LENGTH} belgi)."
+        },
     )
 
     class Meta:

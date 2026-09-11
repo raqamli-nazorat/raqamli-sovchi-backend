@@ -15,6 +15,20 @@ def is_female_candidate(profile):
 
 
 def can_view_profile_photos(request_user, target_profile):
+    """
+    Foydalanuvchi nishon profilning rasmlarini ko'ra olish-olmasligini aniqlaydi.
+
+    Ikki profil orasida holati PENDING yoki ACCEPTED bo'lgan MatchRequest bo'lsa
+    (qaysi tomon yuborgani muhim emas) rasm ochiq hisoblanadi — jinsidan qat'iy
+    nazar. So'rov REJECTED bo'lsa (yoki umuman bo'lmasa) rasm yana yopiladi;
+    bu holat hech qayerda saqlanmaydi, har chaqiriqda jonli hisoblanadi.
+    Faol so'rov bo'lmasa: qiz nomzod uchun har doim yopiq, boshqalar uchun
+    `blur_photos` bayrog'iga qarab belgilanadi.
+
+    :param request_user: So'rov yuborayotgan foydalanuvchi (User).
+    :param target_profile: Rasmlari tekshirilayotgan profil (Profile).
+    :return: Ko'rish huquqi bo'lsa True, aks holda False (bool).
+    """
     if not request_user or not request_user.is_authenticated:
         return False
 
@@ -36,10 +50,13 @@ def can_view_profile_photos(request_user, target_profile):
 
     user_profile = getattr(request_user, "profile", None)
 
-    has_accepted_match = False
+    has_active_match = False
     if user_profile:
-        has_accepted_match = (
-            MatchRequest.objects.filter(status=MatchRequestStatus.ACCEPTED)
+        has_active_match = (
+            MatchRequest.objects.active()
+            .filter(
+                status__in=[MatchRequestStatus.PENDING, MatchRequestStatus.ACCEPTED]
+            )
             .filter(
                 Q(from_profile=user_profile, to_profile=target_profile)
                 | Q(from_profile=target_profile, to_profile=user_profile)
@@ -47,11 +64,11 @@ def can_view_profile_photos(request_user, target_profile):
             .exists()
         )
 
-    if is_female_candidate(target_profile):
-        return has_accepted_match
-
-    if has_accepted_match:
+    if has_active_match:
         return True
+
+    if is_female_candidate(target_profile):
+        return False
 
     if not target_profile.blur_photos:
         return True

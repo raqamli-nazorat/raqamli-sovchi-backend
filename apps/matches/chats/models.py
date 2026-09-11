@@ -4,6 +4,8 @@ from apps.accounts.users.models import User
 from apps.core.base.models import BaseModel
 from apps.matches.match_requests.models import MatchRequest
 
+MESSAGE_CONTENT_MAX_LENGTH = 256
+
 
 class ChatRoom(BaseModel):
     match_request = models.ForeignKey(
@@ -43,7 +45,12 @@ class Message(BaseModel):
         null=True,
         verbose_name="Javob berilgan xabar",
     )
-    content = models.TextField(blank=True, default="", verbose_name="Xabar matni")
+    content = models.TextField(
+        blank=True,
+        default="",
+        max_length=MESSAGE_CONTENT_MAX_LENGTH,
+        verbose_name="Xabar matni",
+    )
     attachment = models.FileField(
         upload_to="chat_attachments/",
         blank=True,
