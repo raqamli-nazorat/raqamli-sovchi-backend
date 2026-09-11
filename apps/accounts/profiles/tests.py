@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.accounts.profiles.models import CandidateRole, GenderType, Profile
+from apps.accounts.profiles.utils import can_view_profile_photos
 from apps.accounts.users.models import AuthProvider, Role, User
 
 
@@ -468,3 +469,82 @@ class SeedTestCandidatesCommandTestCase(TestCase):
             User.objects.filter(phone_number__startswith="+99890000").count(), 10
         )
         call_command("unseed_test_candidates")
+
+
+class CanViewProfilePhotosTestCase(TestCase):
+    """
+    `can_view_profile_photos` funksiyasi: moslik so'rovi holatiga qarab
+    rasm ko'rinish-ko'rinmasligini tekshiradi.
+    """
+
+    def setUp(self):
+        self.role = Role.objects.filter(is_default=True).first()
+
+        self.user_bride = User.objects.create(
+            phone_number="+998904444401",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile_bride = Profile.objects.create(
+            user=self.user_bride,
+            first_name="Qiz",
+            last_name="Nomzod",
+            gender=GenderType.FEMALE,
+            candidate_type=CandidateRole.BRIDE,
+            birth_date="1999-01-01",
+            height=165,
+        )
+
+        self.user_groom = User.objects.create(
+            phone_number="+998904444402",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile_groom = Profile.objects.create(
+            user=self.user_groom,
+            first_name="Yigit",
+            last_name="Nomzod",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_date="1995-01-01",
+            height=180,
+        )
+
+    def _create_match_request(self, from_profile, to_profile, status):
+        from apps.matches.match_requests.models import MatchRequest
+
+        return MatchRequest.objects.create(
+            from_profile=from_profile, to_profile=to_profile, status=status
+        )
+
+    def test_view_photo_pending_match_visible_both_directions(self):
+        from apps.matches.match_requests.models import MatchRequestStatus
+
+        self._create_match_request(
+            self.profile_bride, self.profile_groom, MatchRequestStatus.PENDING
+        )
+
+        self.assertTrue(can_view_profile_photos(self.user_groom, self.profile_bride))
+        self.assertTrue(can_view_profile_photos(self.user_bride, self.profile_groom))
+
+    def test_view_photo_rejected_match_hidden(self):
+        from apps.matches.match_requests.models import MatchRequestStatus
+
+        self._create_match_request(
+            self.profile_bride, self.profile_groom, MatchRequestStatus.REJECTED
+        )
+
+        self.assertFalse(can_view_profile_photos(self.user_groom, self.profile_bride))
+        self.assertFalse(can_view_profile_photos(self.user_bride, self.profile_groom))
+
+    def test_view_photo_no_match_bride_hidden_by_default(self):
+        self.assertFalse(can_view_profile_photos(self.user_groom, self.profile_bride))
+
+    def test_view_photo_no_match_groom_visible_when_blur_disabled(self):
+        self.profile_groom.blur_photos = False
+        self.profile_groom.save(update_fields=["blur_photos"])
+
+        self.assertTrue(can_view_profile_photos(self.user_bride, self.profile_groom))
+
+    def test_view_photo_own_profile_always_visible(self):
+        self.assertTrue(can_view_profile_photos(self.user_bride, self.profile_bride))

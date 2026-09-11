@@ -4,7 +4,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.db.models import Q
 
-from .models import Message
+from .models import MESSAGE_CONTENT_MAX_LENGTH, Message
 
 logger = logging.getLogger(__name__)
 
@@ -205,9 +205,15 @@ def persist_chat_message(chat_room, sender, content, reply_to_id=None):
     :param sender: Yuboruvchi (User).
     :param content: Xabar matni (str).
     :param reply_to_id: Javob berilayotgan xabar ID si (str | None).
-    :raises ValueError: reply_to xabari topilmasa yoki boshqa xonaga tegishli bo'lsa.
+    :raises ValueError: reply_to xabari topilmasa/boshqa xonaga tegishli bo'lsa
+        yoki matn uzunlik chegarasidan oshsa.
     :return: Yaratilgan xabar (Message).
     """
+    if len(content or "") > MESSAGE_CONTENT_MAX_LENGTH:
+        raise ValueError(
+            f"Xabar matni juda uzun (maksimal {MESSAGE_CONTENT_MAX_LENGTH} belgi)."
+        )
+
     reply_to = None
     if reply_to_id:
         reply_to = (
