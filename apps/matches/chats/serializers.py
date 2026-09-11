@@ -6,11 +6,57 @@ from .models import ChatRoom, Message
 
 
 class ChatRoomSerializer(BaseModelSerializer):
+    # Joriy foydalanuvchi uchun suhbatdoshning ismi va asosiy rasmi — frontend
+    # xona ro'yxatida "kim bilan" suhbat ekanini shu maydondan oladi.
+    partner_info = serializers.SerializerMethodField()
+
     class Meta:
         model = ChatRoom
         fields = "__all__"
         related_fields = {
             "match_request": ["id", "from_profile", "to_profile", "status"],
+        }
+
+    def get_partner_info(self, obj):
+        """
+        Xonaning ikkinchi ishtirokchisi (so'rov yuborayotgan foydalanuvchi
+        emas) haqida qisqa ma'lumot: id, to'liq ism, asosiy rasm.
+
+        Foydalanuvchi ma'lum bo'lmasa (masalan, schema generatsiyasi) yoki
+        xodim moslik so'rovining hech qaysi tomoni bo'lmasa — None qaytadi.
+
+        :param obj: Chat xonasi (ChatRoom).
+        :return: {"id", "full_name", "main_photo"} yoki None (dict | None).
+        """
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        match_request = obj.match_request
+        if (
+            not user
+            or not getattr(user, "is_authenticated", False)
+            or not match_request
+        ):
+            return None
+
+        from_profile = match_request.from_profile
+        to_profile = match_request.to_profile
+        if from_profile and from_profile.user_id == user.id:
+            partner = to_profile
+        elif to_profile and to_profile.user_id == user.id:
+            partner = from_profile
+        else:
+            return None
+
+        if not partner:
+            return None
+
+        main_photo = next((p for p in partner.photos.all() if p.is_main), None)
+        return {
+            "id": partner.id,
+            "full_name": f"{partner.first_name} {partner.last_name}".strip(),
+            "main_photo": main_photo.image.url
+            if main_photo and main_photo.image
+            else None,
         }
 
 
