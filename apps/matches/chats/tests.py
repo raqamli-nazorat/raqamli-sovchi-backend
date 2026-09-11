@@ -9,7 +9,12 @@ from django.test import TestCase, TransactionTestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.accounts.profiles.models import CandidateRole, GenderType, Profile
+from apps.accounts.profiles.models import (
+    CandidateRole,
+    GenderType,
+    Profile,
+    ProfilePhoto,
+)
 from apps.accounts.users.models import AuthProvider, Role, User
 from apps.matches.chats.models import ChatRoom, Message
 from apps.matches.match_requests.models import MatchRequest, MatchRequestStatus
@@ -98,6 +103,35 @@ class ChatsTestCase(TestCase):
     def test_list_chat_rooms_unauthenticated(self):
         response = self.client.get("/api/v1/matches/chat-rooms/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_list_chat_rooms_returns_partner_name_and_main_photo(self):
+        """`partner_info` — so'rov yuborayotgan foydalanuvchiga ko'ra suhbatdoshning
+        ismi va faqat asosiy (`is_main=True`) rasmi qaytishini tekshiradi."""
+        main_photo = ProfilePhoto.objects.create(
+            profile=self.profile2,
+            image=SimpleUploadedFile(
+                "main.jpg", b"fake-image-bytes", content_type="image/jpeg"
+            ),
+            order=1,
+            is_main=True,
+        )
+        ProfilePhoto.objects.create(
+            profile=self.profile2,
+            image=SimpleUploadedFile(
+                "other.jpg", b"fake-image-bytes", content_type="image/jpeg"
+            ),
+            order=2,
+            is_main=False,
+        )
+
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get("/api/v1/matches/chat-rooms/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        room_data = response.data["results"][0]
+        partner = room_data["partner_info"]
+        self.assertEqual(partner["full_name"], "User2 Test")
+        self.assertIn(main_photo.image.name.rsplit("/", 1)[-1], partner["main_photo"])
 
     def test_create_chat_room_not_allowed(self):
         self.client.force_authenticate(user=self.user1)
