@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -7,6 +8,7 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
 
 from apps.accounts.notifications.presence import get_chat_partner_ids, get_presence
+from apps.accounts.profiles.models import ProfilePhoto
 from apps.core.base.views import BaseManageViewSet, BaseReadOnlyViewSet
 
 from .models import ChatRoom, Message
@@ -36,10 +38,20 @@ class ChatRoomViewSet(BaseReadOnlyViewSet):
     ordering_fields = ["created_at"]
 
     def get_queryset(self):
-        qs = ChatRoom.objects.select_related(
-            "match_request__from_profile__user",
-            "match_request__to_profile__user",
-        ).active()
+        # `partner_info` (ism + asosiy rasm) uchun faqat is_main=True rasm
+        # oldindan yuklanadi — aks holda har xona uchun alohida so'rov ketardi (N+1).
+        main_photo_qs = ProfilePhoto.objects.filter(is_main=True)
+        qs = (
+            ChatRoom.objects.select_related(
+                "match_request__from_profile__user",
+                "match_request__to_profile__user",
+            )
+            .prefetch_related(
+                Prefetch("match_request__from_profile__photos", queryset=main_photo_qs),
+                Prefetch("match_request__to_profile__photos", queryset=main_photo_qs),
+            )
+            .active()
+        )
         return filter_chat_rooms_for_user(qs, self.request.user)
 
     @extend_schema(
