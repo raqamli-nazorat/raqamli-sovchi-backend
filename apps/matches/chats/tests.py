@@ -142,6 +142,53 @@ class ChatsTestCase(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    def test_delete_chat_room_by_participant_success(self):
+        self._create_message(self.user1)
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.delete(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.chat_room.refresh_from_db()
+        self.assertFalse(self.chat_room.is_active)
+        self.assertFalse(
+            Message.objects.active().filter(chat_room=self.chat_room).exists()
+        )
+
+    def test_delete_chat_room_by_staff_success(self):
+        staff_user = User.objects.create(
+            phone_number="+998903333333",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+            is_superuser=True,
+            is_staff=True,
+        )
+        self.client.force_authenticate(user=staff_user)
+        response = self.client.delete(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.chat_room.refresh_from_db()
+        self.assertFalse(self.chat_room.is_active)
+
+    def test_delete_chat_room_by_non_participant_not_found(self):
+        outsider = _make_user_with_profile(
+            "+998904444444", GenderType.MALE, CandidateRole.GROOM
+        )
+        self.client.force_authenticate(user=outsider)
+        response = self.client.delete(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.chat_room.refresh_from_db()
+        self.assertTrue(self.chat_room.is_active)
+
+    def test_delete_chat_room_unauthenticated(self):
+        response = self.client.delete(
+            f"/api/v1/matches/chat-rooms/{self.chat_room.id}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     # --- Xabar yuborish ---
 
     def test_send_chat_message_success(self):
