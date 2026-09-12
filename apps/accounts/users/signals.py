@@ -43,6 +43,7 @@ DEFAULT_PERMISSIONS_CODENAMES = [
     "view_photorequest",
     "add_chatroom",
     "change_chatroom",
+    "delete_chatroom",
     "view_chatroom",
     "add_message",
     "change_message",

@@ -66,6 +66,17 @@ def filter_messages_for_user(qs, user):
     )
 
 
+def soft_delete_chat_room(chat_room):
+    """
+    Chat xonasini va undagi barcha faol xabarlarni soft-delete qiladi.
+
+    :param chat_room: O'chirilayotgan xona (ChatRoom).
+    :return: None
+    """
+    Message.objects.active().filter(chat_room=chat_room).update(is_active=False)
+    chat_room.delete()
+
+
 def mark_room_messages_read(chat_room, user):
     """
     Xonadagi, foydalanuvchi o'zi yozmagan o'qilmagan xabarlarni o'qilgan deb belgilaydi.
