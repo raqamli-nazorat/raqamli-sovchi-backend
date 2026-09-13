@@ -53,6 +53,7 @@ class UserAdmin(BaseModelAdmin):
             obj.set_password(obj.password)
         if "is_blocked" in form.changed_data:
             obj._block_reason = "Admin paneli orqali"
+            obj._block_actor = request.user
         super().save_model(request, obj, form, change)
 
 

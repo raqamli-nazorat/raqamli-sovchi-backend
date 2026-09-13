@@ -8,6 +8,12 @@ USER & AUTH
         auth_provider: enum (GOOGLE, PHONE, TELEGRAM, EMAIL)
         is_verified: boolean
         is_blocked: boolean
+        blocked_at: timestamp [null] — bloklangan vaqti
+        blocked_by: FK(User) [null, SET_NULL] — bloklagan xodim/admin (faqat xodim bo'ladi)
+        blocked_reason: text [null] — bloklash sababi
+        unblocked_at: timestamp [null] — blokdan chiqarilgan vaqti
+        unblocked_by: FK(User) [null, SET_NULL] — blokdan chiqargan xodim/admin
+        unblocked_reason: text [null] — blokdan chiqarish sababi
         first_name: string [AbstractUser dan meros, faqat admin panel xodimlari uchun ishlatiladi]
         last_name: string [AbstractUser dan meros, faqat admin panel xodimlari uchun ishlatiladi]
         avatar: image [null] — admin panel xodimining profil rasmi (nomzod Profile.photos'idan alohida)

@@ -226,4 +226,9 @@ def apply_complaint_enforcement(complaint, enforcement_action):
             extra_data={"complaint_id": str(complaint.id), "action": "warn"},
         )
     elif enforcement_action == ComplaintEnforcementAction.BLOCK:
-        block_user(to_user, reason=complaint.get_reason_display(), notify_user=True)
+        block_user(
+            to_user,
+            reason=complaint.get_reason_display(),
+            actor=complaint.resolved_by,
+            notify_user=True,
+        )
