@@ -2,6 +2,7 @@ from django.contrib.auth.models import Permission
 from django.db import OperationalError, ProgrammingError
 from django.db.models.signals import post_migrate, post_save, pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from apps.accounts.users.models import Role, User
 
@@ -43,6 +44,7 @@ DEFAULT_PERMISSIONS_CODENAMES = [
     "view_photorequest",
     "add_chatroom",
     "change_chatroom",
+    "delete_chatroom",
     "view_chatroom",
     "add_message",
     "change_message",
@@ -134,11 +136,25 @@ def capture_is_blocked_transition(sender, instance, update_fields=None, **kwargs
 def handle_is_blocked_transition(sender, instance, created, **kwargs):
     """
     `is_blocked` o'zgargan bo'lsa yon ta'sirlarni ishga tushiradi: yuzni
-    qora ro'yxatga olish/tozalash va (so'ralgan bo'lsa) bildirishnoma.
+    qora ro'yxatga olish/tozalash, `blocked_*`/`unblocked_*` maydonlarini
+    to'ldirish/tozalash va (so'ralgan bo'lsa) bildirishnoma.
 
-    Sabab va bildirishnoma bayrog'i `block_user`/`unblock_user` tomonidan
-    `instance` ga vaqtinchalik qo'yiladi; boshqa yo'llarda (masalan admin
-    checkbox) ular bo'lmaydi va standart qiymatlar ishlatiladi.
+    Bloklanganda `blocked_at`/`blocked_by`/`blocked_reason` to'ldiriladi,
+    `unblocked_*` esa tozalanadi (endi joriy holat — blok). Blokdan
+    chiqarilganda aksincha: `unblocked_*` to'ldiriladi, `blocked_*`
+    tozalanadi — shu tufayli hozir bloklanmagan, lekin ilgari bloklangan
+    foydalanuvchi uchun ham "kim/qachon/nega blokdan chiqargani" saqlanib
+    qoladi.
+
+    Sabab, actor va bildirishnoma bayrog'i `block_user`/`unblock_user`
+    tomonidan `instance` ga vaqtinchalik qo'yiladi; boshqa yo'llarda
+    (masalan admin checkbox) ular bo'lmasligi mumkin va standart qiymatlar
+    ishlatiladi.
+
+    `blocked_*`/`unblocked_*` maydonlari asosiy `save()` chaqiruvidan
+    mustaqil, alohida `.update()` bilan yoziladi — shu tufayli chaqiruvchi
+    qaysi `update_fields` bilan saqlaganidan qat'iy nazar (masalan faqat
+    `["is_blocked"]`) ishlaydi.
     """
     transitioned_to = getattr(instance, "_is_blocked_transition", None)
     if transitioned_to is None:
@@ -146,19 +162,46 @@ def handle_is_blocked_transition(sender, instance, created, **kwargs):
 
     instance._is_blocked_transition = None
 
+    reason = getattr(instance, "_block_reason", None)
+    actor = getattr(instance, "_block_actor", None)
+    notify_user = getattr(instance, "_block_notify", False)
+
+    blocked = bool(transitioned_to)
+    now = timezone.now()
+    blocked_at = now if blocked else None
+    blocked_by = actor if blocked else None
+    blocked_reason = reason if blocked else None
+    unblocked_at = None if blocked else now
+    unblocked_by = None if blocked else actor
+    unblocked_reason = None if blocked else reason
+
+    sender.objects.filter(pk=instance.pk).update(
+        blocked_at=blocked_at,
+        blocked_by=blocked_by,
+        blocked_reason=blocked_reason,
+        unblocked_at=unblocked_at,
+        unblocked_by=unblocked_by,
+        unblocked_reason=unblocked_reason,
+    )
+    instance.blocked_at = blocked_at
+    instance.blocked_by = blocked_by
+    instance.blocked_reason = blocked_reason
+    instance.unblocked_at = unblocked_at
+    instance.unblocked_by = unblocked_by
+    instance.unblocked_reason = unblocked_reason
+
     # Chaqiruvchi yon ta'sirni o'zi bajarmoqchi bo'lsa (masalan yuz tekshiruvi
     # aynan bir embeddingni qo'shishi kerak) — signal uni takrorlamaydi.
+    # `blocked_*` maydonlari baribir yuqorida yozildi, chunki bu ham haqiqiy
+    # bloklash voqeasi.
     if getattr(instance, "_skip_block_side_effects", False):
         return
-
-    reason = getattr(instance, "_block_reason", None)
-    notify_user = getattr(instance, "_block_notify", False)
 
     from apps.accounts.users.services import apply_user_block_side_effects
 
     apply_user_block_side_effects(
         instance,
-        blocked=bool(transitioned_to),
+        blocked=blocked,
         reason=reason,
         notify_user=notify_user,
     )

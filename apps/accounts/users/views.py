@@ -299,6 +299,10 @@ class UserViewSet(BaseManageViewSet):
                     "profile__marital_status",
                     "profile__health_status",
                     "role",
+                    "blocked_by",
+                    "blocked_by__profile",
+                    "unblocked_by",
+                    "unblocked_by__profile",
                 )
                 .prefetch_related(
                     "profile__photos",
@@ -395,7 +399,7 @@ class UserViewSet(BaseManageViewSet):
 
         from .services import block_user as block_user_service
 
-        block_user_service(user, reason=reason_display)
+        block_user_service(user, reason=reason_display, actor=request.user)
 
         # notify_user=True bo'lsa FCM orqali xabar yuborish — Celery sozlangach aktivlashtirish kerak
 
@@ -435,7 +439,9 @@ class UserViewSet(BaseManageViewSet):
 
         from .services import unblock_user as unblock_user_service
 
-        unblock_user_service(user, reason=reason_display, notify_user=notify_user)
+        unblock_user_service(
+            user, reason=reason_display, actor=request.user, notify_user=notify_user
+        )
 
         return Response(
             {

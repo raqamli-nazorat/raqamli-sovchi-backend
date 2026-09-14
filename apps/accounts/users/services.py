@@ -7,6 +7,7 @@ from apps.accounts.users.models import UserDevice
 logger = logging.getLogger(__name__)
 
 DEVICE_CACHE_TIMEOUT = 30 * 24 * 3600
+DEFAULT_BLOCK_REASON = "Sabab ko'rsatilmagan"
 
 
 def get_device_cache_key(user_id, device_id):
@@ -334,51 +335,62 @@ def authenticate_email_user(email, request):
     return user, tokens, False
 
 
-def block_user(user, reason, notify_user=False):
+def block_user(user, reason=None, actor=None, notify_user=False):
     """
     Foydalanuvchini platforma bo'yicha bloklaydi.
 
     Bu — `is_blocked` ni `True` qilishning yagona qulay darvozasi. Yon
-    ta'sirlar (yuzni qora ro'yxatga olish, bildirishnoma) shu yerda emas,
-    `is_blocked` o'zgarishini kuzatuvchi signalda (`users.signals`)
-    bajariladi — shu tufayli Django admin, API yoki har qanday boshqa yo'l
-    bir xil natija beradi.
+    ta'sirlar (yuzni qora ro'yxatga olish, bildirishnoma, `blocked_at`/
+    `blocked_by`/`blocked_reason`ni to'ldirish) shu yerda emas, `is_blocked`
+    o'zgarishini kuzatuvchi signalda (`users.signals`) bajariladi — shu
+    tufayli Django admin, API yoki har qanday boshqa yo'l bir xil natija
+    beradi.
 
     Idempotent: allaqachon bloklangan foydalanuvchi uchun hech nima qilmaydi.
 
     :param user: Bloklanadigan foydalanuvchi.
-    :param reason: Bloklash sababi (matn, `BlockedFace.reason` ga yoziladi).
+    :param reason: Bloklash sababi (matn, `User.blocked_reason` va
+        `BlockedFace.reason` ga yoziladi). Berilmasa, `DEFAULT_BLOCK_REASON`
+        ishlatiladi.
+    :param actor: Bloklagan xodim/admin (`User.blocked_by` ga yoziladi).
     :param notify_user: True bo'lsa, foydalanuvchiga bildirishnoma yuboriladi.
     :return: Foydalanuvchi obyekti.
     """
     if user.is_blocked:
         return user
 
-    user._block_reason = reason
+    user._block_reason = reason or DEFAULT_BLOCK_REASON
+    user._block_actor = actor
     user._block_notify = notify_user
     user.is_blocked = True
     user.save(update_fields=["is_blocked", "updated_at"])
     return user
 
 
-def unblock_user(user, reason=None, notify_user=False):
+def unblock_user(user, reason=None, actor=None, notify_user=False):
     """
     Foydalanuvchini blokdan chiqaradi.
 
     `block_user` bilan teng huquqli darvoza. Yon ta'sirlar (yuzni qora
-    ro'yxatdan tozalash, bildirishnoma) signalda bajariladi.
+    ro'yxatdan tozalash, bildirishnoma, `blocked_*`ni tozalab
+    `unblocked_at`/`unblocked_by`/`unblocked_reason`ni to'ldirish) signalda
+    bajariladi.
 
     Idempotent: bloklanmagan foydalanuvchi uchun hech nima qilmaydi.
 
     :param user: Blokdan chiqariladigan foydalanuvchi.
-    :param reason: Blokdan chiqarish sababi (ixtiyoriy, bildirishnoma matnida ishlatiladi).
+    :param reason: Blokdan chiqarish sababi (`User.unblocked_reason` ga
+        yoziladi, bildirishnoma matnida ham ishlatiladi). Berilmasa,
+        `DEFAULT_BLOCK_REASON` ishlatiladi.
+    :param actor: Blokdan chiqargan xodim/admin (`User.unblocked_by` ga yoziladi).
     :param notify_user: True bo'lsa, foydalanuvchiga bildirishnoma yuboriladi.
     :return: Foydalanuvchi obyekti.
     """
     if not user.is_blocked:
         return user
 
-    user._block_reason = reason
+    user._block_reason = reason or DEFAULT_BLOCK_REASON
+    user._block_actor = actor
     user._block_notify = notify_user
     user.is_blocked = False
     user.save(update_fields=["is_blocked", "updated_at"])

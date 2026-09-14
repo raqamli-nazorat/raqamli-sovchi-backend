@@ -92,6 +92,34 @@ class User(AbstractUser, RolePermissionsMixin, BaseModel):
     is_blocked = models.BooleanField(
         default=False, verbose_name="Bloklangan foydalanuvchi"
     )
+    blocked_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Bloklangan vaqti"
+    )
+    blocked_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="blocked_users_by_admin",
+        verbose_name="Bloklagan xodim",
+    )
+    blocked_reason = models.TextField(
+        null=True, blank=True, verbose_name="Bloklash sababi"
+    )
+    unblocked_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Blokdan chiqarilgan vaqti"
+    )
+    unblocked_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="unblocked_users_by_admin",
+        verbose_name="Blokdan chiqargan xodim",
+    )
+    unblocked_reason = models.TextField(
+        null=True, blank=True, verbose_name="Blokdan chiqarish sababi"
+    )
     avatar = models.ImageField(
         upload_to="admin_avatars/",
         null=True,

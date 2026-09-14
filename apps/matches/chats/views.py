@@ -2,6 +2,7 @@ from django.db.models import Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.filters import OrderingFilter, SearchFilter
@@ -21,15 +22,19 @@ from .services import (
     filter_messages_for_user,
     mark_room_messages_read,
     notify_recipient_new_message,
+    soft_delete_chat_room,
 )
 
 
-class ChatRoomViewSet(BaseReadOnlyViewSet):
+class ChatRoomViewSet(mixins.DestroyModelMixin, BaseReadOnlyViewSet):
     """
-    Chat xonalari — faqat o'qish uchun.
+    Chat xonalari — o'qish va o'chirish uchun.
 
     Xona faqat `MatchRequest` qabul qilinganda avtomatik ochiladi
-    (`match_requests.accept_request`), API orqali yaratilmaydi.
+    (`match_requests.accept_request`), API orqali yaratilmaydi — faqat
+    o'chiriladi. O'chirishni xonaning ikki ishtirokchisi yoki xodim amalga
+    oshira oladi (`get_queryset` dagi `filter_chat_rooms_for_user` orqali —
+    begona foydalanuvchiga xona umuman ko'rinmaydi, 404 qaytadi).
     """
 
     serializer_class = ChatRoomSerializer
@@ -53,6 +58,10 @@ class ChatRoomViewSet(BaseReadOnlyViewSet):
             .active()
         )
         return filter_chat_rooms_for_user(qs, self.request.user)
+
+    def perform_destroy(self, instance):
+        """Xonani va undagi barcha faol xabarlarni soft-delete qiladi."""
+        soft_delete_chat_room(instance)
 
     @extend_schema(
         summary="Suhbatdoshning onlayn holati",
