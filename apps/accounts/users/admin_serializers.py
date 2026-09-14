@@ -405,6 +405,16 @@ class AdminUserDetailSerializer(BaseModelSerializer):
             "auth_provider": obj.get_auth_provider_display(),
             "is_verified": obj.is_verified,
             "is_blocked": obj.is_blocked,
+            "blocked_at": obj.blocked_at if obj.is_blocked else None,
+            "blocked_by": _actor_display_name(obj.blocked_by)
+            if obj.is_blocked
+            else None,
+            "blocked_reason": obj.blocked_reason if obj.is_blocked else None,
+            "unblocked_at": None if obj.is_blocked else obj.unblocked_at,
+            "unblocked_by": None
+            if obj.is_blocked
+            else (_actor_display_name(obj.unblocked_by) if obj.unblocked_at else None),
+            "unblocked_reason": None if obj.is_blocked else obj.unblocked_reason,
             "created_at": obj.created_at,
             "deactivated_at": obj.updated_at if not obj.is_active else None,
         }

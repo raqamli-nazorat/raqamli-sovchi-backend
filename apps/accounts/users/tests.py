@@ -686,6 +686,107 @@ class AdminUserUnblockTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
+class AdminUserDetailBlockInfoTestCase(TestCase):
+    """`AdminUserDetailSerializer.get_account` dagi bloklash ma'lumotlari (qachon/kim/nega) testlari."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = User.objects.create(
+            phone_number="+998900000050",
+            auth_provider=AuthProvider.PHONE,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.staff = User.objects.create(
+            phone_number="+998900000051",
+            auth_provider=AuthProvider.PHONE,
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.role = Role.objects.filter(is_default=True).first()
+        self.candidate = User.objects.create(
+            phone_number="+998900000052",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+
+    def _account(self, user):
+        """Berilgan foydalanuvchining admin detail javobidagi `account` bo'limini qaytaradi."""
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(f"/api/v1/accounts/users/{user.id}/")
+        data = response.data
+        if isinstance(data, dict) and "data" in data:
+            data = data["data"]
+        return response, data["account"]
+
+    def test_detail_shows_blocker_time_and_reason_when_blocked(self):
+        self.client.force_authenticate(self.staff)
+        self.client.post(
+            f"/api/v1/accounts/users/{self.candidate.id}/block/",
+            {"reason": "fraud"},
+            format="json",
+        )
+
+        response, account = self._account(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(account["is_blocked"])
+        self.assertIsNotNone(account["blocked_at"])
+        self.assertEqual(account["blocked_by"], self.staff.phone_number)
+        self.assertEqual(account["blocked_reason"], "Firibgarlik belgilari")
+
+    def test_detail_hides_block_info_when_not_blocked(self):
+        response, account = self._account(self.candidate)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(account["is_blocked"])
+        self.assertIsNone(account["blocked_at"])
+        self.assertIsNone(account["blocked_by"])
+        self.assertIsNone(account["blocked_reason"])
+        self.assertIsNone(account["unblocked_at"])
+        self.assertIsNone(account["unblocked_by"])
+        self.assertIsNone(account["unblocked_reason"])
+
+    def test_detail_shows_unblocker_time_and_reason_after_unblock(self):
+        self.candidate.is_blocked = True
+        self.candidate.save(update_fields=["is_blocked"])
+        self.client.force_authenticate(self.staff)
+
+        response = self.client.post(
+            f"/api/v1/accounts/users/{self.candidate.id}/unblock/",
+            {"reason": "mistake"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        _, account = self._account(self.candidate)
+        self.assertFalse(account["is_blocked"])
+        self.assertIsNone(account["blocked_at"])
+        self.assertIsNone(account["blocked_by"])
+        self.assertIsNone(account["blocked_reason"])
+        self.assertIsNotNone(account["unblocked_at"])
+        self.assertEqual(account["unblocked_by"], self.staff.phone_number)
+        self.assertEqual(account["unblocked_reason"], "Xato bloklangan edi")
+
+    def test_detail_clears_block_info_after_unblock(self):
+        self.candidate.is_blocked = True
+        self.candidate.save(update_fields=["is_blocked"])
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post(
+            f"/api/v1/accounts/users/{self.candidate.id}/unblock/",
+            {"reason": "mistake"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        _, account = self._account(self.candidate)
+        self.assertFalse(account["is_blocked"])
+        self.assertIsNone(account["blocked_at"])
+        self.assertIsNone(account["blocked_by"])
+        self.assertIsNone(account["blocked_reason"])
+
+
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class AdminProfileTestCase(TestCase):
     """
@@ -972,3 +1073,26 @@ class UserBlockSideEffectsTestCase(TestCase):
 
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_blocked)
+
+    @patch("apps.core.utils.face.register_user_faces_as_blocked")
+    def test_block_user_without_reason_uses_default_reason(self, mock_register):
+        from apps.accounts.users.services import DEFAULT_BLOCK_REASON, block_user
+
+        block_user(self.user)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.blocked_reason, DEFAULT_BLOCK_REASON)
+
+    @patch("apps.core.utils.face.remove_user_faces_from_blocked")
+    def test_unblock_user_without_reason_uses_default_reason(self, mock_remove):
+        from apps.accounts.users.services import (
+            DEFAULT_BLOCK_REASON,
+            block_user,
+            unblock_user,
+        )
+
+        block_user(self.user, reason="fraud")
+        unblock_user(self.user)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.unblocked_reason, DEFAULT_BLOCK_REASON)

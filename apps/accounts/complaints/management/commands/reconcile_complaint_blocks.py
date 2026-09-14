@@ -52,6 +52,7 @@ class Command(BaseCommand):
                 block_user(
                     user,
                     reason=complaint.get_reason_display(),
+                    actor=complaint.resolved_by,
                     notify_user=False,
                 )
                 fixed += 1
