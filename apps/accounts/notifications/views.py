@@ -30,6 +30,8 @@ class WebSocketTicketView(AutoSchemaMixin, APIView):
 
 
 class NotificationPreferenceView(AutoSchemaMixin, generics.RetrieveUpdateAPIView):
+    # To'liq almashtirish (PUT) kerak emas — faqat qisman yangilash (PATCH) beriladi.
+    http_method_names = ["get", "patch", "head", "options"]
     serializer_class = NotificationPreferenceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
