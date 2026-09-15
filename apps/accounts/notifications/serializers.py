@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Notification, UserDevice
+from .models import Notification, NotificationPreference, UserDevice
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -8,13 +8,25 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = (
             "id",
+            "type",
             "title",
             "message",
             "extra_data",
             "is_read",
             "created_at",
         )
-        read_only_fields = ("id", "created_at")
+        read_only_fields = ("id", "type", "created_at")
+
+
+class NotificationPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationPreference
+        fields = (
+            "new_match",
+            "new_message",
+            "profile_viewed",
+            "system_messages",
+        )
 
 
 class UserDeviceSerializer(serializers.ModelSerializer):

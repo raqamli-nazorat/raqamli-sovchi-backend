@@ -548,3 +548,84 @@ class CanViewProfilePhotosTestCase(TestCase):
 
     def test_view_photo_own_profile_always_visible(self):
         self.assertTrue(can_view_profile_photos(self.user_bride, self.profile_bride))
+
+
+class ProfileViewedNotificationTestCase(TestCase):
+    """Boshqa foydalanuvchi profilni ko'rganda "profil ko'rildi" bildirishnomasi."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.role = Role.objects.filter(is_default=True).first()
+
+        self.user_bride = User.objects.create(
+            phone_number="+998904444501",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.profile_bride = Profile.objects.create(
+            user=self.user_bride,
+            first_name="Qiz",
+            last_name="Nomzod",
+            gender=GenderType.FEMALE,
+            candidate_type=CandidateRole.BRIDE,
+            birth_date="1999-01-01",
+            height=165,
+        )
+
+        self.user_groom = User.objects.create(
+            phone_number="+998904444502",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        Profile.objects.create(
+            user=self.user_groom,
+            first_name="Yigit",
+            last_name="Nomzod",
+            gender=GenderType.MALE,
+            candidate_type=CandidateRole.GROOM,
+            birth_date="1995-01-01",
+            height=180,
+        )
+
+        self.url = f"/api/v1/accounts/profiles/{self.profile_bride.id}/"
+
+    def test_viewing_other_profile_creates_notification(self):
+        from apps.accounts.notifications.models import Notification, NotificationType
+
+        self.client.force_authenticate(user=self.user_groom)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.user_bride, type=NotificationType.PROFILE_VIEWED
+            ).exists()
+        )
+
+    def test_viewing_own_profile_does_not_create_notification(self):
+        # `filter_profiles_for_user` o'z profilini ro'yxatdan chiqarib tashlaydi,
+        # shuning uchun bu endpoint orqali o'z profiliga kirish 404 qaytaradi —
+        # baribir bildirishnoma yaratilmasligini tekshiramiz.
+        from apps.accounts.notifications.models import Notification, NotificationType
+
+        self.client.force_authenticate(user=self.user_bride)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        self.assertFalse(
+            Notification.objects.filter(
+                user=self.user_bride, type=NotificationType.PROFILE_VIEWED
+            ).exists()
+        )
+
+    def test_viewing_same_profile_twice_sends_notification_once(self):
+        from apps.accounts.notifications.models import Notification, NotificationType
+
+        self.client.force_authenticate(user=self.user_groom)
+        self.client.get(self.url)
+        self.client.get(self.url)
+
+        count = Notification.objects.filter(
+            user=self.user_bride, type=NotificationType.PROFILE_VIEWED
+        ).count()
+        self.assertEqual(count, 1)

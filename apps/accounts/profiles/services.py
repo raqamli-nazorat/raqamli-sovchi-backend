@@ -200,7 +200,7 @@ def send_representative_consent_request(
             {"detail": "Avval vakil profili yaratilgan bo'lishi kerak."}
         )
 
-    from apps.accounts.notifications.models import Notification
+    from apps.accounts.notifications.models import Notification, NotificationType
     from apps.accounts.users.models import User
 
     from .models import RepresentativeInfo
@@ -235,6 +235,7 @@ def send_representative_consent_request(
 
         Notification.objects.create(
             user=target_user,
+            type=NotificationType.SYSTEM,
             title="Vakillik roziligi so'rovi",
             message=f"{user_profile.first_name} ({kinship_name}) sizning nomingizdan anketa to'ldirdi. Rozimisiz?",
             extra_data={
@@ -259,7 +260,7 @@ def approve_representative_consent(user, rep_info_id=None):
     :return: Yangilangan RepresentativeInfo obyekti.
     :raises ValidationError: Vakillik so'rovi topilmasa.
     """
-    from apps.accounts.notifications.models import Notification
+    from apps.accounts.notifications.models import Notification, NotificationType
 
     from .models import RepresentativeInfo
 
@@ -283,6 +284,7 @@ def approve_representative_consent(user, rep_info_id=None):
 
         Notification.objects.create(
             user=rep_info.profile.user,
+            type=NotificationType.SYSTEM,
             title="Nomzod rozilik berdi!",
             message=f"{candidate_name} sizning vakilligingizga rozilik berdi. Anketa faollashdi.",
             extra_data={
@@ -307,7 +309,7 @@ def reject_representative_consent(user, rep_info_id=None):
     :return: None
     :raises ValidationError: Vakillik so'rovi topilmasa.
     """
-    from apps.accounts.notifications.models import Notification
+    from apps.accounts.notifications.models import Notification, NotificationType
 
     from .models import RepresentativeInfo
 
@@ -327,6 +329,7 @@ def reject_representative_consent(user, rep_info_id=None):
 
         Notification.objects.create(
             user=rep_info.profile.user,
+            type=NotificationType.SYSTEM,
             title="Vakillik so'rovi rad etildi",
             message=f"{candidate_name} vakillik so'rovini rad etdi.",
             extra_data={
@@ -340,6 +343,49 @@ def reject_representative_consent(user, rep_info_id=None):
         )
 
     rep_info.delete()
+
+
+def notify_profile_viewed(viewer, profile):
+    """
+    Boshqa foydalanuvchi profilni ko'rganda profil egasiga bildirishnoma yuboradi.
+
+    Xodim/moderator ko'rishlari va o'z profilini ko'rish hisobga olinmaydi.
+    Bir xil ko'ruvchi-profil jufti uchun 24 soat ichida faqat bitta marta
+    yuboriladi — aks holda har oching sahifada spam bo'lib ketadi.
+
+    :param viewer: Profilni ko'rayotgan foydalanuvchi (User).
+    :param profile: Ko'rilayotgan profil (Profile).
+    :return: None
+    """
+    from django.core.cache import cache
+
+    from apps.accounts.notifications.models import Notification, NotificationType
+
+    owner = profile.user
+    if not owner or not viewer.is_authenticated or owner.id == viewer.id:
+        return
+    if viewer.role and not viewer.role.is_default:
+        return
+
+    cache_key = f"profile_viewed:{viewer.id}:{profile.id}"
+    if cache.get(cache_key):
+        return
+    cache.set(cache_key, True, timeout=60 * 60 * 24)
+
+    viewer_profile = getattr(viewer, "profile", None)
+    viewer_name = viewer_profile.first_name if viewer_profile else "Kimdir"
+    viewer_profile_id = str(viewer_profile.id) if viewer_profile else None
+
+    Notification.objects.create(
+        user=owner,
+        type=NotificationType.PROFILE_VIEWED,
+        title="Profilingiz ko'rildi",
+        message=f"{viewer_name} profilingizni ko'rdi.",
+        extra_data={
+            "type": "profile_viewed",
+            "viewer_profile_id": viewer_profile_id,
+        },
+    )
 
 
 def filter_profiles_for_user(qs, user):
