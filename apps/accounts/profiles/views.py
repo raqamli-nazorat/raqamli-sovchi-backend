@@ -34,6 +34,7 @@ from .services import (
     get_paginated_profiles_response,
     get_saved_profile_objects_for_user,
     get_saved_profiles_for_user,
+    notify_profile_viewed,
     reject_representative_consent,
     save_profile_for_user,
     send_representative_consent_request,
@@ -90,6 +91,12 @@ class ProfileViewSet(BaseManageViewSet):
             .active()
         )
         return filter_profiles_for_user(qs, self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        notify_profile_viewed(request.user, instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         target_user = create_profile(self.request.user, serializer.validated_data)

@@ -46,12 +46,16 @@ class PhotoRequestViewSet(BaseManageViewSet):
         instance = serializer.save(from_profile=user_profile)
 
         if instance.to_profile and instance.to_profile.user:
-            from apps.accounts.notifications.models import Notification
+            from apps.accounts.notifications.models import (
+                Notification,
+                NotificationType,
+            )
 
             sender_name = user_profile.first_name if user_profile else "Foydalanuvchi"
             note_str = f" Izoh: «{instance.note}»" if instance.note else ""
             Notification.objects.create(
                 user=instance.to_profile.user,
+                type=NotificationType.NEW_MATCH,
                 title="Yangi rasm ko'rish so'rovi",
                 message=f"{sender_name} sizga rasm ko'rish so'rovini yubordi.{note_str}",
                 extra_data={
@@ -94,7 +98,10 @@ class PhotoRequestViewSet(BaseManageViewSet):
         photo_req.save(update_fields=["status", "updated_at"])
 
         if photo_req.from_profile and photo_req.from_profile.user:
-            from apps.accounts.notifications.models import Notification
+            from apps.accounts.notifications.models import (
+                Notification,
+                NotificationType,
+            )
 
             receiver_name = (
                 photo_req.to_profile.first_name
@@ -103,6 +110,7 @@ class PhotoRequestViewSet(BaseManageViewSet):
             )
             Notification.objects.create(
                 user=photo_req.from_profile.user,
+                type=NotificationType.NEW_MATCH,
                 title="Rasm ko'rish so'rovi qabul qilindi!",
                 message=f"{receiver_name} rasm ko'rish so'rovingizni qabul qildi.",
                 extra_data={
@@ -136,7 +144,10 @@ class PhotoRequestViewSet(BaseManageViewSet):
         photo_req.save(update_fields=["status", "updated_at"])
 
         if photo_req.from_profile and photo_req.from_profile.user:
-            from apps.accounts.notifications.models import Notification
+            from apps.accounts.notifications.models import (
+                Notification,
+                NotificationType,
+            )
 
             receiver_name = (
                 photo_req.to_profile.first_name
@@ -145,6 +156,7 @@ class PhotoRequestViewSet(BaseManageViewSet):
             )
             Notification.objects.create(
                 user=photo_req.from_profile.user,
+                type=NotificationType.NEW_MATCH,
                 title="Rasm ko'rish so'rovi rad etildi",
                 message=f"{receiver_name} rasm ko'rish so'rovingizni rad etdi.",
                 extra_data={

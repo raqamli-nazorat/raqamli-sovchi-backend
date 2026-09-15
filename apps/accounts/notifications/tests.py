@@ -8,7 +8,12 @@ from django.test import TestCase, TransactionTestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.accounts.notifications.models import UserDevice
+from apps.accounts.notifications.models import (
+    Notification,
+    NotificationPreference,
+    NotificationType,
+    UserDevice,
+)
 from apps.accounts.notifications.presence import get_presence, mark_offline, mark_online
 from apps.accounts.notifications.tasks import (
     NotificationPayload,
@@ -281,3 +286,79 @@ class NotificationPresenceWebSocketTestCase(TransactionTestCase):
             await comm.disconnect()
 
         async_to_sync(scenario)()
+
+
+class NotificationPreferenceApiTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.role = Role.objects.filter(is_default=True).first()
+        self.user = User.objects.create(
+            phone_number="+998901234599",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = "/api/v1/accounts/notifications/preferences/"
+
+    def test_get_preferences_creates_default_success(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["new_match"])
+        self.assertTrue(response.data["new_message"])
+        self.assertTrue(response.data["profile_viewed"])
+        self.assertTrue(response.data["system_messages"])
+        self.assertTrue(NotificationPreference.objects.filter(user=self.user).exists())
+
+    def test_patch_preferences_updates_selected_field_success(self):
+        response = self.client.patch(
+            self.url, data={"new_message": False}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["new_message"])
+        self.assertTrue(response.data["new_match"])
+
+        preference = NotificationPreference.objects.get(user=self.user)
+        self.assertFalse(preference.new_message)
+
+    def test_get_preferences_unauthenticated(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class NotificationPreferenceFilteringTestCase(TestCase):
+    def setUp(self):
+        self.role = Role.objects.filter(is_default=True).first()
+        self.user = User.objects.create(
+            phone_number="+998901234598",
+            auth_provider=AuthProvider.PHONE,
+            role=self.role,
+        )
+
+    def test_disabled_type_skips_enqueue(self):
+        NotificationPreference.objects.filter(user=self.user).update(new_message=False)
+
+        with patch(
+            "apps.accounts.notifications.signals.enqueue_notification"
+        ) as mock_enqueue:
+            with self.captureOnCommitCallbacks(execute=True):
+                Notification.objects.create(
+                    user=self.user,
+                    type=NotificationType.NEW_MESSAGE,
+                    title="Test",
+                    message="Test",
+                )
+            mock_enqueue.assert_not_called()
+
+    def test_enabled_type_calls_enqueue(self):
+        with patch(
+            "apps.accounts.notifications.signals.enqueue_notification"
+        ) as mock_enqueue:
+            with self.captureOnCommitCallbacks(execute=True):
+                Notification.objects.create(
+                    user=self.user,
+                    type=NotificationType.NEW_MESSAGE,
+                    title="Test",
+                    message="Test",
+                )
+            mock_enqueue.assert_called_once()

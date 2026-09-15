@@ -52,11 +52,15 @@ class MatchRequestViewSet(BaseManageViewSet):
         instance = serializer.save(from_profile=user_profile)
 
         if instance.to_profile and instance.to_profile.user:
-            from apps.accounts.notifications.models import Notification
+            from apps.accounts.notifications.models import (
+                Notification,
+                NotificationType,
+            )
 
             sender_name = user_profile.first_name if user_profile else "Foydalanuvchi"
             Notification.objects.create(
                 user=instance.to_profile.user,
+                type=NotificationType.NEW_MATCH,
                 title="Yangi moslik so'rovi",
                 message=f"{sender_name} sizga moslik so'rovini yubordi.",
                 extra_data={
@@ -96,7 +100,7 @@ class MatchRequestViewSet(BaseManageViewSet):
 
         self._ensure_undecided(match_req)
 
-        from apps.accounts.notifications.models import Notification
+        from apps.accounts.notifications.models import Notification, NotificationType
 
         match_req.status = MatchRequestStatus.ACCEPTED
         match_req.save(update_fields=["status", "updated_at"])
@@ -113,6 +117,7 @@ class MatchRequestViewSet(BaseManageViewSet):
             )
             Notification.objects.create(
                 user=match_req.from_profile.user,
+                type=NotificationType.NEW_MATCH,
                 title="Moslik so'rovi qabul qilindi!",
                 message=f"{receiver_name} moslik so'rovingizni qabul qildi.",
                 extra_data={
@@ -147,7 +152,10 @@ class MatchRequestViewSet(BaseManageViewSet):
         match_req.save(update_fields=["status", "updated_at"])
 
         if match_req.from_profile and match_req.from_profile.user:
-            from apps.accounts.notifications.models import Notification
+            from apps.accounts.notifications.models import (
+                Notification,
+                NotificationType,
+            )
 
             receiver_name = (
                 match_req.to_profile.first_name
@@ -156,6 +164,7 @@ class MatchRequestViewSet(BaseManageViewSet):
             )
             Notification.objects.create(
                 user=match_req.from_profile.user,
+                type=NotificationType.NEW_MATCH,
                 title="Moslik so'rovi rad etildi",
                 message=f"{receiver_name} moslik so'rovingizni rad etdi.",
                 extra_data={
