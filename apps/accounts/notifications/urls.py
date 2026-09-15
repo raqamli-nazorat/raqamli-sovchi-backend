@@ -5,6 +5,7 @@ from .views import (
     MarkNotificationReadView,
     NotificationCountView,
     NotificationListView,
+    NotificationPreferenceView,
     UserDeviceRegisterView,
     UserDeviceUnregisterView,
     WebSocketTicketView,
@@ -13,6 +14,11 @@ from .views import (
 urlpatterns = [
     path("", NotificationListView.as_view(), name="notifications"),
     path("count/", NotificationCountView.as_view(), name="notifications-count"),
+    path(
+        "preferences/",
+        NotificationPreferenceView.as_view(),
+        name="notification-preferences",
+    ),
     path(
         "<uuid:pk>/read/", MarkNotificationReadView.as_view(), name="read-notifications"
     ),

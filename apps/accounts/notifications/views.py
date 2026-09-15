@@ -10,8 +10,9 @@ from rest_framework.views import APIView
 
 from apps.core.base.mixins import AutoSchemaMixin
 
-from .models import Notification, UserDevice
+from .models import Notification, NotificationPreference, UserDevice
 from .serializers import (
+    NotificationPreferenceSerializer,
     NotificationSerializer,
     UserDeviceRegisterSerializer,
     UserDeviceUnregisterSerializer,
@@ -26,6 +27,17 @@ class WebSocketTicketView(AutoSchemaMixin, APIView):
         cache.set(f"ws_ticket_{ticket}", request.user.id, timeout=60)
 
         return Response({"ticket": ticket, "expires_in": 60})
+
+
+class NotificationPreferenceView(AutoSchemaMixin, generics.RetrieveUpdateAPIView):
+    serializer_class = NotificationPreferenceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        preference, _ = NotificationPreference.objects.get_or_create(
+            user=self.request.user
+        )
+        return preference
 
 
 class NotificationListView(AutoSchemaMixin, generics.ListAPIView):

@@ -186,7 +186,7 @@ def notify_recipient_new_message(message):
     if not recipient_user:
         return
 
-    from apps.accounts.notifications.models import Notification
+    from apps.accounts.notifications.models import Notification, NotificationType
 
     sender_name = getattr(
         getattr(sender, "profile", None), "first_name", "Foydalanuvchi"
@@ -194,6 +194,7 @@ def notify_recipient_new_message(message):
     preview = message.content[:100] or "📎 Biriktirilgan fayl"
     Notification.objects.create(
         user=recipient_user,
+        type=NotificationType.NEW_MESSAGE,
         title=f"{sender_name}dan yangi xabar",
         message=preview,
         extra_data={

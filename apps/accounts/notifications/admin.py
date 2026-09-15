@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apps.core.base.admin import BaseModelAdmin as ModelAdmin
 
-from .models import Notification, UserDevice
+from .models import Notification, NotificationPreference, UserDevice
 
 
 @admin.register(Notification)
@@ -10,13 +10,14 @@ class NotificationAdmin(ModelAdmin):
     list_display = (
         "id",
         "user",
+        "type",
         "title",
         "is_read",
         "created_at",
         "is_active",
     )
     list_display_links = ("id", "user")
-    list_filter = ("is_read", "created_at")
+    list_filter = ("type", "is_read", "created_at")
     search_fields = (
         "user__phone_number",
         "title",
@@ -32,6 +33,7 @@ class NotificationAdmin(ModelAdmin):
             {
                 "fields": (
                     "user",
+                    "type",
                     "title",
                     "message",
                 )
@@ -46,6 +48,21 @@ class NotificationAdmin(ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(NotificationPreference)
+class NotificationPreferenceAdmin(ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "new_match",
+        "new_message",
+        "profile_viewed",
+        "system_messages",
+    )
+    list_display_links = ("id", "user")
+    search_fields = ("user__phone_number",)
+    autocomplete_fields = ("user",)
 
 
 @admin.register(UserDevice)

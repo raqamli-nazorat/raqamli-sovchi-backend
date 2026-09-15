@@ -436,7 +436,7 @@ def apply_user_block_side_effects(user, *, blocked, reason=None, notify_user=Fal
 
 def _send_block_notification(user, *, blocked, reason=None):
     """Bloklash/blokdan chiqarish bo'yicha foydalanuvchiga bildirishnoma yuboradi."""
-    from apps.accounts.notifications.models import Notification
+    from apps.accounts.notifications.models import Notification, NotificationType
 
     if blocked:
         message = "Profilingiz bloklandi."
@@ -444,6 +444,7 @@ def _send_block_notification(user, *, blocked, reason=None):
             message = f"Profilingiz quyidagi sabab bo'yicha bloklandi: {reason}"
         Notification.objects.create(
             user=user,
+            type=NotificationType.SYSTEM,
             title="Profilingiz bloklandi",
             message=message,
             extra_data={"reason": reason} if reason else {},
@@ -454,6 +455,7 @@ def _send_block_notification(user, *, blocked, reason=None):
             message = f"Profilingiz blokdan chiqarildi. Sababi: {reason}"
         Notification.objects.create(
             user=user,
+            type=NotificationType.SYSTEM,
             title="Profilingiz blokdan chiqarildi",
             message=message,
             extra_data={"reason": reason} if reason else {},

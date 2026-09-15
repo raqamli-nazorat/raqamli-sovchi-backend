@@ -203,7 +203,7 @@ def apply_complaint_enforcement(complaint, enforcement_action):
     :param enforcement_action: ComplaintEnforcementAction qiymati.
     :return: None
     """
-    from apps.accounts.notifications.models import Notification
+    from apps.accounts.notifications.models import Notification, NotificationType
     from apps.accounts.users.services import block_user
 
     to_user = complaint.to_user
@@ -218,6 +218,7 @@ def apply_complaint_enforcement(complaint, enforcement_action):
             return
         Notification.objects.create(
             user=to_user,
+            type=NotificationType.SYSTEM,
             title="Ogohlantirish",
             message=(
                 f"'{complaint.get_reason_display()}' sababli shikoyatingiz "
